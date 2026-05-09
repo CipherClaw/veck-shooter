@@ -59,6 +59,8 @@ The server tests cover team allocation, friendly-fire prevention, player limit e
 
 Railway can deploy the repo directly with the included `railway.json`.
 
+When changes should go live, push the finished GitHub commit and then trigger or verify the Railway deployment. Do not assume the GitHub push alone updated Railway unless the Railway project is confirmed to be watching the pushed branch.
+
 Build command:
 
 ```bash
