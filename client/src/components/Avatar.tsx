@@ -15,8 +15,10 @@ export function Avatar({ player, mine }: { player: PlayerSnapshot; mine: boolean
         <mesh position={[0, 0.78, 0]} castShadow><boxGeometry args={[0.62, 0.55, 0.55]} /><meshStandardMaterial color="#ffd5a8" /></mesh>
         <mesh position={[-0.14, 0.85, -0.29]}><boxGeometry args={[0.08, 0.08, 0.04]} /><meshStandardMaterial color="#171717" /></mesh>
         <mesh position={[0.14, 0.85, -0.29]}><boxGeometry args={[0.08, 0.08, 0.04]} /><meshStandardMaterial color="#171717" /></mesh>
-        <mesh position={[-0.58, 0.05, 0]} castShadow><boxGeometry args={[0.25, 0.9, 0.28]} /><meshStandardMaterial color="#ffd5a8" /></mesh>
-        <mesh position={[0.58, 0.05, 0]} castShadow><boxGeometry args={[0.25, 0.9, 0.28]} /><meshStandardMaterial color="#ffd5a8" /></mesh>
+        <mesh position={[-0.58, 0.2, 0]} castShadow><boxGeometry args={[0.27, 0.55, 0.3]} /><meshStandardMaterial color={color} roughness={0.58} /></mesh>
+        <mesh position={[0.58, 0.2, 0]} castShadow><boxGeometry args={[0.27, 0.55, 0.3]} /><meshStandardMaterial color={color} roughness={0.58} /></mesh>
+        <mesh position={[-0.58, -0.18, -0.02]} castShadow><boxGeometry args={[0.23, 0.32, 0.25]} /><meshStandardMaterial color="#ffd5a8" roughness={0.72} /></mesh>
+        <mesh position={[0.58, -0.18, -0.02]} castShadow><boxGeometry args={[0.23, 0.32, 0.25]} /><meshStandardMaterial color="#ffd5a8" roughness={0.72} /></mesh>
         <mesh position={[-0.22, -0.9, 0]} castShadow><boxGeometry args={[0.28, 0.82, 0.3]} /><meshStandardMaterial color="#2f3440" /></mesh>
         <mesh position={[0.22, -0.9, 0]} castShadow><boxGeometry args={[0.28, 0.82, 0.3]} /><meshStandardMaterial color="#2f3440" /></mesh>
         <group position={[0.62, 0.08, -0.36]} rotation={[0.15, 0, 0]}>

@@ -1,17 +1,19 @@
 import type { MapName } from "@veck/shared";
 
 function Tile({ position, scale, color = "#e7edf3" }: { position: [number, number, number]; scale: [number, number, number]; color?: string }) {
-  return <mesh position={position} scale={scale} castShadow receiveShadow><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color={color} roughness={0.68} /></mesh>;
+  return <mesh position={position} scale={scale} castShadow receiveShadow><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color={color} roughness={0.72} metalness={0.02} /></mesh>;
 }
 
 export function ArenaMap({ map }: { map: MapName }) {
+  const floorColor = map === "Forest" ? "#6fb44b" : map === "Pyramid" ? "#d8c38e" : "#d9e1e8";
+  const gridColor = map === "Forest" ? "#4f8935" : map === "Pyramid" ? "#b9995d" : "#a8b4c1";
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[80, 80, 40, 40]} />
-        <meshStandardMaterial color={map === "Forest" ? "#75bb4d" : "#d9e1e8"} roughness={0.9} />
+        <meshStandardMaterial color={floorColor} roughness={0.86} />
       </mesh>
-      <gridHelper args={[80, 40, "#ffffff", map === "Forest" ? "#5fa23e" : "#b9c4ce"]} position={[0, 0.02, 0]} />
+      <gridHelper args={[80, 40, "#fff7d6", gridColor]} position={[0, 0.025, 0]} />
       {map === "Pyramid" && <Pyramid />}
       {map === "Practice Range" && <Practice />}
       {map === "Forest" && <Forest />}
@@ -22,10 +24,14 @@ export function ArenaMap({ map }: { map: MapName }) {
 function Pyramid() {
   return (
     <group>
-      {[0, 1, 2, 3, 4].map((i) => <Tile key={i} position={[0, 0.35 + i * 0.62, 0]} scale={[15 - i * 2.4, 0.7, 15 - i * 2.4]} color={i % 2 ? "#cfd8e3" : "#f2f5f8"} />)}
-      {[-26, 26].map((x) => <Tile key={x} position={[x, 1.4, 0]} scale={[1.2, 2.8, 30]} color="#c8d1dc" />)}
-      {[-26, 26].map((z) => <Tile key={z} position={[0, 1.4, z]} scale={[30, 2.8, 1.2]} color="#c8d1dc" />)}
-      {[-16, 16].map((x) => [-16, 16].map((z) => <Tile key={`${x}${z}`} position={[x, 0.6, z]} scale={[5, 1.2, 1.4]} color="#f7f7f7" />))}
+      {[0, 1, 2, 3, 4].map((i) => <Tile key={i} position={[0, 0.35 + i * 0.62, 0]} scale={[15 - i * 2.4, 0.7, 15 - i * 2.4]} color={i % 2 ? "#c7b071" : "#ead594"} />)}
+      {[-26, 26].map((x) => <Tile key={x} position={[x, 1.4, 0]} scale={[1.2, 2.8, 30]} color="#b79258" />)}
+      {[-26, 26].map((z) => <Tile key={z} position={[0, 1.4, z]} scale={[30, 2.8, 1.2]} color="#b79258" />)}
+      {[-16, 16].map((x) => [-16, 16].map((z) => <Tile key={`${x}${z}`} position={[x, 0.6, z]} scale={[5, 1.2, 1.4]} color="#dfc47d" />))}
+      {[-10, 10].map((x) => <Tile key={`pillar-${x}`} position={[x, 1.35, -9]} scale={[1.5, 2.7, 1.5]} color="#9f7a43" />)}
+      {[-10, 10].map((x) => <Tile key={`pillar-b-${x}`} position={[x, 1.35, 9]} scale={[1.5, 2.7, 1.5]} color="#9f7a43" />)}
+      {[[-21, -12], [-12, 21], [13, -21], [22, 12]].map(([x, z]) => <Crate key={`${x}${z}`} x={x} z={z} />)}
+      <mesh position={[0, 3.55, 0]} castShadow><octahedronGeometry args={[1.4, 0]} /><meshStandardMaterial color="#f7c948" emissive="#f59e0b" emissiveIntensity={0.25} roughness={0.45} /></mesh>
     </group>
   );
 }
@@ -40,6 +46,16 @@ function Practice() {
       {[-18, -10, -2, 6, 14, 22].map((x, i) => <Tile key={x} position={[x, 0.8, -24 + (i % 2) * 8]} scale={[2.2, 1.6, 6]} color="#ffffff" />)}
       {[-28, 28].map((x) => <Tile key={x} position={[x, 3, 0]} scale={[1.2, 6, 54]} color="#d6dee7" />)}
       {[[-7, 1.7, 8], [8, 2.8, -7], [1, 4.2, 18]].map((p, i) => <Tile key={i} position={p as [number, number, number]} scale={[4, 0.5, 10]} color="#b7c2ce" />)}
+    </group>
+  );
+}
+
+function Crate({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 0.75, z]} rotation={[0, (x + z) * 0.03, 0]}>
+      <Tile position={[0, 0, 0]} scale={[2.2, 1.5, 2.2]} color="#8b5e34" />
+      <Tile position={[0, 0.06, 0]} scale={[2.35, 0.18, 0.22]} color="#5f3d23" />
+      <Tile position={[0, 0.06, 0]} scale={[0.22, 0.18, 2.35]} color="#5f3d23" />
     </group>
   );
 }
