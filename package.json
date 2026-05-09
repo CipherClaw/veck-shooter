@@ -1,0 +1,26 @@
+{
+  "name": "veck-shooter",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n shared,server,client -c cyan,green,magenta \"npm:dev -w @veck/shared\" \"npm:dev -w @veck/server\" \"npm:dev -w @veck/client\"",
+    "build": "npm run build -w @veck/shared && npm run build -w @veck/client && npm run build -w @veck/server",
+    "start": "npm run start -w @veck/server",
+    "test": "npm run test -w @veck/server",
+    "lint": "npm run lint -w @veck/client && npm run lint -w @veck/server",
+    "railway:build": "npm ci && npm run build",
+    "railway:start": "npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.19"
+  }
+}

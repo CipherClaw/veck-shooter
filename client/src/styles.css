@@ -1,0 +1,69 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background: #89d3ff; color: #fff; overflow: hidden; }
+button, input { font: inherit; }
+button { border: 0; border-radius: 8px; padding: 10px 13px; color: #fff; background: #1f2937; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25), 0 2px 0 rgba(255,255,255,.12); cursor: pointer; font-weight: 800; text-shadow: 0 2px 0 #0008; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input { width: 100%; border: 3px solid #101827; border-radius: 8px; padding: 11px 12px; background: #fff; color: #111827; font-weight: 700; outline: none; }
+label { display: block; margin: 12px 0 6px; color: #dbeafe; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
+.lobby, .match { width: 100vw; height: 100vh; position: relative; }
+.ambient-scene { position: fixed; inset: 0; filter: saturate(1.12); }
+.ambient-scene::after { content:""; position:absolute; inset:0; background: linear-gradient(90deg, rgba(10,18,32,.78), rgba(10,18,32,.16)); pointer-events:none; }
+.lobby-shell { position: relative; width: min(1180px, calc(100vw - 28px)); height: calc(100vh - 28px); margin: 14px auto; overflow: auto; padding-bottom: 14px; }
+.brand { display: flex; align-items: center; justify-content: space-between; margin: 0 0 14px; }
+h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff; text-shadow: 0 5px 0 #111827, 0 12px 30px #0009; letter-spacing: 0; }
+.brand p { margin: 8px 0 0; font-weight: 900; color: #e0f2fe; text-shadow: 0 2px 0 #111827; }
+.icon-btn { width: 48px; height: 48px; display: grid; place-items: center; padding: 0; }
+.lobby-grid { display: grid; grid-template-columns: 1fr 1.25fr 1.35fr; gap: 14px; align-items: start; }
+.panel, .chat.panel, .modal, .hud { border: 4px solid #111827; border-radius: 8px; background: rgba(15, 23, 42, .82); box-shadow: 0 8px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.1); backdrop-filter: blur(8px); }
+.panel { padding: 14px; }
+.panel h2, .chat h2, .modal h2 { margin: 0 0 12px; font-size: 20px; text-shadow: 0 3px 0 #000; display: flex; gap: 8px; align-items: center; }
+.row { display: flex; gap: 8px; }
+.primary { width: 100%; margin-top: 12px; background: #ff7a18; color: white; }
+.segmented { display: flex; flex-wrap: wrap; gap: 7px; }
+.segmented button, .weapon-select button { background: #334155; font-size: 13px; padding: 9px 10px; }
+.segmented .active, .weapon-select .active { background: #22c55e; color: #052e16; text-shadow: none; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.stats div { background: #0f172a; border: 3px solid #263142; border-radius: 8px; padding: 10px; text-align: center; }
+.stats b { display:block; font-size: 24px; }
+.stats span, .coming, .game-row span { color: #bfdbfe; font-size: 12px; font-weight: 800; }
+.coming { margin-top: 10px; }
+.wide { grid-row: span 2; }
+.games { display: grid; gap: 9px; }
+.game-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; background: #111827; border-radius: 8px; padding: 9px; border: 2px solid #2f3a4d; }
+.game-row strong { display:block; }
+.empty, .error { padding: 12px; background: #111827; border-radius: 8px; font-weight: 800; }
+.error { margin-bottom: 10px; background: #7f1d1d; border: 3px solid #fecaca; }
+.chat { padding: 12px; }
+.messages { display: grid; align-content: end; gap: 6px; min-height: 180px; max-height: 240px; overflow: hidden; }
+.messages div { display: flex; gap: 8px; align-items: baseline; }
+.messages b { color: #fbbf24; text-shadow: 0 2px 0 #000; }
+.messages span { overflow-wrap: anywhere; }
+.weapon-select { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.weapon-select button { min-height: 48px; text-align: left; }
+.weapon-select span { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; background:#0f172a; margin-right:6px; color:#fff; }
+.weapon-select.compact { grid-template-columns: repeat(5, auto); }
+.weapon-select.compact button { min-height: 36px; font-size: 12px; padding: 7px 8px; }
+.hud { position: absolute; z-index: 5; padding: 10px 12px; pointer-events: none; }
+.topbar { top: 12px; left: 50%; transform: translateX(-50%); display:flex; gap:20px; align-items:center; font-weight:900; min-width: 360px; justify-content: space-between; }
+.topbar strong { font-size: 30px; color: #fef08a; text-shadow: 0 3px 0 #000; }
+.crosshair { position:absolute; inset:0; display:grid; place-items:center; color:#fff; filter: drop-shadow(0 2px 0 #000); pointer-events:none; }
+.scoreboard { top: 82px; right: 12px; width: 240px; display:grid; gap:5px; }
+.scoreboard div { display:flex; justify-content:space-between; }
+.scoreboard .mine { color:#86efac; }
+.killfeed { top: 82px; left: 12px; display:grid; gap:6px; min-width: 250px; color:#fef3c7; }
+.weapon-hud { right: 12px; bottom: 12px; pointer-events:auto; }
+.ammo { margin-top: 7px; text-align:right; color:#fef08a; font-weight:900; }
+.chat.compact { position:absolute; left:12px; top:82px; width:330px; z-index:8; background: rgba(15, 23, 42, .58); border-radius: 8px; padding: 10px; pointer-events:none; }
+.chat.compact.open { pointer-events:auto; background: rgba(15, 23, 42, .9); border:4px solid #111827; }
+.chat.compact .messages { min-height: 170px; }
+.modal { position:absolute; z-index:10; left:50%; top:50%; transform: translate(-50%, -50%); padding:18px; width:min(520px, calc(100vw - 30px)); text-align:center; pointer-events:auto; }
+.modal p { color:#dbeafe; font-weight:700; line-height:1.5; }
+.loading { display:grid; place-items:center; width:100vw; height:100vh; background:#111827; color:#fff; font-size:28px; font-weight:900; }
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .lobby-grid { grid-template-columns: 1fr; }
+  .wide { grid-row: auto; }
+  .topbar { min-width: calc(100vw - 24px); font-size: 12px; }
+  .scoreboard { display:none; }
+  .weapon-select.compact { grid-template-columns: repeat(2, 1fr); }
+}
