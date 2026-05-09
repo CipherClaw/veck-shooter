@@ -1,0 +1,13 @@
+node_modules
+dist
+client/dist
+server/dist
+shared/dist
+.git
+.railway
+.env
+.env.*
+*.log
+*.tsbuildinfo
+server/data
+server/server
