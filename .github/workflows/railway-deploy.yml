@@ -1,0 +1,34 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: railway-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy production service
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: >
+          railway up
+          --service veck-shooter
+          --environment production
+          --detach
+          --message "Deploy ${{ github.sha }} from GitHub Actions"
