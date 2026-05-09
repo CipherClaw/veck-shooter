@@ -59,7 +59,7 @@ The server tests cover team allocation, friendly-fire prevention, player limit e
 
 Railway can deploy the repo directly with the included `railway.json`.
 
-Pushes to `main` automatically redeploy the production Railway service through `.github/workflows/railway-deploy.yml`. The workflow expects a GitHub repository secret named `RAILWAY_TOKEN`.
+Pushes to `main` automatically redeploy the production Railway service through `.github/workflows/railway-deploy.yml`. The workflow expects a GitHub repository secret named `RAILWAY_API_TOKEN`.
 
 Manual deploys can still be triggered from this repo with the Railway token wrapper documented in `AGENTS.md`.
 
