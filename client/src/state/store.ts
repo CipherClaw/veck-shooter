@@ -49,7 +49,7 @@ export const useGame = create<State>((set) => ({
   addFx: (fx) => {
     const id = Date.now() + Math.random();
     set((s) => ({ fx: [...s.fx.slice(-16), { ...fx, id }] }));
-    window.setTimeout(() => useGame.getState().clearFx(id), fx.explosion ? 900 : 180);
+    window.setTimeout(() => useGame.getState().clearFx(id), fx.explosion ? 900 : fx.weapon === "watergun" ? 180 : 520);
   },
   clearFx: (id) => set((s) => ({ fx: s.fx.filter((f) => f.id !== id) })),
   setMuted: (muted) => {

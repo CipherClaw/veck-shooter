@@ -307,12 +307,53 @@ function shoot(camera: THREE.Camera, weapon: string, seq: number) {
 }
 
 function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?: Vec3 } }) {
-  const points = useMemo(() => [new THREE.Vector3(fx.from.x, fx.from.y, fx.from.z), new THREE.Vector3(fx.to.x, fx.to.y, fx.to.z)], [fx]);
+  const group = useRef<THREE.Group>(null);
+  const createdAt = useRef(performance.now());
+  const from = useMemo(() => new THREE.Vector3(fx.from.x, fx.from.y, fx.from.z), [fx.from.x, fx.from.y, fx.from.z]);
+  const to = useMemo(() => new THREE.Vector3(fx.to.x, fx.to.y, fx.to.z), [fx.to.x, fx.to.y, fx.to.z]);
+  const shot = useMemo(() => {
+    const direction = to.clone().sub(from);
+    const distance = Math.max(0.01, direction.length());
+    direction.normalize();
+    const right = new THREE.Vector3().crossVectors(direction, new THREE.Vector3(0, 1, 0));
+    if (right.lengthSq() < 0.001) right.set(1, 0, 0);
+    right.normalize();
+    const up = new THREE.Vector3().crossVectors(right, direction).normalize();
+    const pelletCount = fx.weapon === "shottie" ? 7 : 1;
+    const color = fx.weapon === "sniper" ? "#93e8ff" : fx.weapon === "watergun" ? "#2dd4ff" : "#ffd166";
+    const width = fx.weapon === "sniper" ? 5 : fx.weapon === "shottie" ? 3 : fx.weapon === "watergun" ? 7 : 4;
+    const duration = fx.weapon === "watergun" ? 160 : fx.weapon === "sniper" ? 420 : 360;
+    const pellets = Array.from({ length: pelletCount }, (_, i) => {
+      if (pelletCount === 1) return [from, to] as const;
+      const angle = i * 2.399;
+      const spread = (0.22 + (i % 3) * 0.13) * Math.min(1, distance / 26);
+      const offset = right.clone().multiplyScalar(Math.cos(angle) * spread).add(up.clone().multiplyScalar(Math.sin(angle) * spread));
+      const pelletTo = to.clone().add(offset);
+      return [from, pelletTo] as const;
+    });
+    return { color, duration, pellets, width };
+  }, [from, fx.weapon, to]);
+  useFrame(() => {
+    if (!group.current) return;
+    const age = Math.min(1, (performance.now() - createdAt.current) / shot.duration);
+    group.current.children.forEach((child, i) => {
+      const [start, end] = shot.pellets[i] ?? shot.pellets[0];
+      const head = start.clone().lerp(end, THREE.MathUtils.smoothstep(age, 0, 1));
+      const tail = start.clone().lerp(end, Math.max(0, age - 0.16));
+      const line = child as unknown as { geometry?: { setPositions?: (positions: number[]) => void }; material?: { opacity?: number } };
+      line.geometry?.setPositions?.([tail.x, tail.y, tail.z, head.x, head.y, head.z]);
+      if (line.material) line.material.opacity = Math.max(0, 1 - age * 0.65);
+    });
+  });
   if (fx.explosion) {
     return <mesh position={[fx.explosion.x, fx.explosion.y, fx.explosion.z]}><sphereGeometry args={[2.6, 16, 12]} /><meshStandardMaterial color="#ff8a00" emissive="#ff3d00" emissiveIntensity={1.2} transparent opacity={0.55} /></mesh>;
   }
   return (
-    <Line points={points} color={fx.weapon === "watergun" ? "#2dd4ff" : "#ffd166"} lineWidth={fx.weapon === "watergun" ? 7 : 3} transparent opacity={fx.weapon === "watergun" ? 0.8 : 1} />
+    <group ref={group}>
+      {shot.pellets.map(([start, end], i) => (
+        <Line key={i} points={[start, end]} color={shot.color} lineWidth={shot.width} transparent opacity={0.95} />
+      ))}
+    </group>
   );
 }
 

@@ -172,6 +172,14 @@ const practiceColliders: ArenaCollider[] = [
   { id: "practice-left-platform", center: { x: -26, y: 3.0, z: 22 }, size: { x: 16, y: 1.1, z: 12 }, color: "#cbd5df", climbable: true },
   { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9", climbable: true },
   { id: "practice-back-platform", center: { x: 0, y: 6.4, z: 43 }, size: { x: 26, y: 1, z: 7 }, color: "#cbd5df", climbable: true },
+  ...[
+    { id: "practice-left-support-a", center: { x: -32, y: 1.25, z: 17.5 }, size: { x: 2.4, y: 2.5, z: 2.4 }, color: "#8f9aa5" },
+    { id: "practice-left-support-b", center: { x: -20, y: 1.25, z: 26.5 }, size: { x: 2.4, y: 2.5, z: 2.4 }, color: "#8f9aa5" },
+    { id: "practice-right-support-a", center: { x: 21, y: 2.15, z: -27.5 }, size: { x: 2.5, y: 4.3, z: 2.5 }, color: "#9aa5af" },
+    { id: "practice-right-support-b", center: { x: 35, y: 2.15, z: -18.5 }, size: { x: 2.5, y: 4.3, z: 2.5 }, color: "#9aa5af" },
+    { id: "practice-back-support-a", center: { x: -10, y: 2.95, z: 43 }, size: { x: 2.6, y: 5.9, z: 2.2 }, color: "#8f9aa5" },
+    { id: "practice-back-support-b", center: { x: 10, y: 2.95, z: 43 }, size: { x: 2.6, y: 5.9, z: 2.2 }, color: "#8f9aa5" }
+  ],
   { id: "practice-left-wall", center: { x: -55, y: 3.2, z: 0 }, size: { x: 1.6, y: 6.4, z: 104 }, color: "#d6dee7" },
   { id: "practice-right-wall", center: { x: 55, y: 3.2, z: 0 }, size: { x: 1.6, y: 6.4, z: 104 }, color: "#d6dee7" },
   { id: "practice-ramp-a", center: { x: -13, y: 1.5, z: 14 }, size: { x: 5, y: 0.55, z: 16 }, color: "#b7c2ce", climbable: true },
