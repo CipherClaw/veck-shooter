@@ -13,7 +13,8 @@ const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSn
   weapon: "revolver",
   kills,
   deaths: 0,
-  score: kills
+  score: kills,
+  ammo: { revolver: 6, sniper: 4, grenade: 2, shottie: 3, watergun: 100 }
 });
 
 describe("game rules", () => {

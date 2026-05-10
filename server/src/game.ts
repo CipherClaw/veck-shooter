@@ -1,5 +1,6 @@
 import { v4 as uuid } from "uuid";
 import {
+  ARENAS,
   MAPS,
   MAX_PLAYERS,
   PLAYER_RADIUS,
@@ -13,7 +14,8 @@ import {
   type MapName,
   type PlayerSnapshot,
   type Vec3,
-  type WeaponId
+  type WeaponId,
+  resolvePlayerPosition
 } from "@veck/shared";
 import { canDamage, distance, nextTeam, rayPointDistance, validateJoin, weaponDamage, winner } from "./rules.js";
 import { cleanText } from "./filter.js";
@@ -22,8 +24,22 @@ import type { StatsStore } from "./store.js";
 type RuntimePlayer = PlayerSnapshot & {
   socketId: string;
   lastFire: Record<WeaponId, number>;
-  ammo: Record<WeaponId, number>;
   lastChat: number;
+};
+
+type RuntimeGrenade = {
+  id: string;
+  ownerId: string;
+  position: Vec3;
+  velocity: Vec3;
+  explodeAt: number;
+  bounces: number;
+};
+
+type RuntimeExplosion = {
+  id: string;
+  position: Vec3;
+  createdAt: number;
 };
 
 type RuntimeGame = {
@@ -36,42 +52,11 @@ type RuntimeGame = {
   startedAt: number;
   endsAt: number;
   players: Map<string, RuntimePlayer>;
+  grenades: RuntimeGrenade[];
+  explosions: RuntimeExplosion[];
   chat: ChatMessage[];
   killFeed: string[];
   winner?: string;
-};
-
-const spawnPoints: Record<MapName, Vec3[]> = {
-  Pyramid: [
-    { x: -17, y: 1.2, z: -17 },
-    { x: 17, y: 1.2, z: 17 },
-    { x: 17, y: 1.2, z: -17 },
-    { x: -17, y: 1.2, z: 17 },
-    { x: 0, y: 1.2, z: -22 },
-    { x: 0, y: 1.2, z: 22 },
-    { x: -22, y: 1.2, z: 0 },
-    { x: 22, y: 1.2, z: 0 }
-  ],
-  "Practice Range": [
-    { x: -24, y: 1.2, z: -10 },
-    { x: 24, y: 1.2, z: 10 },
-    { x: -8, y: 5.2, z: 20 },
-    { x: 8, y: 5.2, z: -20 },
-    { x: -26, y: 1.2, z: 22 },
-    { x: 26, y: 1.2, z: -22 },
-    { x: 0, y: 7.2, z: 0 },
-    { x: 0, y: 1.2, z: 26 }
-  ],
-  Forest: [
-    { x: -22, y: 1.2, z: -18 },
-    { x: 20, y: 1.2, z: 18 },
-    { x: 14, y: 1.2, z: -20 },
-    { x: -18, y: 1.2, z: 16 },
-    { x: 0, y: 2.8, z: 0 },
-    { x: -26, y: 1.2, z: 4 },
-    { x: 26, y: 1.2, z: -4 },
-    { x: 4, y: 1.2, z: 25 }
-  ]
 };
 
 export class GameHub {
@@ -102,6 +87,8 @@ export class GameHub {
       startedAt: now,
       endsAt: now + opts.durationMinutes * 60_000,
       players: new Map(),
+      grenades: [],
+      explosions: [],
       chat: [],
       killFeed: [],
     };
@@ -116,7 +103,7 @@ export class GameHub {
     const full = validateJoin(game.players.size);
     if (full && !game.players.has(playerId)) return { ok: false, reason: full };
     const name = this.playerNames.get(playerId) ?? "Guest";
-    const spawn = spawnPoints[game.map][game.players.size % spawnPoints[game.map].length];
+    const spawn = ARENAS[game.map].spawns[game.players.size % ARENAS[game.map].spawns.length];
     const player: RuntimePlayer = {
       id: playerId,
       socketId,
@@ -132,6 +119,8 @@ export class GameHub {
       score: 0,
       lastFire: { revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0 },
       ammo: { revolver: 6, sniper: 4, grenade: 2, shottie: 3, watergun: 100 },
+      reloadingWeapon: undefined,
+      reloadingUntil: undefined,
       lastChat: 0
     };
     game.players.set(playerId, player);
@@ -146,9 +135,10 @@ export class GameHub {
   }
 
   input(playerId: string, input: ClientInput) {
-    const player = this.findPlayer(playerId);
-    if (!player || !player.alive) return;
-    player.position = clampPosition(input.position);
+    const found = this.find(playerId);
+    if (!found || !found.player.alive) return;
+    const { game, player } = found;
+    player.position = resolvePlayerPosition(game.map, input.position, player.position);
     player.rotationY = input.rotationY;
     player.weapon = input.weapon;
   }
@@ -160,24 +150,31 @@ export class GameHub {
     if (!player.alive || payload.weapon !== player.weapon) return null;
     const spec = WEAPONS[payload.weapon];
     const now = Date.now();
+    if (player.reloadingWeapon === payload.weapon && player.reloadingUntil && now < player.reloadingUntil) return null;
+    if (player.reloadingWeapon === payload.weapon && player.reloadingUntil && now >= player.reloadingUntil) {
+      player.ammo[player.reloadingWeapon] = WEAPONS[player.reloadingWeapon].ammo;
+      player.reloadingWeapon = undefined;
+      player.reloadingUntil = undefined;
+    }
     if (now - player.lastFire[payload.weapon] < spec.fireMs) return null;
     if (player.ammo[payload.weapon] <= 0) return null;
     player.lastFire[payload.weapon] = now;
-    player.ammo[payload.weapon] -= payload.weapon === "watergun" ? 2 : 1;
+    player.ammo[payload.weapon] = Math.max(0, player.ammo[payload.weapon] - (payload.weapon === "watergun" ? 2 : 1));
 
     const dir = normalize(payload.direction);
     let fxTo = add(payload.origin, scale(dir, spec.range));
     let hitPoint: Vec3 | undefined;
 
     if (payload.weapon === "grenade") {
-      hitPoint = add(payload.origin, scale(dir, 12));
-      fxTo = hitPoint;
-      for (const victim of game.players.values()) {
-        if (!canDamage(player, victim, game.mode)) continue;
-        const dist = distance(victim.position, hitPoint);
-        if (dist < 8) this.damage(game, player, victim, weaponDamage(payload.weapon, dist));
-      }
-      return { from: payload.origin, to: fxTo, weapon: payload.weapon, explosion: hitPoint };
+      game.grenades.push({
+        id: uuid().slice(0, 8),
+        ownerId: player.id,
+        position: { ...payload.origin },
+        velocity: add(scale(dir, 26), { x: 0, y: 9, z: 0 }),
+        explodeAt: now + 1800,
+        bounces: 0
+      });
+      return null;
     }
 
     const candidates = [...game.players.values()]
@@ -197,7 +194,9 @@ export class GameHub {
 
   reload(playerId: string, weapon: WeaponId) {
     const player = this.findPlayer(playerId);
-    if (player) player.ammo[weapon] = WEAPONS[weapon].ammo;
+    if (!player || player.ammo[weapon] >= WEAPONS[weapon].ammo) return;
+    player.reloadingWeapon = weapon;
+    player.reloadingUntil = Date.now() + WEAPONS[weapon].reloadMs;
   }
 
   respawn(playerId: string, weapon: WeaponId) {
@@ -205,13 +204,15 @@ export class GameHub {
     if (!found) return;
     const { game, player } = found;
     if (player.alive || (player.respawnAt && Date.now() < player.respawnAt)) return;
-    const spawn = spawnPoints[game.map][Math.floor(Math.random() * spawnPoints[game.map].length)];
+    const spawn = ARENAS[game.map].spawns[Math.floor(Math.random() * ARENAS[game.map].spawns.length)];
     player.position = { ...spawn };
     player.health = 100;
     player.weapon = weapon;
     player.alive = true;
     player.respawnAt = undefined;
     player.ammo[weapon] = WEAPONS[weapon].ammo;
+    player.reloadingWeapon = undefined;
+    player.reloadingUntil = undefined;
   }
 
   chat(playerId: string, scope: "lobby" | "game", text: string, gameId?: string): ChatMessage | null {
@@ -242,7 +243,17 @@ export class GameHub {
     const snapshots: GameSnapshot[] = [];
     for (const game of this.games.values()) {
       if (game.status === "active" && now >= game.endsAt) this.endGame(game);
-      snapshots.push({ game: this.summary(game), players: [...game.players.values()].map(stripRuntime), killFeed: game.killFeed, winner: game.winner });
+      this.updateReloads(game, now);
+      this.updateGrenades(game, now);
+      game.explosions = game.explosions.filter((explosion) => now - explosion.createdAt < 650);
+      snapshots.push({
+        game: this.summary(game),
+        players: [...game.players.values()].map(stripRuntime),
+        grenades: game.grenades.map(({ id, ownerId, position, velocity, explodeAt }) => ({ id, ownerId, position, velocity, explodeAt })),
+        explosions: game.explosions,
+        killFeed: game.killFeed,
+        winner: game.winner
+      });
       if (game.status === "ended" && game.players.size === 0) this.games.delete(game.id);
     }
     return snapshots;
@@ -274,6 +285,53 @@ export class GameHub {
     }
   }
 
+  private updateReloads(game: RuntimeGame, now: number) {
+    for (const player of game.players.values()) {
+      if (!player.reloadingUntil || now < player.reloadingUntil) continue;
+      const weapon = player.reloadingWeapon ?? player.weapon;
+      player.ammo[weapon] = WEAPONS[weapon].ammo;
+      player.reloadingWeapon = undefined;
+      player.reloadingUntil = undefined;
+    }
+  }
+
+  private updateGrenades(game: RuntimeGame, now: number) {
+    const dt = 1 / 20;
+    const active: RuntimeGrenade[] = [];
+    for (const grenade of game.grenades) {
+      grenade.velocity.y -= 18 * dt;
+      grenade.position = add(grenade.position, scale(grenade.velocity, dt));
+      const resolved = resolvePlayerPosition(game.map, grenade.position, grenade.position);
+      const hitGround = resolved.y > grenade.position.y;
+      if (hitGround) {
+        grenade.position = { ...resolved };
+        grenade.velocity.y = Math.abs(grenade.velocity.y) * 0.42;
+        grenade.velocity.x *= 0.72;
+        grenade.velocity.z *= 0.72;
+        grenade.bounces += 1;
+      }
+      const out = Math.abs(grenade.position.x) > ARENAS[game.map].bounds || Math.abs(grenade.position.z) > ARENAS[game.map].bounds;
+      if (now >= grenade.explodeAt || grenade.bounces > 2 || out) {
+        this.explodeGrenade(game, grenade);
+      } else {
+        active.push(grenade);
+      }
+    }
+    game.grenades = active;
+  }
+
+  private explodeGrenade(game: RuntimeGame, grenade: RuntimeGrenade) {
+    const attacker = game.players.get(grenade.ownerId);
+    if (attacker) {
+      for (const victim of game.players.values()) {
+        if (!canDamage(attacker, victim, game.mode)) continue;
+        const dist = distance(victim.position, grenade.position);
+        if (dist < 8) this.damage(game, attacker, victim, weaponDamage("grenade", dist));
+      }
+    }
+    game.explosions.push({ id: grenade.id, position: { ...grenade.position }, createdAt: Date.now() });
+  }
+
   private summary(game: RuntimeGame): GameSummary {
     return {
       id: game.id,
@@ -302,12 +360,8 @@ export class GameHub {
 }
 
 function stripRuntime(player: RuntimePlayer): PlayerSnapshot {
-  const { socketId: _socketId, lastFire: _lastFire, ammo: _ammo, lastChat: _lastChat, ...snapshot } = player;
+  const { socketId: _socketId, lastFire: _lastFire, lastChat: _lastChat, ...snapshot } = player;
   return snapshot;
-}
-
-function clampPosition(pos: Vec3): Vec3 {
-  return { x: Math.max(-34, Math.min(34, pos.x)), y: Math.max(1.1, Math.min(12, pos.y)), z: Math.max(-34, Math.min(34, pos.z)) };
 }
 
 function normalize(v: Vec3): Vec3 {

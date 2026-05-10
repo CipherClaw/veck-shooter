@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Line, Sky, Stars } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { WEAPONS, type Vec3 } from "@veck/shared";
+import { ARENAS, WEAPONS, resolvePlayerPosition, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
 import { beep } from "../game/audio";
@@ -18,7 +18,7 @@ export function GameCanvas() {
   const fx = useGame((s) => s.fx);
   const map = snapshot?.game.map ?? "Pyramid";
   return (
-    <Canvas shadows camera={{ fov: 74, position: [0, 2, 8] }}>
+    <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 74, position: [0, 2, 8] }}>
       <color attach="background" args={["#8fd3ff"]} />
       <fog attach="fog" args={["#b7e5ff", 36, 86]} />
       <ambientLight intensity={0.55} />
@@ -38,7 +38,10 @@ export function GameCanvas() {
       <Suspense fallback={null}>
         <ArenaMap map={map} />
         {snapshot?.players.map((p) => <Avatar key={p.id} player={p} mine={p.id === playerId} />)}
+        {snapshot?.grenades.map((grenade) => <GrenadeProjectile key={grenade.id} position={grenade.position} />)}
+        {snapshot?.explosions.map((explosion) => <ExplosionFx key={explosion.id} explosion={explosion} />)}
         {fx.map((f) => <ShotFx key={f.id} fx={f} />)}
+        <RendererEvents />
         <PlayerController />
       </Suspense>
     </Canvas>
@@ -52,6 +55,7 @@ function PlayerController() {
   const weapon = useGame((s) => s.weapon);
   const muted = useGame((s) => s.muted);
   const [zoom, setZoom] = useState(false);
+  const [spraying, setSpraying] = useState(false);
   const velocity = useRef(new THREE.Vector3());
   const localPosition = useRef(new THREE.Vector3());
   const localReady = useRef(false);
@@ -59,12 +63,16 @@ function PlayerController() {
   const yaw = useRef(0);
   const pitch = useRef(0);
   const shotSeq = useRef(0);
+  const firing = useRef(false);
+  const lastStreamFire = useRef(0);
   const recoil = useRef(0);
   const bob = useRef(0);
   const [locked, setLocked] = useState(false);
   const [lockCooldown, setLockCooldown] = useState(0);
 
   const me = snapshot?.players.find((p) => p.id === playerId);
+  const map = snapshot?.game.map ?? "Pyramid";
+  const scoped = zoom && weapon === "sniper";
   useEffect(() => {
     const down = (e: KeyboardEvent) => keys.add(e.code);
     const up = (e: KeyboardEvent) => keys.delete(e.code);
@@ -79,9 +87,19 @@ function PlayerController() {
     };
     const fire = (e: MouseEvent) => {
       if (document.pointerLockElement !== gl.domElement || e.button !== 0) return;
+      firing.current = true;
+      if (weapon === "watergun") {
+        setSpraying(true);
+        return;
+      }
       recoil.current = Math.min(1, recoil.current + 0.85);
       shoot(camera, weapon, ++shotSeq.current);
       beep(weapon, muted);
+    };
+    const stopFire = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      firing.current = false;
+      setSpraying(false);
     };
     const right = (e: MouseEvent) => {
       if (e.button === 2 && weapon === "sniper") setZoom(e.type === "mousedown");
@@ -98,8 +116,9 @@ function PlayerController() {
     document.addEventListener("pointerlockchange", pointerLockChange);
     gl.domElement.addEventListener("click", requestLock);
     gl.domElement.addEventListener("mousedown", fire);
+    window.addEventListener("mouseup", stopFire);
     gl.domElement.addEventListener("mousedown", right);
-    gl.domElement.addEventListener("mouseup", right);
+    window.addEventListener("mouseup", right);
     gl.domElement.addEventListener("contextmenu", context);
     return () => {
       window.removeEventListener("keydown", down);
@@ -108,8 +127,9 @@ function PlayerController() {
       document.removeEventListener("pointerlockchange", pointerLockChange);
       gl.domElement.removeEventListener("click", requestLock);
       gl.domElement.removeEventListener("mousedown", fire);
+      window.removeEventListener("mouseup", stopFire);
       gl.domElement.removeEventListener("mousedown", right);
-      gl.domElement.removeEventListener("mouseup", right);
+      window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
   }, [camera, gl.domElement, lockCooldown, me?.alive, muted, weapon]);
@@ -117,6 +137,8 @@ function PlayerController() {
   useEffect(() => {
     if (!me?.alive) {
       localReady.current = false;
+      firing.current = false;
+      setSpraying(false);
       return;
     }
     const serverPos = new THREE.Vector3(me.position.x, me.position.y, me.position.z);
@@ -128,14 +150,19 @@ function PlayerController() {
   }, [me?.alive, me?.position.x, me?.position.y, me?.position.z]);
 
   useEffect(() => {
-    const perspective = camera as THREE.PerspectiveCamera;
-    perspective.fov = zoom ? 34 : 74;
-    perspective.updateProjectionMatrix();
-  }, [camera, zoom]);
+    if (weapon !== "sniper") setZoom(false);
+    if (weapon !== "watergun" || (me?.ammo.watergun ?? 1) <= 0) {
+      firing.current = false;
+      setSpraying(false);
+    }
+  }, [me?.ammo.watergun, weapon]);
 
   useFrame((_, dt) => {
     if (!me?.alive) return;
     const step = Math.min(dt, 0.05);
+    const perspective = camera as THREE.PerspectiveCamera;
+    perspective.fov = THREE.MathUtils.damp(perspective.fov, scoped ? 21 : 74, scoped ? 10 : 8, step);
+    perspective.updateProjectionMatrix();
     const forward = new THREE.Vector3(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     const right = new THREE.Vector3(-forward.z, 0, forward.x);
     const dir = new THREE.Vector3();
@@ -147,16 +174,26 @@ function PlayerController() {
     if (dir.lengthSq()) dir.normalize().multiplyScalar(15 * sprint);
     const accel = 1 - Math.exp(-18 * step);
     velocity.current.lerp(dir, accel);
+    const previous = localPosition.current.clone();
     const pos = localPosition.current.addScaledVector(velocity.current, step);
     if (keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
     verticalVelocity.current -= 19 * step;
     pos.y = Math.max(1.2, Math.min(8, pos.y + verticalVelocity.current * step));
-    if (pos.y <= 1.2) verticalVelocity.current = 0;
-    pos.x = Math.max(-34, Math.min(34, pos.x));
-    pos.z = Math.max(-34, Math.min(34, pos.z));
+    const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
+    if (resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
+    pos.set(resolved.x, resolved.y, resolved.z);
+    const arena = ARENAS[map];
+    pos.y = Math.min(pos.y, 12);
+    pos.x = Math.max(-arena.bounds, Math.min(arena.bounds, pos.x));
+    pos.z = Math.max(-arena.bounds, Math.min(arena.bounds, pos.z));
     const moving = velocity.current.length();
     bob.current += moving * step * 0.7;
     recoil.current = THREE.MathUtils.damp(recoil.current, 0, 14, step);
+    if (weapon === "watergun" && firing.current && performance.now() - lastStreamFire.current >= WEAPONS.watergun.fireMs) {
+      lastStreamFire.current = performance.now();
+      recoil.current = Math.min(0.65, recoil.current + 0.14);
+      shoot(camera, weapon, ++shotSeq.current);
+    }
     camera.position.set(pos.x, pos.y + 0.7, pos.z);
     camera.rotation.set(pitch.current, yaw.current, 0, "YXZ");
     socket.emit("input", {
@@ -169,7 +206,8 @@ function PlayerController() {
 
   return (
     <>
-      <FirstPersonRig weapon={weapon} velocity={velocity} bob={bob} recoil={recoil} playerColor={me?.team === "green" ? "#22c55e" : me?.team === "red" ? "#ef4444" : "#3b82f6"} />
+      <FirstPersonRig weapon={weapon} velocity={velocity} bob={bob} recoil={recoil} scoped={scoped} spraying={spraying && weapon === "watergun"} playerColor={me?.team === "green" ? "#22c55e" : me?.team === "red" ? "#ef4444" : "#3b82f6"} />
+      {scoped && <ScopeOverlay />}
       {me?.alive && !locked && (
         <Html fullscreen>
           <button className="play-overlay" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => {
@@ -186,7 +224,7 @@ function PlayerController() {
   );
 }
 
-function FirstPersonRig({ weapon, velocity, bob, recoil, playerColor }: { weapon: string; velocity: MutableRefObject<THREE.Vector3>; bob: MutableRefObject<number>; recoil: MutableRefObject<number>; playerColor: string }) {
+function FirstPersonRig({ weapon, velocity, bob, recoil, scoped, spraying, playerColor }: { weapon: string; velocity: MutableRefObject<THREE.Vector3>; bob: MutableRefObject<number>; recoil: MutableRefObject<number>; scoped: boolean; spraying: boolean; playerColor: string }) {
   const { camera, scene } = useThree();
   const group = useRef<THREE.Group>(null);
   useEffect(() => {
@@ -200,6 +238,7 @@ function FirstPersonRig({ weapon, velocity, bob, recoil, playerColor }: { weapon
   }, [camera, scene]);
   useFrame((_, dt) => {
     if (!group.current) return;
+    group.current.visible = !scoped;
     const moveAmount = Math.min(1, velocity.current.length() / 10);
     const target = new THREE.Vector3(
       0.42 + Math.sin(bob.current * 0.5) * 0.012 * moveAmount,
@@ -216,6 +255,34 @@ function FirstPersonRig({ weapon, velocity, bob, recoil, playerColor }: { weapon
       <mesh position={[0.24, -0.18, 0.08]} rotation={[0.1, -0.04, 0.08]} castShadow><boxGeometry args={[0.2, 0.56, 0.2]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
       <mesh position={[0.24, -0.5, -0.03]} rotation={[0.1, -0.04, 0.08]} castShadow><boxGeometry args={[0.18, 0.2, 0.18]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
       <WeaponModel weapon={weapon as never} firstPerson />
+      {spraying && <LocalWaterSpray />}
+    </group>
+  );
+}
+
+function ScopeOverlay() {
+  return (
+    <Html fullscreen>
+      <div className="scope-overlay">
+        <div className="scope-ring">
+          <span className="scope-line horizontal" />
+          <span className="scope-line vertical" />
+        </div>
+      </div>
+    </Html>
+  );
+}
+
+function LocalWaterSpray() {
+  const drops = useMemo(() => Array.from({ length: 13 }, (_, i) => new THREE.Vector3((Math.sin(i * 7.1) * 0.04), (Math.cos(i * 3.9) * 0.035), -0.55 - i * 0.25)), []);
+  return (
+    <group position={[0, 0.04, -0.55]}>
+      {drops.map((point, i) => (
+        <mesh key={i} position={[point.x, point.y, point.z]}>
+          <sphereGeometry args={[0.035 + (i % 3) * 0.01, 8, 6]} />
+          <meshStandardMaterial color="#38d9ff" emissive="#0284c7" emissiveIntensity={0.7} transparent opacity={0.75} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -237,6 +304,53 @@ function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?
     return <mesh position={[fx.explosion.x, fx.explosion.y, fx.explosion.z]}><sphereGeometry args={[2.6, 16, 12]} /><meshStandardMaterial color="#ff8a00" emissive="#ff3d00" emissiveIntensity={1.2} transparent opacity={0.55} /></mesh>;
   }
   return (
-    <Line points={points} color={fx.weapon === "watergun" ? "#2dd4ff" : "#ffd166"} lineWidth={3} />
+    <Line points={points} color={fx.weapon === "watergun" ? "#2dd4ff" : "#ffd166"} lineWidth={fx.weapon === "watergun" ? 7 : 3} transparent opacity={fx.weapon === "watergun" ? 0.8 : 1} />
   );
+}
+
+function GrenadeProjectile({ position }: { position: Vec3 }) {
+  return (
+    <group position={[position.x, position.y, position.z]}>
+      <mesh castShadow>
+        <dodecahedronGeometry args={[0.28, 0]} />
+        <meshStandardMaterial color="#40552c" roughness={0.78} />
+      </mesh>
+      <mesh position={[0, 0.24, 0]} castShadow>
+        <boxGeometry args={[0.24, 0.08, 0.16]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.5} />
+      </mesh>
+      <mesh position={[0.16, 0.33, 0]} rotation={[0, 0, 0.45]} castShadow>
+        <torusGeometry args={[0.1, 0.015, 6, 12]} />
+        <meshStandardMaterial color="#c7a44c" metalness={0.3} roughness={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
+function ExplosionFx({ explosion }: { explosion: { position: Vec3; createdAt: number } }) {
+  const age = Math.min(1, (Date.now() - explosion.createdAt) / 650);
+  return (
+    <mesh position={[explosion.position.x, explosion.position.y, explosion.position.z]}>
+      <sphereGeometry args={[1.4 + age * 4.2, 24, 16]} />
+      <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={Math.max(0, 0.48 - age * 0.42)} />
+    </mesh>
+  );
+}
+
+function RendererEvents() {
+  const { gl } = useThree();
+  useEffect(() => {
+    const lost = (event: Event) => {
+      event.preventDefault();
+      console.warn("WebGL context lost; rendering will resume when the browser restores it.");
+    };
+    const restored = () => console.info("WebGL context restored.");
+    gl.domElement.addEventListener("webglcontextlost", lost, false);
+    gl.domElement.addEventListener("webglcontextrestored", restored, false);
+    return () => {
+      gl.domElement.removeEventListener("webglcontextlost", lost);
+      gl.domElement.removeEventListener("webglcontextrestored", restored);
+    };
+  }, [gl.domElement]);
+  return null;
 }

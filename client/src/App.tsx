@@ -129,7 +129,10 @@ function Match() {
       <div className="hud killfeed">{snapshot.killFeed.map((k) => <div key={k}>{k}</div>)}</div>
       <div className="hud weapon-hud">
         <WeaponSelect weapon={weapon} setWeapon={setWeapon} compact />
-        <div className="ammo">{WEAPONS[weapon].name}</div>
+        <div className="ammo-card">
+          <span>{WEAPONS[weapon].name}</span>
+          <strong>{ammoText(me, weapon)}</strong>
+        </div>
       </div>
       <ChatPanel messages={gameChat} scope="game" gameId={gameId} compact open={chatOpen} setOpen={setChatOpen} />
       {(!me?.alive || snapshot.game.status === "ended") && (
@@ -185,4 +188,12 @@ function ChatPanel({ messages, scope, gameId, compact = false, open, setOpen }: 
 function formatTime(ms: number) {
   const total = Math.ceil(ms / 1000);
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function ammoText(player: { ammo: Record<WeaponId, number>; reloadingWeapon?: WeaponId; reloadingUntil?: number } | undefined, weapon: WeaponId) {
+  if (!player) return "";
+  if (player.reloadingWeapon === weapon && player.reloadingUntil && Date.now() < player.reloadingUntil) return "Reloading...";
+  const current = Math.max(0, player.ammo[weapon] ?? WEAPONS[weapon].ammo);
+  if (weapon === "watergun") return `${(current / 20).toFixed(1)}s / ${(WEAPONS[weapon].ammo / 20).toFixed(0)}s`;
+  return `${current} / ${WEAPONS[weapon].ammo}`;
 }

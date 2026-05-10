@@ -1,74 +1,79 @@
-import type { MapName } from "@veck/shared";
+import { ARENAS, type ArenaCollider, type MapName } from "@veck/shared";
 
-function Tile({ position, scale, color = "#e7edf3" }: { position: [number, number, number]; scale: [number, number, number]; color?: string }) {
-  return <mesh position={position} scale={scale} castShadow receiveShadow><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color={color} roughness={0.72} metalness={0.02} /></mesh>;
+function Tile({ collider }: { collider: ArenaCollider }) {
+  const { center, size, color } = collider;
+  return (
+    <mesh position={[center.x, center.y, center.z]} scale={[size.x, size.y, size.z]} castShadow receiveShadow>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color={color} roughness={0.74} metalness={0.02} />
+    </mesh>
+  );
 }
 
 export function ArenaMap({ map }: { map: MapName }) {
-  const floorColor = map === "Forest" ? "#6fb44b" : map === "Pyramid" ? "#d8c38e" : "#d9e1e8";
-  const gridColor = map === "Forest" ? "#4f8935" : map === "Pyramid" ? "#b9995d" : "#a8b4c1";
+  const arena = ARENAS[map];
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[80, 80, 40, 40]} />
-        <meshStandardMaterial color={floorColor} roughness={0.86} />
+        <planeGeometry args={[arena.floorSize, arena.floorSize, 48, 48]} />
+        <meshStandardMaterial color={arena.floorColor} roughness={0.88} />
       </mesh>
-      <gridHelper args={[80, 40, "#fff7d6", gridColor]} position={[0, 0.025, 0]} />
-      {map === "Pyramid" && <Pyramid />}
-      {map === "Practice Range" && <Practice />}
-      {map === "Forest" && <Forest />}
+      <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, 0.025, 0]} />
+      {arena.colliders.filter((collider) => !collider.id.startsWith("forest-tree") && !collider.id.startsWith("forest-rock")).map((collider) => <Tile key={collider.id} collider={collider} />)}
+      {map === "Pyramid" && <PyramidDetails />}
+      {map === "Practice Range" && <PracticeDetails />}
+      {map === "Forest" && <ForestDetails />}
     </group>
   );
 }
 
-function Pyramid() {
+function PyramidDetails() {
   return (
     <group>
-      {[0, 1, 2, 3, 4].map((i) => <Tile key={i} position={[0, 0.35 + i * 0.62, 0]} scale={[15 - i * 2.4, 0.7, 15 - i * 2.4]} color={i % 2 ? "#c7b071" : "#ead594"} />)}
-      {[-26, 26].map((x) => <Tile key={x} position={[x, 1.4, 0]} scale={[1.2, 2.8, 30]} color="#b79258" />)}
-      {[-26, 26].map((z) => <Tile key={z} position={[0, 1.4, z]} scale={[30, 2.8, 1.2]} color="#b79258" />)}
-      {[-16, 16].map((x) => [-16, 16].map((z) => <Tile key={`${x}${z}`} position={[x, 0.6, z]} scale={[5, 1.2, 1.4]} color="#dfc47d" />))}
-      {[-10, 10].map((x) => <Tile key={`pillar-${x}`} position={[x, 1.35, -9]} scale={[1.5, 2.7, 1.5]} color="#9f7a43" />)}
-      {[-10, 10].map((x) => <Tile key={`pillar-b-${x}`} position={[x, 1.35, 9]} scale={[1.5, 2.7, 1.5]} color="#9f7a43" />)}
-      {[[-21, -12], [-12, 21], [13, -21], [22, 12]].map(([x, z]) => <Crate key={`${x}${z}`} x={x} z={z} />)}
-      <mesh position={[0, 3.55, 0]} castShadow><octahedronGeometry args={[1.4, 0]} /><meshStandardMaterial color="#f7c948" emissive="#f59e0b" emissiveIntensity={0.25} roughness={0.45} /></mesh>
+      <mesh position={[0, 3.55, 0]} castShadow>
+        <octahedronGeometry args={[1.7, 0]} />
+        <meshStandardMaterial color="#f7c948" emissive="#f59e0b" emissiveIntensity={0.28} roughness={0.45} />
+      </mesh>
+      {[-32, 32].map((x) => (
+        <mesh key={x} position={[x, 3.9, 0]} castShadow>
+          <boxGeometry args={[1.1, 4.2, 1.1]} />
+          <meshStandardMaterial color="#7c5a32" roughness={0.8} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
-function Practice() {
+function PracticeDetails() {
   return (
     <group>
-      <Tile position={[0, 0.5, 0]} scale={[8, 1, 8]} />
-      <Tile position={[-14, 3.2, 14]} scale={[9, 1.1, 7]} color="#cbd5df" />
-      <Tile position={[15, 4.8, -13]} scale={[9, 1.1, 7]} color="#f1f5f9" />
-      <Tile position={[0, 6.3, 24]} scale={[15, 1, 5]} color="#cbd5df" />
-      {[-18, -10, -2, 6, 14, 22].map((x, i) => <Tile key={x} position={[x, 0.8, -24 + (i % 2) * 8]} scale={[2.2, 1.6, 6]} color="#ffffff" />)}
-      {[-28, 28].map((x) => <Tile key={x} position={[x, 3, 0]} scale={[1.2, 6, 54]} color="#d6dee7" />)}
-      {[[-7, 1.7, 8], [8, 2.8, -7], [1, 4.2, 18]].map((p, i) => <Tile key={i} position={p as [number, number, number]} scale={[4, 0.5, 10]} color="#b7c2ce" />)}
+      {[-40, -20, 0, 20, 40].map((x, i) => (
+        <group key={x} position={[x, 0.05, 52 - i * 6]}>
+          <mesh position={[0, 1.8, 0]} castShadow>
+            <boxGeometry args={[2.4, 3.6, 0.35]} />
+            <meshStandardMaterial color="#ef4444" roughness={0.6} />
+          </mesh>
+          <mesh position={[0, 1.8, -0.22]} castShadow>
+            <circleGeometry args={[0.55, 24]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
 
-function Crate({ x, z }: { x: number; z: number }) {
-  return (
-    <group position={[x, 0.75, z]} rotation={[0, (x + z) * 0.03, 0]}>
-      <Tile position={[0, 0, 0]} scale={[2.2, 1.5, 2.2]} color="#8b5e34" />
-      <Tile position={[0, 0.06, 0]} scale={[2.35, 0.18, 0.22]} color="#5f3d23" />
-      <Tile position={[0, 0.06, 0]} scale={[0.22, 0.18, 2.35]} color="#5f3d23" />
-    </group>
-  );
-}
-
-function Forest() {
-  const trees = [[-22, -18], [-15, 8], [-6, -22], [7, 16], [17, -12], [24, 20], [0, -3], [-26, 18], [20, 4]];
+function ForestDetails() {
+  const { trees = [], rocks = [] } = ARENAS.Forest;
   return (
     <group>
-      {trees.map(([x, z]) => <Tree key={`${x}${z}`} x={x} z={z} />)}
-      {[[-9, 0], [10, -5], [4, 20], [-20, -2]].map(([x, z]) => <Tile key={`${x}${z}`} position={[x, 0.45, z]} scale={[5, 0.9, 2]} color="#8a8176" />)}
-      <Tile position={[0, 1.2, 0]} scale={[8, 2.4, 8]} color="#6aa84f" />
-      <Tile position={[0, 2.7, 0]} scale={[5.5, 0.7, 5.5]} color="#9ccc65" />
-      {[[-14, -13], [14, 14], [24, -21]].map(([x, z]) => <mesh key={`${x}${z}`} position={[x, 0.7, z]} castShadow receiveShadow><dodecahedronGeometry args={[1.6, 0]} /><meshStandardMaterial color="#899098" roughness={0.85} /></mesh>)}
+      {trees.map((p, i) => <Tree key={`tree-${i}`} x={p.x} z={p.z} />)}
+      {rocks.map((p, i) => (
+        <mesh key={`rock-${i}`} position={[p.x, p.y, p.z]} castShadow receiveShadow>
+          <dodecahedronGeometry args={[1.8, 0]} />
+          <meshStandardMaterial color="#899098" roughness={0.85} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -76,9 +81,18 @@ function Forest() {
 function Tree({ x, z }: { x: number; z: number }) {
   return (
     <group position={[x, 0, z]}>
-      <Tile position={[0, 1.25, 0]} scale={[0.9, 2.5, 0.9]} color="#6b4226" />
-      <mesh position={[0, 3.1, 0]} castShadow><coneGeometry args={[2.1, 3.2, 6]} /><meshStandardMaterial color="#238241" roughness={0.8} /></mesh>
-      <mesh position={[0, 4.45, 0]} castShadow><coneGeometry args={[1.55, 2.4, 6]} /><meshStandardMaterial color="#2ea44f" roughness={0.8} /></mesh>
+      <mesh position={[0, 1.25, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.9, 2.5, 0.9]} />
+        <meshStandardMaterial color="#6b4226" roughness={0.78} />
+      </mesh>
+      <mesh position={[0, 3.25, 0]} castShadow>
+        <coneGeometry args={[2.45, 3.3, 6]} />
+        <meshStandardMaterial color="#238241" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 4.75, 0]} castShadow>
+        <coneGeometry args={[1.8, 2.55, 6]} />
+        <meshStandardMaterial color="#2ea44f" roughness={0.8} />
+      </mesh>
     </group>
   );
 }
