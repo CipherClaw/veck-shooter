@@ -55,8 +55,8 @@ h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff;
 .ammo-card { margin-top: 9px; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 12px; border:3px solid #111827; border-radius:8px; background:#0f172a; color:#e0f2fe; font-weight:900; }
 .ammo-card span { color:#bfdbfe; font-size:12px; text-transform:uppercase; }
 .ammo-card strong { color:#fef08a; font-size:22px; text-shadow:0 3px 0 #000; white-space:nowrap; }
-.scope-overlay { position:absolute; inset:0; pointer-events:none; background: radial-gradient(circle at center, transparent 0 33vh, rgba(0,0,0,.92) 33.5vh 100%); display:grid; place-items:center; }
-.scope-ring { width:min(66vh, 66vw); aspect-ratio:1; border:5px solid rgba(5, 8, 12, .95); border-radius:50%; box-shadow: inset 0 0 24px rgba(0,0,0,.65), 0 0 0 999px rgba(0,0,0,.42); position:relative; }
+.scope-overlay { position:absolute; inset:0; z-index:7; pointer-events:none; background: radial-gradient(circle at center, transparent 0 43vmin, rgba(0,0,0,.94) 43.5vmin 100%); display:grid; place-items:center; }
+.scope-ring { width:86vmin; aspect-ratio:1; border:5px solid rgba(5, 8, 12, .95); border-radius:50%; box-shadow: inset 0 0 28px rgba(0,0,0,.72), 0 0 0 999px rgba(0,0,0,.45); position:relative; }
 .scope-line { position:absolute; background:rgba(10, 15, 20, .86); left:50%; top:50%; transform:translate(-50%, -50%); }
 .scope-line.horizontal { width:88%; height:2px; }
 .scope-line.vertical { width:2px; height:88%; }
@@ -64,8 +64,23 @@ h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff;
 .chat.compact { position:absolute; left:12px; top:82px; width:330px; z-index:8; background: rgba(15, 23, 42, .58); border-radius: 8px; padding: 10px; pointer-events:none; }
 .chat.compact.open { pointer-events:auto; background: rgba(15, 23, 42, .9); border:4px solid #111827; }
 .chat.compact .messages { min-height: 170px; }
+.chat-placeholder, .chat-hint { color: rgba(219, 234, 254, .62); font-size: 13px; font-weight: 900; }
+.chat-placeholder { align-self: end; }
+.chat-hint { margin-top: 6px; text-shadow: 0 2px 0 #000; }
 .modal { position:absolute; z-index:10; left:50%; top:50%; transform: translate(-50%, -50%); padding:18px; width:min(520px, calc(100vw - 30px)); text-align:center; pointer-events:auto; }
 .modal p { color:#dbeafe; font-weight:700; line-height:1.5; }
+.round-summary { width:min(780px, calc(100vw - 28px)); text-align:left; }
+.round-summary h2 { justify-content:center; }
+.summary-winner { text-align:center; font-size:22px; font-weight:900; margin-bottom:12px; color:#e0f2fe; }
+.summary-winner strong { color:#fef08a; text-shadow:0 3px 0 #000; }
+.team-totals { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.team-totals span { border:3px solid #111827; border-radius:8px; background:#0f172a; padding:10px; text-align:center; font-weight:900; }
+.summary-table { display:grid; gap:4px; max-height:45vh; overflow:auto; }
+.summary-row { display:grid; grid-template-columns:42px minmax(0, 1fr) 52px 52px 64px 72px; gap:6px; align-items:center; padding:8px 10px; border:2px solid #263142; border-radius:8px; background:#111827; font-weight:800; }
+.summary-row.header { color:#bfdbfe; background:#0f172a; text-transform:uppercase; font-size:12px; }
+.summary-row.mine { border-color:#86efac; color:#dcfce7; }
+.summary-row span:nth-child(n+3) { text-align:right; }
+.round-summary .primary { display:block; margin-left:auto; margin-right:auto; max-width:220px; }
 .play-overlay { position:absolute; inset:0; width:100%; height:100%; display:grid; place-items:center; align-content:center; gap:8px; background: rgba(6, 10, 18, .34); border:0; border-radius:0; box-shadow:none; pointer-events:auto; }
 .play-overlay strong { padding: 14px 22px; border: 4px solid #111827; border-radius: 8px; background:#ff7a18; color:#fff; font-size: clamp(24px, 4vw, 42px); line-height:1; box-shadow: 0 6px 0 rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.25); text-shadow: 0 3px 0 #7c2d12; }
 .play-overlay span { padding: 8px 12px; border: 3px solid #111827; border-radius: 8px; background: rgba(15, 23, 42, .88); color:#dbeafe; font-size: 13px; font-weight:900; text-shadow:none; }

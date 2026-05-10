@@ -17,6 +17,7 @@ type State = {
   gameChat: ChatMessage[];
   weapon: WeaponId;
   muted: boolean;
+  scoped: boolean;
   fx: Fx[];
   error: string;
   setName: (name: string) => void;
@@ -24,6 +25,7 @@ type State = {
   addFx: (fx: Omit<Fx, "id">) => void;
   clearFx: (id: number) => void;
   setMuted: (muted: boolean) => void;
+  setScoped: (scoped: boolean) => void;
 };
 
 export const useGame = create<State>((set) => ({
@@ -36,6 +38,7 @@ export const useGame = create<State>((set) => ({
   gameChat: [],
   weapon: "revolver",
   muted: localStorage.getItem("veck.muted") === "true",
+  scoped: false,
   fx: [],
   error: "",
   setName: (name) => {
@@ -52,7 +55,8 @@ export const useGame = create<State>((set) => ({
   setMuted: (muted) => {
     localStorage.setItem("veck.muted", String(muted));
     set({ muted });
-  }
+  },
+  setScoped: (scoped) => set({ scoped })
 }));
 
 export const actions = {

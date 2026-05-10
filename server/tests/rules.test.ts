@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canDamage, nextTeam, validateJoin, winner } from "../src/rules";
+import { canDamage, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import type { PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
@@ -39,5 +39,11 @@ describe("game rules", () => {
   it("declares winners for free play and team mode", () => {
     expect(winner([player("a", "none", 1), player("b", "none", 3)], "Free Play")).toBe("b");
     expect(winner([player("r", "red", 4), player("g", "green", 2)], "Team Mode")).toBe("Red Team");
+  });
+
+  it("keeps grenade blast damage lethal near center and readable at the edge", () => {
+    expect(weaponDamage("grenade", 0)).toBe(115);
+    expect(weaponDamage("grenade", 8)).toBe(28);
+    expect(weaponDamage("grenade", 9)).toBe(0);
   });
 });

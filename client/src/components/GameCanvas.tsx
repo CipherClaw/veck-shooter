@@ -54,6 +54,7 @@ function PlayerController() {
   const snapshot = useGame((s) => s.snapshot);
   const weapon = useGame((s) => s.weapon);
   const muted = useGame((s) => s.muted);
+  const setScoped = useGame((s) => s.setScoped);
   const [zoom, setZoom] = useState(false);
   const [spraying, setSpraying] = useState(false);
   const velocity = useRef(new THREE.Vector3());
@@ -72,21 +73,32 @@ function PlayerController() {
 
   const me = snapshot?.players.find((p) => p.id === playerId);
   const map = snapshot?.game.map ?? "Pyramid";
-  const scoped = zoom && weapon === "sniper";
+  const matchActive = snapshot?.game.status === "active";
+  const scoped = Boolean(matchActive && zoom && weapon === "sniper");
+  const controlsBlocked = () => !matchActive || isTextInputActive();
+
   useEffect(() => {
-    const down = (e: KeyboardEvent) => keys.add(e.code);
+    setScoped(scoped);
+    return () => setScoped(false);
+  }, [scoped, setScoped]);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (controlsBlocked()) return;
+      keys.add(e.code);
+    };
     const up = (e: KeyboardEvent) => keys.delete(e.code);
     const move = (e: MouseEvent) => {
-      if (document.pointerLockElement !== gl.domElement) return;
+      if (document.pointerLockElement !== gl.domElement || controlsBlocked()) return;
       yaw.current -= e.movementX * 0.0022;
       pitch.current = Math.max(-1.25, Math.min(1.25, pitch.current - e.movementY * 0.0022));
     };
     const requestLock = () => {
-      if (!me?.alive || document.pointerLockElement === gl.domElement || performance.now() < lockCooldown) return;
+      if (!me?.alive || !matchActive || controlsBlocked() || document.pointerLockElement === gl.domElement || performance.now() < lockCooldown) return;
       gl.domElement.requestPointerLock().catch(() => undefined);
     };
     const fire = (e: MouseEvent) => {
-      if (document.pointerLockElement !== gl.domElement || e.button !== 0) return;
+      if (document.pointerLockElement !== gl.domElement || e.button !== 0 || controlsBlocked()) return;
       firing.current = true;
       if (weapon === "watergun") {
         setSpraying(true);
@@ -102,7 +114,7 @@ function PlayerController() {
       setSpraying(false);
     };
     const right = (e: MouseEvent) => {
-      if (e.button === 2 && weapon === "sniper") setZoom(e.type === "mousedown");
+      if (e.button === 2 && weapon === "sniper") setZoom(e.type === "mousedown" && !controlsBlocked());
     };
     const pointerLockChange = () => {
       const isLocked = document.pointerLockElement === gl.domElement;
@@ -132,13 +144,19 @@ function PlayerController() {
       window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
-  }, [camera, gl.domElement, lockCooldown, me?.alive, muted, weapon]);
+  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, muted, weapon]);
 
   useEffect(() => {
-    if (!me?.alive) {
+    if (!me?.alive || !matchActive) {
       localReady.current = false;
       firing.current = false;
       setSpraying(false);
+      setZoom(false);
+      const perspective = camera as THREE.PerspectiveCamera;
+      perspective.fov = 74;
+      perspective.updateProjectionMatrix();
+      keys.clear();
+      if (document.pointerLockElement === gl.domElement) document.exitPointerLock();
       return;
     }
     const serverPos = new THREE.Vector3(me.position.x, me.position.y, me.position.z);
@@ -147,7 +165,7 @@ function PlayerController() {
       verticalVelocity.current = 0;
       localReady.current = true;
     }
-  }, [me?.alive, me?.position.x, me?.position.y, me?.position.z]);
+  }, [camera, gl.domElement, matchActive, me?.alive, me?.position.x, me?.position.y, me?.position.z]);
 
   useEffect(() => {
     if (weapon !== "sniper") setZoom(false);
@@ -158,7 +176,11 @@ function PlayerController() {
   }, [me?.ammo.watergun, weapon]);
 
   useFrame((_, dt) => {
-    if (!me?.alive) return;
+    if (!me?.alive || !matchActive) return;
+    if (controlsBlocked()) {
+      firing.current = false;
+      setSpraying(false);
+    }
     const step = Math.min(dt, 0.05);
     const perspective = camera as THREE.PerspectiveCamera;
     perspective.fov = THREE.MathUtils.damp(perspective.fov, scoped ? 21 : 74, scoped ? 10 : 8, step);
@@ -166,17 +188,17 @@ function PlayerController() {
     const forward = new THREE.Vector3(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     const right = new THREE.Vector3(-forward.z, 0, forward.x);
     const dir = new THREE.Vector3();
-    if (keys.has("KeyW")) dir.add(forward);
-    if (keys.has("KeyS")) dir.sub(forward);
-    if (keys.has("KeyA")) dir.sub(right);
-    if (keys.has("KeyD")) dir.add(right);
-    const sprint = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 1.7 : 1;
+    if (!controlsBlocked() && keys.has("KeyW")) dir.add(forward);
+    if (!controlsBlocked() && keys.has("KeyS")) dir.sub(forward);
+    if (!controlsBlocked() && keys.has("KeyA")) dir.sub(right);
+    if (!controlsBlocked() && keys.has("KeyD")) dir.add(right);
+    const sprint = !controlsBlocked() && (keys.has("ShiftLeft") || keys.has("ShiftRight")) ? 1.7 : 1;
     if (dir.lengthSq()) dir.normalize().multiplyScalar(15 * sprint);
     const accel = 1 - Math.exp(-18 * step);
     velocity.current.lerp(dir, accel);
     const previous = localPosition.current.clone();
     const pos = localPosition.current.addScaledVector(velocity.current, step);
-    if (keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
+    if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
     verticalVelocity.current -= 19 * step;
     pos.y = Math.max(1.2, Math.min(8, pos.y + verticalVelocity.current * step));
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
@@ -207,8 +229,7 @@ function PlayerController() {
   return (
     <>
       <FirstPersonRig weapon={weapon} velocity={velocity} bob={bob} recoil={recoil} scoped={scoped} spraying={spraying && weapon === "watergun"} playerColor={me?.team === "green" ? "#22c55e" : me?.team === "red" ? "#ef4444" : "#3b82f6"} />
-      {scoped && <ScopeOverlay />}
-      {me?.alive && !locked && (
+      {me?.alive && matchActive && !locked && (
         <Html fullscreen>
           <button className="play-overlay" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => {
             e.stopPropagation();
@@ -216,7 +237,7 @@ function PlayerController() {
             gl.domElement.requestPointerLock().catch(() => undefined);
           }}>
             <strong>Click to play</strong>
-            <span>WASD move · Mouse look · Click fire</span>
+            <span>WASD move · Mouse look · Click fire · Enter chat</span>
           </button>
         </Html>
       )}
@@ -260,19 +281,6 @@ function FirstPersonRig({ weapon, velocity, bob, recoil, scoped, spraying, playe
   );
 }
 
-function ScopeOverlay() {
-  return (
-    <Html fullscreen>
-      <div className="scope-overlay">
-        <div className="scope-ring">
-          <span className="scope-line horizontal" />
-          <span className="scope-line vertical" />
-        </div>
-      </div>
-    </Html>
-  );
-}
-
 function LocalWaterSpray() {
   const drops = useMemo(() => Array.from({ length: 13 }, (_, i) => new THREE.Vector3((Math.sin(i * 7.1) * 0.04), (Math.cos(i * 3.9) * 0.035), -0.55 - i * 0.25)), []);
   return (
@@ -312,29 +320,36 @@ function GrenadeProjectile({ position }: { position: Vec3 }) {
   return (
     <group position={[position.x, position.y, position.z]}>
       <mesh castShadow>
-        <dodecahedronGeometry args={[0.28, 0]} />
-        <meshStandardMaterial color="#40552c" roughness={0.78} />
+        <dodecahedronGeometry args={[0.2, 0]} />
+        <meshStandardMaterial color="#2f4f2f" roughness={0.82} />
       </mesh>
       <mesh position={[0, 0.24, 0]} castShadow>
-        <boxGeometry args={[0.24, 0.08, 0.16]} />
+        <boxGeometry args={[0.18, 0.06, 0.12]} />
         <meshStandardMaterial color="#1f2937" roughness={0.5} />
       </mesh>
-      <mesh position={[0.16, 0.33, 0]} rotation={[0, 0, 0.45]} castShadow>
-        <torusGeometry args={[0.1, 0.015, 6, 12]} />
-        <meshStandardMaterial color="#c7a44c" metalness={0.3} roughness={0.35} />
+      <mesh position={[0.09, 0.3, 0]} rotation={[0, 0, 0.45]} castShadow>
+        <boxGeometry args={[0.12, 0.025, 0.025]} />
+        <meshStandardMaterial color="#a3a3a3" metalness={0.25} roughness={0.4} />
       </mesh>
     </group>
   );
 }
 
-function ExplosionFx({ explosion }: { explosion: { position: Vec3; createdAt: number } }) {
+function ExplosionFx({ explosion }: { explosion: { position: Vec3; createdAt: number; radius: number } }) {
   const age = Math.min(1, (Date.now() - explosion.createdAt) / 650);
   return (
     <mesh position={[explosion.position.x, explosion.position.y, explosion.position.z]}>
-      <sphereGeometry args={[1.4 + age * 4.2, 24, 16]} />
+      <sphereGeometry args={[1.2 + age * explosion.radius, 24, 16]} />
       <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={Math.max(0, 0.48 - age * 0.42)} />
     </mesh>
   );
+}
+
+function isTextInputActive() {
+  const active = document.activeElement;
+  if (!active) return false;
+  const tag = active.tagName.toLowerCase();
+  return tag === "input" || tag === "textarea" || (active instanceof HTMLElement && active.isContentEditable);
 }
 
 function RendererEvents() {

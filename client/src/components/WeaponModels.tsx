@@ -17,9 +17,9 @@ export function WeaponModel({ weapon, firstPerson = false }: { weapon: WeaponId;
   if (weapon === "grenade") {
     return (
       <group scale={scale}>
-        <mesh castShadow><dodecahedronGeometry args={[0.36, 0]} /><meshStandardMaterial color="#556b35" roughness={0.75} /></mesh>
-        <mesh position={[0, 0.32, 0]} castShadow><boxGeometry args={[0.3, 0.1, 0.18]} /><meshStandardMaterial color="#252525" roughness={0.5} /></mesh>
-        <mesh position={[0.18, 0.42, 0]} rotation={[0, 0, 0.45]} castShadow><torusGeometry args={[0.12, 0.018, 6, 12]} /><meshStandardMaterial color="#c7a44c" metalness={0.3} roughness={0.35} /></mesh>
+        <mesh castShadow><dodecahedronGeometry args={[0.28, 0]} /><meshStandardMaterial color="#3f5f2f" roughness={0.78} /></mesh>
+        <mesh position={[0, 0.25, 0]} castShadow><boxGeometry args={[0.22, 0.08, 0.14]} /><meshStandardMaterial color="#1f2937" roughness={0.52} /></mesh>
+        <mesh position={[0.11, 0.34, 0]} rotation={[0, 0, 0.45]} castShadow><boxGeometry args={[0.18, 0.035, 0.035]} /><meshStandardMaterial color="#a3a3a3" metalness={0.25} roughness={0.4} /></mesh>
       </group>
     );
   }

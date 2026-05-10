@@ -40,6 +40,13 @@ type RuntimeExplosion = {
   id: string;
   position: Vec3;
   createdAt: number;
+  radius: number;
+};
+
+type DamageEvent = {
+  attackerSocketId: string;
+  damage: number;
+  killed?: string;
 };
 
 type RuntimeGame = {
@@ -54,9 +61,12 @@ type RuntimeGame = {
   players: Map<string, RuntimePlayer>;
   grenades: RuntimeGrenade[];
   explosions: RuntimeExplosion[];
+  damageEvents: DamageEvent[];
   chat: ChatMessage[];
   killFeed: string[];
   winner?: string;
+  endedAt?: number;
+  returnToLobbyAt?: number;
 };
 
 export class GameHub {
@@ -89,6 +99,7 @@ export class GameHub {
       players: new Map(),
       grenades: [],
       explosions: [],
+      damageEvents: [],
       chat: [],
       killFeed: [],
     };
@@ -138,6 +149,7 @@ export class GameHub {
     const found = this.find(playerId);
     if (!found || !found.player.alive) return;
     const { game, player } = found;
+    if (game.status !== "active") return;
     player.position = resolvePlayerPosition(game.map, input.position, player.position);
     player.rotationY = input.rotationY;
     player.weapon = input.weapon;
@@ -147,6 +159,7 @@ export class GameHub {
     const found = this.find(playerId);
     if (!found) return null;
     const { game, player } = found;
+    if (game.status !== "active") return null;
     if (!player.alive || payload.weapon !== player.weapon) return null;
     const spec = WEAPONS[payload.weapon];
     const now = Date.now();
@@ -193,7 +206,9 @@ export class GameHub {
   }
 
   reload(playerId: string, weapon: WeaponId) {
-    const player = this.findPlayer(playerId);
+    const found = this.find(playerId);
+    if (!found || found.game.status !== "active") return;
+    const player = found.player;
     if (!player || player.ammo[weapon] >= WEAPONS[weapon].ammo) return;
     player.reloadingWeapon = weapon;
     player.reloadingUntil = Date.now() + WEAPONS[weapon].reloadMs;
@@ -203,6 +218,7 @@ export class GameHub {
     const found = this.find(playerId);
     if (!found) return;
     const { game, player } = found;
+    if (game.status !== "active") return;
     if (player.alive || (player.respawnAt && Date.now() < player.respawnAt)) return;
     const spawn = ARENAS[game.map].spawns[Math.floor(Math.random() * ARENAS[game.map].spawns.length)];
     player.position = { ...spawn };
@@ -263,8 +279,19 @@ export class GameHub {
     return this.games.get(gameId)?.chat ?? [];
   }
 
+  drainDamageEvents(gameId: string): DamageEvent[] {
+    const game = this.games.get(gameId);
+    if (!game) return [];
+    const events = game.damageEvents;
+    game.damageEvents = [];
+    return events;
+  }
+
   private damage(game: RuntimeGame, attacker: RuntimePlayer, victim: RuntimePlayer, amount: number) {
-    victim.health = Math.max(0, victim.health - amount);
+    const damage = Math.max(0, Math.round(amount));
+    if (damage <= 0) return;
+    victim.health = Math.max(0, victim.health - damage);
+    game.damageEvents.push({ attackerSocketId: attacker.socketId, damage, killed: victim.health <= 0 ? victim.name : undefined });
     if (victim.health > 0) return;
     victim.alive = false;
     victim.deaths += 1;
@@ -278,7 +305,10 @@ export class GameHub {
 
   private endGame(game: RuntimeGame) {
     game.status = "ended";
+    game.endedAt = Date.now();
+    game.returnToLobbyAt = game.endedAt + 13_000;
     game.winner = winner([...game.players.values()], game.mode);
+    game.grenades = [];
     for (const player of game.players.values()) {
       const won = game.mode === "Team Mode" ? `${player.team === "red" ? "Red" : "Green"} Team` === game.winner : player.name === game.winner;
       this.stats.add(player.id, { wins: won ? 1 : 0, gamesPlayed: 1, coins: won ? 25 : 10 });
@@ -326,10 +356,17 @@ export class GameHub {
       for (const victim of game.players.values()) {
         if (!canDamage(attacker, victim, game.mode)) continue;
         const dist = distance(victim.position, grenade.position);
-        if (dist < 8) this.damage(game, attacker, victim, weaponDamage("grenade", dist));
+        if (dist <= WEAPONS.grenade.range) this.damage(game, attacker, victim, weaponDamage("grenade", dist));
       }
     }
-    game.explosions.push({ id: grenade.id, position: { ...grenade.position }, createdAt: Date.now() });
+    if (process.env.NODE_ENV === "development" || process.env.GRENADE_DEBUG === "1") {
+      const affected = [...game.players.values()]
+        .map((player) => ({ player, dist: distance(player.position, grenade.position) }))
+        .filter(({ player, dist }) => attacker && canDamage(attacker, player, game.mode) && dist <= WEAPONS.grenade.range)
+        .map(({ player, dist }) => `${player.name}:${dist.toFixed(1)}u/${weaponDamage("grenade", dist)}d`);
+      console.info(`[grenade] game=${game.id} pos=${grenade.position.x.toFixed(1)},${grenade.position.y.toFixed(1)},${grenade.position.z.toFixed(1)} affected=${affected.join(",") || "none"}`);
+    }
+    game.explosions.push({ id: grenade.id, position: { ...grenade.position }, createdAt: Date.now(), radius: WEAPONS.grenade.range });
   }
 
   private summary(game: RuntimeGame): GameSummary {
@@ -342,7 +379,9 @@ export class GameHub {
       playerCount: game.players.size,
       maxPlayers: MAX_PLAYERS,
       timeRemainingMs: Math.max(0, game.endsAt - Date.now()),
-      createdAt: game.createdAt
+      createdAt: game.createdAt,
+      endedAt: game.endedAt,
+      returnToLobbyAt: game.returnToLobbyAt
     };
   }
 

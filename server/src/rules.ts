@@ -45,7 +45,10 @@ export function validateJoin(count: number): string | null {
 
 export function weaponDamage(weaponId: keyof typeof WEAPONS, dist: number): number {
   const spec = WEAPONS[weaponId];
-  if (weaponId === "grenade") return Math.max(0, Math.round(spec.damage * (1 - dist / 8)));
+  if (weaponId === "grenade") {
+    if (dist > spec.range) return 0;
+    return Math.round(Math.max(28, spec.damage * (1 - dist / spec.range)));
+  }
   if (weaponId === "shottie") return Math.max(5, Math.round(spec.damage * Math.max(0.2, 1 - dist / spec.range)));
   return spec.damage;
 }

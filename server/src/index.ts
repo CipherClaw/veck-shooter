@@ -110,7 +110,13 @@ io.on("connection", (socket) => {
 });
 
 setInterval(() => {
-  for (const snapshot of hub.tick()) io.to(snapshot.game.id).emit("snapshot", snapshot);
+  for (const snapshot of hub.tick()) {
+    io.to(snapshot.game.id).emit("snapshot", snapshot);
+    for (const event of hub.drainDamageEvents(snapshot.game.id)) {
+      io.to(event.attackerSocketId).emit("hit", event.damage);
+      if (event.killed) io.to(event.attackerSocketId).emit("killed", event.killed);
+    }
+  }
   io.emit("games", hub.summaries());
 }, 1000 / 20);
 
