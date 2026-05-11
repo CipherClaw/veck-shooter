@@ -307,6 +307,9 @@ function ammoText(player: { ammo: Record<WeaponId, number>; reloadingWeapon?: We
   if (!player) return "";
   if (player.reloadingWeapon === weapon && player.reloadingUntil && Date.now() < player.reloadingUntil) return "Reloading...";
   const current = Math.max(0, player.ammo[weapon] ?? WEAPONS[weapon].ammo);
-  if (weapon === "watergun") return `${(current / 20).toFixed(1)}s / ${(WEAPONS[weapon].ammo / 20).toFixed(0)}s`;
+  if (weapon === "watergun") {
+    const usableAmmo = current < 2 ? 0 : current;
+    return `${(usableAmmo / 20).toFixed(1)}s / ${(WEAPONS[weapon].ammo / 20).toFixed(0)}s`;
+  }
   return `${current} / ${WEAPONS[weapon].ammo}`;
 }
