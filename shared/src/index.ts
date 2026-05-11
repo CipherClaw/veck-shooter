@@ -182,6 +182,25 @@ const practiceColliders: ArenaCollider[] = [
   { id: "practice-left-platform", center: { x: -26, y: 3.0, z: 22 }, size: { x: 16, y: 1.1, z: 12 }, color: "#cbd5df", climbable: true },
   { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9", climbable: true },
   { id: "practice-back-platform", center: { x: 0, y: 6.4, z: 43 }, size: { x: 26, y: 1, z: 7 }, color: "#cbd5df", climbable: true },
+  ...[-44, 44].flatMap((x) => [-44, 44].map((z) => ({
+    id: `practice-corner-platform-${x}-${z}`,
+    center: { x, y: 8.05, z },
+    size: { x: 15, y: 0.9, z: 15 },
+    color: "#d7dde3"
+  }))),
+  ...[-48, 48].flatMap((x) => [-48, 48].map((z) => ({
+    id: `practice-corner-ladder-${x}-${z}`,
+    center: { x, y: 4.1, z },
+    size: { x: 2.2, y: 7.8, z: 2.2 },
+    color: "#7b8794",
+    climbable: true
+  }))),
+  ...[-39, 39].flatMap((x) => [-39, 39].map((z) => ({
+    id: `practice-corner-support-${x}-${z}`,
+    center: { x, y: 4.05, z },
+    size: { x: 2.3, y: 8.1, z: 2.3 },
+    color: "#8994a0"
+  }))),
   ...[
     { id: "practice-left-support-a", center: { x: -32, y: 1.25, z: 17.5 }, size: { x: 2.4, y: 2.5, z: 2.4 }, color: "#8f9aa5" },
     { id: "practice-left-support-b", center: { x: -20, y: 1.25, z: 26.5 }, size: { x: 2.4, y: 2.5, z: 2.4 }, color: "#8f9aa5" },

@@ -19,12 +19,16 @@ export function ArenaMap({ map }: { map: MapName }) {
         <meshStandardMaterial color={arena.floorColor} roughness={0.88} />
       </mesh>
       <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, 0.025, 0]} />
-      {arena.colliders.filter((collider) => !collider.id.startsWith("forest-tree") && !collider.id.startsWith("forest-rock")).map((collider) => <Tile key={collider.id} collider={collider} />)}
+      {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} />)}
       {map === "Pyramid" && <PyramidDetails />}
       {map === "Practice Range" && <PracticeDetails />}
       {map === "Forest" && <ForestDetails />}
     </group>
   );
+}
+
+function hiddenCollider(id: string) {
+  return id.startsWith("forest-tree") || id.startsWith("forest-rock") || id.startsWith("practice-corner-ladder");
 }
 
 function PyramidDetails() {
@@ -59,6 +63,27 @@ function PracticeDetails() {
             <meshStandardMaterial color="#f8fafc" roughness={0.5} />
           </mesh>
         </group>
+      ))}
+      {[-48, 48].flatMap((x) => [-48, 48].map((z) => <CornerLadder key={`${x}-${z}`} x={x} z={z} />))}
+    </group>
+  );
+}
+
+function CornerLadder({ x, z }: { x: number; z: number }) {
+  const rotationY = z > 0 ? 0 : Math.PI;
+  return (
+    <group position={[x, 0, z]} rotation={[0, rotationY, 0]}>
+      {[-0.8, 0.8].map((railX) => (
+        <mesh key={railX} position={[railX, 4.15, 0]} castShadow>
+          <boxGeometry args={[0.22, 8.3, 0.22]} />
+          <meshStandardMaterial color="#64717f" roughness={0.68} metalness={0.12} />
+        </mesh>
+      ))}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={i} position={[0, 0.55 + i * 0.68, 0.02]} castShadow>
+          <boxGeometry args={[1.9, 0.16, 0.2]} />
+          <meshStandardMaterial color="#e2e8f0" roughness={0.5} metalness={0.08} />
+        </mesh>
       ))}
     </group>
   );
