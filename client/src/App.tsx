@@ -227,7 +227,7 @@ function ChatPanel({ messages, scope, gameId, compact = false, open, setOpen }: 
     <section className={`chat ${compact ? "compact" : "panel"} ${open ? "open" : ""}`}>
       {!compact && <h2><MessageSquare size={18} /> Chat</h2>}
       <div className="messages">
-        {messages.length === 0 && <div className="chat-placeholder">Press Enter to chat</div>}
+        {messages.length === 0 && (!compact || open) && <div className="chat-placeholder">Press Enter to chat</div>}
         {messages.slice(-8).map((m) => <div key={m.id}><b>{m.name}</b><span>{m.text}</span></div>)}
       </div>
       {compact && !open && <div className="chat-hint">Press Enter to chat</div>}
