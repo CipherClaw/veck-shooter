@@ -17,8 +17,16 @@ socket.on("lobbyChat", actions.lobbyChat);
 socket.on("gameChat", actions.gameChat);
 socket.on("rejected", actions.error);
 socket.on("shotFx", (fx) => {
-  useGame.getState().addFx(fx);
-  beep(fx.explosion ? "explosion" : fx.weapon, useGame.getState().muted);
+  const state = useGame.getState();
+  state.addFx(fx);
+  if (state.scoped && fx.weapon === "sniper" && fx.shooterId === state.playerId) {
+    const shotAt = Date.now();
+    state.setScopeShotAt(shotAt);
+    window.setTimeout(() => {
+      if (useGame.getState().scopeShotAt === shotAt) useGame.getState().setScopeShotAt(0);
+    }, 150);
+  }
+  beep(fx.explosion ? "explosion" : fx.weapon, state.muted);
 });
 socket.on("hit", () => beep("hit", useGame.getState().muted));
 socket.on("killed", () => beep("kill", useGame.getState().muted));

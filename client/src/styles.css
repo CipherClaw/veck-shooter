@@ -61,6 +61,8 @@ h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff;
 .scope-line.horizontal { width:88%; height:2px; }
 .scope-line.vertical { width:2px; height:88%; }
 .scope-ring::after { content:""; position:absolute; width:10px; height:10px; border:2px solid rgba(10,15,20,.9); border-radius:50%; left:50%; top:50%; transform:translate(-50%, -50%); background:rgba(255,255,255,.35); }
+.scope-shot-cue { position:absolute; inset:0; z-index:8; pointer-events:none; background:radial-gradient(circle at center, rgba(147,232,255,.45) 0 1.6vmin, transparent 1.8vmin 100%); animation:scope-shot-flash 150ms ease-out forwards; }
+@keyframes scope-shot-flash { from { opacity:1; transform:scale(.96); } to { opacity:0; transform:scale(1.04); } }
 .chat.compact { position:absolute; left:12px; top:82px; width:330px; z-index:8; background: rgba(15, 23, 42, .58); border-radius: 8px; padding: 10px; pointer-events:none; }
 .chat.compact.open { pointer-events:auto; background: rgba(15, 23, 42, .9); border:4px solid #111827; }
 .chat.compact .messages { min-height: 170px; }

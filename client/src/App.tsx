@@ -92,7 +92,7 @@ function Lobby() {
 }
 
 function Match() {
-  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped } = useGame();
+  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped, scopeShotAt } = useGame();
   const [chatOpen, setChatOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [returnSeconds, setReturnSeconds] = useState(13);
@@ -161,6 +161,7 @@ function Match() {
         <div>{snapshot.game.mode}</div>
       </div>
       {scoped && <ScopeOverlay />}
+      {scoped && scopeShotAt > 0 && <div className="scope-shot-cue" />}
       {!ended && !scoped && <div className="crosshair"><Crosshair size={28} /></div>}
       <div className="hud scoreboard">
         {scores.map((p) => <div key={p.id} className={p.id === playerId ? "mine" : ""}><span>{p.name}</span><b>{p.kills}/{p.deaths}</b></div>)}

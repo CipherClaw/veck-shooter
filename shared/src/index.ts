@@ -147,7 +147,7 @@ export type ServerToClientEvents = {
   stats: (stats: PlayerStats) => void;
   joined: (gameId: string, playerId: string) => void;
   rejected: (reason: string) => void;
-  shotFx: (fx: { from: Vec3; to: Vec3; weapon: WeaponId; hit?: Vec3; explosion?: Vec3 }) => void;
+  shotFx: (fx: { shooterId: string; from: Vec3; to: Vec3; weapon: WeaponId; hit?: Vec3; explosion?: Vec3 }) => void;
   hit: (damage: number) => void;
   killed: (victim: string) => void;
 };

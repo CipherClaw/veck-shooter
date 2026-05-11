@@ -4,7 +4,7 @@ import type { ChatMessage, GameSnapshot, GameSummary, PlayerStats, WeaponId } fr
 const savedId = localStorage.getItem("veck.playerId") ?? crypto.randomUUID();
 localStorage.setItem("veck.playerId", savedId);
 
-export type Fx = { id: number; from: { x: number; y: number; z: number }; to: { x: number; y: number; z: number }; weapon: WeaponId; hit?: { x: number; y: number; z: number }; explosion?: { x: number; y: number; z: number } };
+export type Fx = { id: number; shooterId: string; from: { x: number; y: number; z: number }; to: { x: number; y: number; z: number }; weapon: WeaponId; hit?: { x: number; y: number; z: number }; explosion?: { x: number; y: number; z: number } };
 
 type State = {
   playerId: string;
@@ -18,6 +18,7 @@ type State = {
   weapon: WeaponId;
   muted: boolean;
   scoped: boolean;
+  scopeShotAt: number;
   fx: Fx[];
   error: string;
   setName: (name: string) => void;
@@ -26,6 +27,7 @@ type State = {
   clearFx: (id: number) => void;
   setMuted: (muted: boolean) => void;
   setScoped: (scoped: boolean) => void;
+  setScopeShotAt: (scopeShotAt: number) => void;
 };
 
 export const useGame = create<State>((set) => ({
@@ -39,6 +41,7 @@ export const useGame = create<State>((set) => ({
   weapon: "revolver",
   muted: localStorage.getItem("veck.muted") === "true",
   scoped: false,
+  scopeShotAt: 0,
   fx: [],
   error: "",
   setName: (name) => {
@@ -56,7 +59,8 @@ export const useGame = create<State>((set) => ({
     localStorage.setItem("veck.muted", String(muted));
     set({ muted });
   },
-  setScoped: (scoped) => set({ scoped })
+  setScoped: (scoped) => set({ scoped }),
+  setScopeShotAt: (scopeShotAt) => set({ scopeShotAt })
 }));
 
 export const actions = {

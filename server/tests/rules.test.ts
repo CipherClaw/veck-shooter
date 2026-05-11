@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { GameHub } from "../src/game";
 import { canDamage, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
+import { StatsStore } from "../src/store";
 import type { PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
@@ -45,5 +47,21 @@ describe("game rules", () => {
     expect(weaponDamage("grenade", 0)).toBe(115);
     expect(weaponDamage("grenade", 8)).toBe(28);
     expect(weaponDamage("grenade", 9)).toBe(0);
+  });
+
+  it("does not fire the watergun unless a full stream tick is available", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Tester");
+    const gameId = hub.create("p1", "socket1", { map: "Pyramid", mode: "Free Play", durationMinutes: 3, weapon: "watergun" });
+    const game = (hub as any).games.get(gameId);
+    const playerState = game.players.get("p1");
+
+    playerState.ammo.watergun = 1;
+    expect(hub.fire("p1", { origin: { x: 0, y: 2, z: 0 }, direction: { x: 0, y: 0, z: -1 }, weapon: "watergun", seq: 1 })).toBeNull();
+    expect(playerState.ammo.watergun).toBe(1);
+
+    playerState.ammo.watergun = 2;
+    expect(hub.fire("p1", { origin: { x: 0, y: 2, z: 0 }, direction: { x: 0, y: 0, z: -1 }, weapon: "watergun", seq: 2 })).toMatchObject({ shooterId: "p1", weapon: "watergun" });
+    expect(playerState.ammo.watergun).toBe(0);
   });
 });

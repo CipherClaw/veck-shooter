@@ -5,10 +5,10 @@ import * as THREE from "three";
 import { ARENAS, WEAPONS, resolvePlayerPosition, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
-import { beep } from "../game/audio";
 import { ArenaMap } from "./Maps";
 import { Avatar } from "./Avatar";
 import { WeaponModel } from "./WeaponModels";
+import type { PlayerSnapshot, WeaponId } from "@veck/shared";
 
 const keys = new Set<string>();
 
@@ -65,7 +65,9 @@ function PlayerController() {
   const pitch = useRef(0);
   const shotSeq = useRef(0);
   const firing = useRef(false);
-  const lastStreamFire = useRef(0);
+  const lastLocalFire = useRef<Record<WeaponId, number>>({ revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0 });
+  const optimisticAmmo = useRef<Record<WeaponId, number>>({ revolver: 6, sniper: 4, grenade: 2, shottie: 3, watergun: 100 });
+  const latestPlayer = useRef<PlayerSnapshot>();
   const recoil = useRef(0);
   const bob = useRef(0);
   const [locked, setLocked] = useState(false);
@@ -76,6 +78,11 @@ function PlayerController() {
   const matchActive = snapshot?.game.status === "active";
   const scoped = Boolean(matchActive && zoom && weapon === "sniper");
   const controlsBlocked = () => !matchActive || isTextInputActive();
+
+  useEffect(() => {
+    latestPlayer.current = me;
+    if (me) optimisticAmmo.current = { ...me.ammo };
+  }, [me?.alive, me?.ammo.grenade, me?.ammo.revolver, me?.ammo.shottie, me?.ammo.sniper, me?.ammo.watergun, me?.reloadingUntil, me?.reloadingWeapon]);
 
   useEffect(() => {
     setScoped(scoped);
@@ -99,14 +106,22 @@ function PlayerController() {
     };
     const fire = (e: MouseEvent) => {
       if (document.pointerLockElement !== gl.domElement || e.button !== 0 || controlsBlocked()) return;
-      firing.current = true;
-      if (weapon === "watergun") {
-        setSpraying(true);
+      if (!canLocalFire(latestPlayer.current, weapon, optimisticAmmo.current)) {
+        firing.current = false;
+        setSpraying(false);
         return;
       }
+      if (weapon === "watergun") {
+        firing.current = true;
+        return;
+      }
+      const now = performance.now();
+      if (now - lastLocalFire.current[weapon] < WEAPONS[weapon].fireMs) return;
+      lastLocalFire.current[weapon] = now;
+      firing.current = false;
+      spendLocalAmmo(optimisticAmmo.current, weapon);
       recoil.current = Math.min(1, recoil.current + 0.85);
       shoot(camera, weapon, ++shotSeq.current);
-      beep(weapon, muted);
     };
     const stopFire = (e: MouseEvent) => {
       if (e.button !== 0) return;
@@ -144,7 +159,7 @@ function PlayerController() {
       window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
-  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, muted, weapon]);
+  }, [camera, gl.domElement, lockCooldown, matchActive, weapon]);
 
   useEffect(() => {
     if (!me?.alive || !matchActive) {
@@ -211,10 +226,17 @@ function PlayerController() {
     const moving = velocity.current.length();
     bob.current += moving * step * 0.7;
     recoil.current = THREE.MathUtils.damp(recoil.current, 0, 14, step);
-    if (weapon === "watergun" && firing.current && performance.now() - lastStreamFire.current >= WEAPONS.watergun.fireMs) {
-      lastStreamFire.current = performance.now();
-      recoil.current = Math.min(0.65, recoil.current + 0.14);
-      shoot(camera, weapon, ++shotSeq.current);
+    if (weapon === "watergun" && firing.current) {
+      if (!canLocalFire(me, weapon, optimisticAmmo.current)) {
+        firing.current = false;
+        setSpraying(false);
+      } else if (performance.now() - lastLocalFire.current.watergun >= WEAPONS.watergun.fireMs) {
+        lastLocalFire.current.watergun = performance.now();
+        spendLocalAmmo(optimisticAmmo.current, weapon);
+        setSpraying(true);
+        recoil.current = Math.min(0.65, recoil.current + 0.14);
+        shoot(camera, weapon, ++shotSeq.current);
+      }
     }
     camera.position.set(pos.x, pos.y + 0.7, pos.z);
     camera.rotation.set(pitch.current, yaw.current, 0, "YXZ");
@@ -304,6 +326,21 @@ function shoot(camera: THREE.Camera, weapon: string, seq: number) {
     weapon: weapon as never,
     seq
   });
+}
+
+function weaponAmmoCost(weapon: WeaponId) {
+  return weapon === "watergun" ? 2 : 1;
+}
+
+function canLocalFire(player: PlayerSnapshot | undefined, weapon: WeaponId, optimisticAmmo: Record<WeaponId, number>) {
+  if (!player?.alive) return false;
+  const reloading = player.reloadingWeapon === weapon && player.reloadingUntil && Date.now() < player.reloadingUntil;
+  if (reloading) return false;
+  return Math.min(player.ammo[weapon] ?? 0, optimisticAmmo[weapon] ?? 0) >= weaponAmmoCost(weapon);
+}
+
+function spendLocalAmmo(ammo: Record<WeaponId, number>, weapon: WeaponId) {
+  ammo[weapon] = Math.max(0, (ammo[weapon] ?? 0) - weaponAmmoCost(weapon));
 }
 
 function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?: Vec3 } }) {

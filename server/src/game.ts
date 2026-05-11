@@ -170,9 +170,10 @@ export class GameHub {
       player.reloadingUntil = undefined;
     }
     if (now - player.lastFire[payload.weapon] < spec.fireMs) return null;
-    if (player.ammo[payload.weapon] <= 0) return null;
+    const ammoCost = payload.weapon === "watergun" ? 2 : 1;
+    if (player.ammo[payload.weapon] < ammoCost) return null;
     player.lastFire[payload.weapon] = now;
-    player.ammo[payload.weapon] = Math.max(0, player.ammo[payload.weapon] - (payload.weapon === "watergun" ? 2 : 1));
+    player.ammo[payload.weapon] = Math.max(0, player.ammo[payload.weapon] - ammoCost);
 
     const dir = normalize(payload.direction);
     let fxTo = add(payload.origin, scale(dir, spec.range));
@@ -202,7 +203,7 @@ export class GameHub {
       const total = payload.weapon === "shottie" ? weaponDamage(payload.weapon, hit.ray.along) * Math.ceil(spec.pellets * 0.5) : weaponDamage(payload.weapon, hit.ray.along);
       this.damage(game, player, hit.victim, total);
     }
-    return { from: payload.origin, to: fxTo, weapon: payload.weapon, hit: hitPoint };
+    return { shooterId: player.id, from: payload.origin, to: fxTo, weapon: payload.weapon, hit: hitPoint };
   }
 
   reload(playerId: string, weapon: WeaponId) {
