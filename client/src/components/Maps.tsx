@@ -28,15 +28,16 @@ export function ArenaMap({ map }: { map: MapName }) {
 }
 
 function PyramidDetails() {
+  const pyramidTop = Math.max(...ARENAS.Pyramid.colliders.filter((collider) => collider.id.startsWith("pyramid-")).map((collider) => collider.center.y + collider.size.y / 2));
   return (
     <group>
-      <mesh position={[0, 3.55, 0]} castShadow>
+      <mesh position={[0, pyramidTop + 0.9, 0]} castShadow>
         <octahedronGeometry args={[1.7, 0]} />
         <meshStandardMaterial color="#f7c948" emissive="#f59e0b" emissiveIntensity={0.28} roughness={0.45} />
       </mesh>
       {[-32, 32].map((x) => (
-        <mesh key={x} position={[x, 3.9, 0]} castShadow>
-          <boxGeometry args={[1.1, 4.2, 1.1]} />
+        <mesh key={x} position={[x, 3.4, 0]} castShadow>
+          <boxGeometry args={[1.1, 6.8, 1.1]} />
           <meshStandardMaterial color="#7c5a32" roughness={0.8} />
         </mesh>
       ))}

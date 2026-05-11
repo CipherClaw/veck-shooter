@@ -215,7 +215,7 @@ function PlayerController() {
     const pos = localPosition.current.addScaledVector(velocity.current, step);
     if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
     verticalVelocity.current -= 19 * step;
-    pos.y = Math.max(1.2, Math.min(8, pos.y + verticalVelocity.current * step));
+    pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
     if (resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
     pos.set(resolved.x, resolved.y, resolved.z);

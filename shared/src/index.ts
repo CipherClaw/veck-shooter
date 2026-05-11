@@ -152,12 +152,22 @@ export type ServerToClientEvents = {
   killed: (victim: string) => void;
 };
 
+const pyramidStepCount = 13;
+const pyramidStepHeight = 0.75;
+const pyramidBaseSize = 31;
+const pyramidStepInset = 1.2;
+
 const pyramidColliders: ArenaCollider[] = [
-  { id: "pyramid-0", center: { x: 0, y: 0.35, z: 0 }, size: { x: 31, y: 0.7, z: 31 }, color: "#ead594", climbable: true },
-  { id: "pyramid-1", center: { x: 0, y: 0.97, z: 0 }, size: { x: 25, y: 0.7, z: 25 }, color: "#c7b071", climbable: true },
-  { id: "pyramid-2", center: { x: 0, y: 1.59, z: 0 }, size: { x: 19, y: 0.7, z: 19 }, color: "#ead594", climbable: true },
-  { id: "pyramid-3", center: { x: 0, y: 2.21, z: 0 }, size: { x: 13, y: 0.7, z: 13 }, color: "#c7b071", climbable: true },
-  { id: "pyramid-4", center: { x: 0, y: 2.83, z: 0 }, size: { x: 7, y: 0.7, z: 7 }, color: "#ead594", climbable: true },
+  ...Array.from({ length: pyramidStepCount }, (_, i) => {
+    const size = pyramidBaseSize - i * pyramidStepInset * 2;
+    return {
+      id: `pyramid-${i}`,
+      center: { x: 0, y: pyramidStepHeight * (i + 0.5), z: 0 },
+      size: { x: size, y: pyramidStepHeight, z: size },
+      color: i % 2 === 0 ? "#ead594" : "#c7b071",
+      climbable: true
+    };
+  }),
   { id: "pyramid-north-wall", center: { x: 0, y: 1.7, z: -46 }, size: { x: 84, y: 3.4, z: 1.6 }, color: "#b79258" },
   { id: "pyramid-south-wall", center: { x: 0, y: 1.7, z: 46 }, size: { x: 84, y: 3.4, z: 1.6 }, color: "#b79258" },
   { id: "pyramid-west-wall", center: { x: -46, y: 1.7, z: 0 }, size: { x: 1.6, y: 3.4, z: 84 }, color: "#b79258" },
