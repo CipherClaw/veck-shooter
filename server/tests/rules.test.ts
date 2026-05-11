@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GameHub } from "../src/game";
 import { canDamage, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import { StatsStore } from "../src/store";
-import type { PlayerSnapshot } from "@veck/shared";
+import { ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
   id,
@@ -63,5 +63,14 @@ describe("game rules", () => {
     playerState.ammo.watergun = 2;
     expect(hub.fire("p1", { origin: { x: 0, y: 2, z: 0 }, direction: { x: 0, y: 0, z: -1 }, weapon: "watergun", seq: 2 })).toMatchObject({ shooterId: "p1", weapon: "watergun" });
     expect(playerState.ammo.watergun).toBe(0);
+  });
+
+  it("keeps practice range ladders from snapping players to the roof", () => {
+    const floorPos = resolvePlayerPosition("Practice Range", { x: 48, y: 1.2, z: 48 }, { x: 48, y: 1.2, z: 46 });
+    expect(floorPos.y).toBeCloseTo(1.2);
+
+    const climbingPos = resolvePlayerPosition("Practice Range", { x: 48, y: 3.4, z: 48 }, { x: 48, y: 3.2, z: 48 });
+    expect(climbingPos.y).toBeCloseTo(3.4);
+    expect(ladderAt("Practice Range", climbingPos)).toMatchObject({ topY: 9.7 });
   });
 });

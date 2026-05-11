@@ -11,6 +11,7 @@ export type ArenaCollider = {
   size: Vec3;
   color: string;
   climbable?: boolean;
+  ladder?: boolean;
 };
 
 export type ArenaDefinition = {
@@ -50,6 +51,7 @@ export const DURATIONS = [3, 5, 10, 15] as const;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;
+export const LADDER_CLIMB_SPEED = 4.2;
 
 export type PlayerStats = {
   kills: number;
@@ -182,18 +184,13 @@ const practiceColliders: ArenaCollider[] = [
   { id: "practice-left-platform", center: { x: -26, y: 3.0, z: 22 }, size: { x: 16, y: 1.1, z: 12 }, color: "#cbd5df", climbable: true },
   { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9", climbable: true },
   { id: "practice-back-platform", center: { x: 0, y: 6.4, z: 43 }, size: { x: 26, y: 1, z: 7 }, color: "#cbd5df", climbable: true },
-  ...[-44, 44].flatMap((x) => [-44, 44].map((z) => ({
-    id: `practice-corner-platform-${x}-${z}`,
-    center: { x, y: 8.05, z },
-    size: { x: 15, y: 0.9, z: 15 },
-    color: "#d7dde3"
-  }))),
+  ...[-44, 44].flatMap((x) => [-44, 44].flatMap((z) => cornerPlatformColliders(x, z))),
   ...[-48, 48].flatMap((x) => [-48, 48].map((z) => ({
     id: `practice-corner-ladder-${x}-${z}`,
-    center: { x, y: 4.1, z },
-    size: { x: 2.2, y: 7.8, z: 2.2 },
+    center: { x, y: 4.3, z },
+    size: { x: 2.2, y: 8.4, z: 2.2 },
     color: "#7b8794",
-    climbable: true
+    ladder: true
   }))),
   ...[-39, 39].flatMap((x) => [-39, 39].map((z) => ({
     id: `practice-corner-support-${x}-${z}`,
@@ -216,6 +213,39 @@ const practiceColliders: ArenaCollider[] = [
   { id: "practice-ramp-c", center: { x: 0, y: 4.1, z: 31 }, size: { x: 7, y: 0.55, z: 18 }, color: "#b7c2ce", climbable: true },
   ...[-38, -28, -18, -8, 8, 18, 28, 38].map((x, i) => ({ id: `practice-barrier-${i}`, center: { x, y: 1, z: -40 + (i % 2) * 14 }, size: { x: 2.6, y: 2, z: 8 }, color: "#ffffff" }))
 ];
+
+function cornerPlatformColliders(x: number, z: number): ArenaCollider[] {
+  const platformSize = 15;
+  const holeSize = 4.6;
+  const y = 8.05;
+  const height = 0.9;
+  const color = "#d7dde3";
+  const minX = x - platformSize / 2;
+  const maxX = x + platformSize / 2;
+  const minZ = z - platformSize / 2;
+  const maxZ = z + platformSize / 2;
+  const holeX = x < 0 ? x - 4 : x + 4;
+  const holeZ = z < 0 ? z - 4 : z + 4;
+  const holeMinX = holeX - holeSize / 2;
+  const holeMaxX = holeX + holeSize / 2;
+  const holeMinZ = holeZ - holeSize / 2;
+  const holeMaxZ = holeZ + holeSize / 2;
+  const pieces = [
+    { suffix: "inner-x", minX, maxX: holeMinX, minZ, maxZ },
+    { suffix: "outer-x", minX: holeMaxX, maxX, minZ, maxZ },
+    { suffix: "inner-z", minX: holeMinX, maxX: holeMaxX, minZ, maxZ: holeMinZ },
+    { suffix: "outer-z", minX: holeMinX, maxX: holeMaxX, minZ: holeMaxZ, maxZ }
+  ];
+
+  return pieces
+    .filter((piece) => piece.maxX - piece.minX > 0.15 && piece.maxZ - piece.minZ > 0.15)
+    .map((piece) => ({
+      id: `practice-corner-platform-${x}-${z}-${piece.suffix}`,
+      center: { x: (piece.minX + piece.maxX) / 2, y, z: (piece.minZ + piece.maxZ) / 2 },
+      size: { x: piece.maxX - piece.minX, y: height, z: piece.maxZ - piece.minZ },
+      color
+    }));
+}
 
 const forestTrees = [
   [-38, -30], [-28, 16], [-16, -38], [8, 29], [29, -22], [40, 34], [0, -8], [-44, 32], [34, 7], [-8, 40], [18, -2], [-34, -2]
@@ -282,6 +312,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   resolved.y = Math.max(resolved.y, ground);
   for (const collider of arena.colliders) {
     if (!intersectsXZ(resolved, collider)) continue;
+    if (collider.ladder) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     const bottom = collider.center.y - collider.size.y / 2;
     const canStand = collider.climbable || top - lastGround <= 0.95 || resolved.y >= top - 0.1;
@@ -312,11 +343,20 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
 function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2) {
   let y = 1.2;
   for (const collider of arena.colliders) {
+    if (collider.ladder) continue;
     if (!intersectsXZ(pos, collider)) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     if (collider.climbable || top - previousGround <= 0.95 || pos.y >= top - 0.25) y = Math.max(y, top);
   }
   return y;
+}
+
+export function ladderAt(map: MapName, pos: Vec3): { topY: number; bottomY: number } | null {
+  const collider = ARENAS[map].colliders.find((candidate) => candidate.ladder && intersectsXZ(pos, candidate));
+  if (!collider) return null;
+  const bottomY = collider.center.y - collider.size.y / 2 + 1.2;
+  const topY = collider.center.y + collider.size.y / 2 + 1.2;
+  return pos.y >= bottomY - 0.2 && pos.y <= topY + 0.35 ? { topY, bottomY } : null;
 }
 
 function intersectsXZ(pos: Vec3, collider: ArenaCollider) {

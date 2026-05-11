@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Line, Sky, Stars } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { ARENAS, WEAPONS, resolvePlayerPosition, type Vec3 } from "@veck/shared";
+import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
 import { ArenaMap } from "./Maps";
@@ -213,11 +213,18 @@ function PlayerController() {
     velocity.current.lerp(dir, accel);
     const previous = localPosition.current.clone();
     const pos = localPosition.current.addScaledVector(velocity.current, step);
-    if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
-    verticalVelocity.current -= 19 * step;
-    pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
+    const ladder = ladderAt(map, { x: pos.x, y: pos.y, z: pos.z });
+    const climbInput = !controlsBlocked() && ladder ? Number(keys.has("KeyW") || keys.has("Space")) - Number(keys.has("KeyS")) : 0;
+    if (ladder) {
+      verticalVelocity.current = climbInput * LADDER_CLIMB_SPEED;
+      pos.y = Math.max(ladder.bottomY, Math.min(ladder.topY, pos.y + verticalVelocity.current * step));
+    } else {
+      if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
+      verticalVelocity.current -= 19 * step;
+      pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
+    }
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
-    if (resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
+    if (ladder || resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
     pos.set(resolved.x, resolved.y, resolved.z);
     const arena = ARENAS[map];
     pos.y = Math.min(pos.y, 12);
