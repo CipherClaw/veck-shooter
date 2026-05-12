@@ -192,6 +192,12 @@ const practiceColliders: ArenaCollider[] = [
     color: "#7b8794",
     ladder: true
   }))),
+  ...[-48, 48].flatMap((x) => [-48, 48].map((z) => ({
+    id: `practice-corner-ladder-strip-${x}-${z}`,
+    center: { x, y: 4.3, z: z + Math.sign(z) * 0.58 },
+    size: { x: 2.7, y: 8.4, z: 0.34 },
+    color: "#9aa5af"
+  }))),
   ...[-39, 39].flatMap((x) => [-39, 39].map((z) => ({
     id: `practice-corner-support-${x}-${z}`,
     center: { x, y: 4.05, z },
@@ -326,12 +332,14 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     const halfZ = collider.size.z / 2 + PLAYER_RADIUS;
     const dx = resolved.x - collider.center.x;
     const dz = resolved.z - collider.center.z;
+    const previousDx = last.x - collider.center.x;
+    const previousDz = last.z - collider.center.z;
     const overlapX = halfX - Math.abs(dx);
     const overlapZ = halfZ - Math.abs(dz);
     if (overlapX < overlapZ) {
-      resolved.x += (dx >= 0 ? 1 : -1) * overlapX;
+      resolved.x += collisionDirection(dx, previousDx) * overlapX;
     } else {
-      resolved.z += (dz >= 0 ? 1 : -1) * overlapZ;
+      resolved.z += collisionDirection(dz, previousDz) * overlapZ;
     }
   }
   resolved.x = clamp(resolved.x, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS);
@@ -351,12 +359,17 @@ function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2) {
   return y;
 }
 
-export function ladderAt(map: MapName, pos: Vec3): { topY: number; bottomY: number } | null {
+export function ladderAt(map: MapName, pos: Vec3): { topY: number; bottomY: number; exit: Vec3 } | null {
   const collider = ARENAS[map].colliders.find((candidate) => candidate.ladder && intersectsXZ(pos, candidate));
   if (!collider) return null;
   const bottomY = collider.center.y - collider.size.y / 2 + 1.2;
   const topY = collider.center.y + collider.size.y / 2 + 1.2;
-  return pos.y >= bottomY - 0.2 && pos.y <= topY + 0.35 ? { topY, bottomY } : null;
+  return pos.y >= bottomY - 0.2 && pos.y <= topY + 0.35 ? { topY, bottomY, exit: ladderExit(collider, topY) } : null;
+}
+
+function ladderExit(collider: ArenaCollider, topY: number): Vec3 {
+  const zSign = Math.sign(collider.center.z) || 1;
+  return { x: collider.center.x, y: topY, z: collider.center.z - zSign * 3.05 };
 }
 
 function intersectsXZ(pos: Vec3, collider: ArenaCollider) {
@@ -365,6 +378,11 @@ function intersectsXZ(pos: Vec3, collider: ArenaCollider) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function collisionDirection(delta: number, previousDelta: number) {
+  if (previousDelta !== 0) return previousDelta > 0 ? 1 : -1;
+  return delta >= 0 ? 1 : -1;
 }
 
 export type ClientToServerEvents = {

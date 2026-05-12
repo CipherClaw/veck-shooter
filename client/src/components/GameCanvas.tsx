@@ -218,6 +218,9 @@ function PlayerController() {
     if (ladder) {
       verticalVelocity.current = climbInput * LADDER_CLIMB_SPEED;
       pos.y = Math.max(ladder.bottomY, Math.min(ladder.topY, pos.y + verticalVelocity.current * step));
+      if (climbInput > 0 && pos.y >= ladder.topY - 0.04) {
+        pos.set(ladder.exit.x, ladder.exit.y, ladder.exit.z);
+      }
     } else {
       if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
       verticalVelocity.current -= 19 * step;

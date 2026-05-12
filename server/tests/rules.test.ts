@@ -71,6 +71,21 @@ describe("game rules", () => {
 
     const climbingPos = resolvePlayerPosition("Practice Range", { x: 48, y: 3.4, z: 48 }, { x: 48, y: 3.2, z: 48 });
     expect(climbingPos.y).toBeCloseTo(3.4);
-    expect(ladderAt("Practice Range", climbingPos)).toMatchObject({ topY: 9.7 });
+    expect(ladderAt("Practice Range", climbingPos)).toMatchObject({ topY: 9.7, exit: { x: 48, y: 9.7, z: 44.95 } });
+  });
+
+  it("blocks movement through practice ladder back strips while keeping the ladder trigger reachable", () => {
+    const blocked = resolvePlayerPosition("Practice Range", { x: 48, y: 1.2, z: 49.2 }, { x: 48, y: 1.2, z: 46 });
+
+    expect(blocked.z).toBeLessThan(49.2);
+    expect(ladderAt("Practice Range", { x: 48, y: 1.2, z: blocked.z })?.bottomY).toBeCloseTo(1.3);
+  });
+
+  it("supports players after they exit the top of a practice ladder", () => {
+    const ladder = ladderAt("Practice Range", { x: 48, y: 9.68, z: 48 });
+    expect(ladder).toMatchObject({ exit: { x: 48, y: 9.7, z: 44.95 } });
+
+    const landed = resolvePlayerPosition("Practice Range", ladder!.exit, { x: 48, y: 9.65, z: 48 });
+    expect(landed).toMatchObject(ladder!.exit);
   });
 });
