@@ -28,7 +28,7 @@ export function ArenaMap({ map }: { map: MapName }) {
 }
 
 function hiddenCollider(id: string) {
-  return id.startsWith("forest-tree") || id.startsWith("forest-rock") || id.startsWith("practice-corner-ladder");
+  return id.startsWith("forest-tree") || id.startsWith("forest-rock") || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
 }
 
 function PyramidDetails() {
@@ -64,7 +64,7 @@ function PracticeDetails() {
           </mesh>
         </group>
       ))}
-      {[-48, 48].flatMap((x) => [-48, 48].map((z) => <CornerLadder key={`${x}-${z}`} x={x} z={z} />))}
+      {[-44, 44].flatMap((x) => [-52.35, 52.35].map((z) => <CornerLadder key={`${x}-${z}`} x={x} z={z} />))}
     </group>
   );
 }

@@ -185,14 +185,14 @@ const practiceColliders: ArenaCollider[] = [
   { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9", climbable: true },
   { id: "practice-back-platform", center: { x: 0, y: 6.4, z: 43 }, size: { x: 26, y: 1, z: 7 }, color: "#cbd5df", climbable: true },
   ...[-44, 44].flatMap((x) => [-44, 44].flatMap((z) => cornerPlatformColliders(x, z))),
-  ...[-48, 48].flatMap((x) => [-48, 48].map((z) => ({
+  ...[-44, 44].flatMap((x) => [-52.35, 52.35].map((z) => ({
     id: `practice-corner-ladder-${x}-${z}`,
     center: { x, y: 4.3, z },
     size: { x: 2.2, y: 8.4, z: 2.2 },
     color: "#7b8794",
     ladder: true
   }))),
-  ...[-48, 48].flatMap((x) => [-48, 48].map((z) => ({
+  ...[-44, 44].flatMap((x) => [-52.35, 52.35].map((z) => ({
     id: `practice-corner-ladder-strip-${x}-${z}`,
     center: { x, y: 4.3, z: z + Math.sign(z) * 0.58 },
     size: { x: 2.7, y: 8.4, z: 0.34 },
@@ -222,35 +222,15 @@ const practiceColliders: ArenaCollider[] = [
 
 function cornerPlatformColliders(x: number, z: number): ArenaCollider[] {
   const platformSize = 15;
-  const holeSize = 4.6;
   const y = 8.05;
   const height = 0.9;
   const color = "#d7dde3";
-  const minX = x - platformSize / 2;
-  const maxX = x + platformSize / 2;
-  const minZ = z - platformSize / 2;
-  const maxZ = z + platformSize / 2;
-  const holeX = x < 0 ? x - 4 : x + 4;
-  const holeZ = z < 0 ? z - 4 : z + 4;
-  const holeMinX = holeX - holeSize / 2;
-  const holeMaxX = holeX + holeSize / 2;
-  const holeMinZ = holeZ - holeSize / 2;
-  const holeMaxZ = holeZ + holeSize / 2;
-  const pieces = [
-    { suffix: "inner-x", minX, maxX: holeMinX, minZ, maxZ },
-    { suffix: "outer-x", minX: holeMaxX, maxX, minZ, maxZ },
-    { suffix: "inner-z", minX: holeMinX, maxX: holeMaxX, minZ, maxZ: holeMinZ },
-    { suffix: "outer-z", minX: holeMinX, maxX: holeMaxX, minZ: holeMaxZ, maxZ }
-  ];
-
-  return pieces
-    .filter((piece) => piece.maxX - piece.minX > 0.15 && piece.maxZ - piece.minZ > 0.15)
-    .map((piece) => ({
-      id: `practice-corner-platform-${x}-${z}-${piece.suffix}`,
-      center: { x: (piece.minX + piece.maxX) / 2, y, z: (piece.minZ + piece.maxZ) / 2 },
-      size: { x: piece.maxX - piece.minX, y: height, z: piece.maxZ - piece.minZ },
-      color
-    }));
+  return [{
+    id: `practice-corner-platform-${x}-${z}`,
+    center: { x, y, z },
+    size: { x: platformSize, y: height, z: platformSize },
+    color
+  }];
 }
 
 const forestTrees = [

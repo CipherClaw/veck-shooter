@@ -66,26 +66,30 @@ describe("game rules", () => {
   });
 
   it("keeps practice range ladders from snapping players to the roof", () => {
-    const floorPos = resolvePlayerPosition("Practice Range", { x: 48, y: 1.2, z: 48 }, { x: 48, y: 1.2, z: 46 });
+    const floorPos = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 52.35 }, { x: 44, y: 1.2, z: 50 });
     expect(floorPos.y).toBeCloseTo(1.2);
 
-    const climbingPos = resolvePlayerPosition("Practice Range", { x: 48, y: 3.4, z: 48 }, { x: 48, y: 3.2, z: 48 });
+    const climbingPos = resolvePlayerPosition("Practice Range", { x: 44, y: 3.4, z: 52.35 }, { x: 44, y: 3.2, z: 52.35 });
     expect(climbingPos.y).toBeCloseTo(3.4);
-    expect(ladderAt("Practice Range", climbingPos)).toMatchObject({ topY: 9.7, exit: { x: 48, y: 9.7, z: 44.95 } });
+    const ladder = ladderAt("Practice Range", climbingPos);
+    expect(ladder?.topY).toBeCloseTo(9.7);
+    expect(ladder?.exit).toMatchObject({ x: 44, y: 9.7 });
+    expect(ladder?.exit.z).toBeCloseTo(49.3);
   });
 
   it("blocks movement through practice ladder back strips while keeping the ladder trigger reachable", () => {
-    const blocked = resolvePlayerPosition("Practice Range", { x: 48, y: 1.2, z: 49.2 }, { x: 48, y: 1.2, z: 46 });
+    const blocked = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 53 }, { x: 44, y: 1.2, z: 50 });
 
-    expect(blocked.z).toBeLessThan(49.2);
-    expect(ladderAt("Practice Range", { x: 48, y: 1.2, z: blocked.z })?.bottomY).toBeCloseTo(1.3);
+    expect(blocked.z).toBeLessThan(53);
+    expect(ladderAt("Practice Range", { x: 44, y: 1.2, z: blocked.z })?.bottomY).toBeCloseTo(1.3);
   });
 
   it("supports players after they exit the top of a practice ladder", () => {
-    const ladder = ladderAt("Practice Range", { x: 48, y: 9.68, z: 48 });
-    expect(ladder).toMatchObject({ exit: { x: 48, y: 9.7, z: 44.95 } });
+    const ladder = ladderAt("Practice Range", { x: 44, y: 9.68, z: 52.35 });
+    expect(ladder?.exit).toMatchObject({ x: 44, y: 9.7 });
+    expect(ladder?.exit.z).toBeCloseTo(49.3);
 
-    const landed = resolvePlayerPosition("Practice Range", ladder!.exit, { x: 48, y: 9.65, z: 48 });
+    const landed = resolvePlayerPosition("Practice Range", ladder!.exit, { x: 44, y: 9.65, z: 52.35 });
     expect(landed).toMatchObject(ladder!.exit);
   });
 });
