@@ -4,6 +4,7 @@ import { actions, useGame } from "../state/store";
 import { beep } from "./audio";
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
+let heardExplosionIds = new Set<string>();
 
 socket.on("connect", () => {
   const s = useGame.getState();
@@ -12,7 +13,13 @@ socket.on("connect", () => {
 socket.on("games", actions.games);
 socket.on("stats", actions.stats);
 socket.on("joined", actions.joined);
-socket.on("snapshot", actions.snapshot);
+socket.on("snapshot", (snapshot) => {
+  const state = useGame.getState();
+  const nextExplosionIds = new Set(snapshot.explosions.map((explosion) => explosion.id));
+  if (snapshot.explosions.some((explosion) => !heardExplosionIds.has(explosion.id))) beep("explosion", state.muted);
+  heardExplosionIds = nextExplosionIds;
+  actions.snapshot(snapshot);
+});
 socket.on("lobbyChat", actions.lobbyChat);
 socket.on("gameChat", actions.gameChat);
 socket.on("rejected", actions.error);

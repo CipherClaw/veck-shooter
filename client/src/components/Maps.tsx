@@ -64,13 +64,13 @@ function PracticeDetails() {
           </mesh>
         </group>
       ))}
-      {[-44, 44].flatMap((x) => [-52.35, 52.35].map((z) => <CornerLadder key={`${x}-${z}`} x={x} z={z} />))}
+      {[-44, 44].flatMap((x) => [-51.95, 51.95].map((z) => <CornerLadder key={`${x}-${z}`} x={x} z={z} />))}
     </group>
   );
 }
 
 function CornerLadder({ x, z }: { x: number; z: number }) {
-  const rotationY = z > 0 ? 0 : Math.PI;
+  const rotationY = z > 0 ? Math.PI : 0;
   return (
     <group position={[x, 0, z]} rotation={[0, rotationY, 0]}>
       {[-0.8, 0.8].map((railX) => (
