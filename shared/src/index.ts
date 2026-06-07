@@ -12,6 +12,7 @@ export type ArenaCollider = {
   color: string;
   climbable?: boolean;
   ladder?: boolean;
+  ladderNormal?: { x: number; z: number };
 };
 
 export type ArenaDefinition = {
@@ -190,11 +191,12 @@ const practiceColliders: ArenaCollider[] = [
     center: { x, y: 4.3, z },
     size: { x: 2.2, y: 8.4, z: 2.2 },
     color: "#7b8794",
-    ladder: true
+    ladder: true,
+    ladderNormal: { x: 0, z: Math.sign(z) || 1 }
   }))),
   ...[-44, 44].flatMap((x) => [-51.95, 51.95].map((z) => ({
     id: `practice-corner-ladder-strip-${x}-${z}`,
-    center: { x, y: 4.3, z: z + Math.sign(z) * 0.58 },
+    center: { x, y: 4.3, z: z - Math.sign(z) * 0.58 },
     size: { x: 2.7, y: 8.4, z: 0.34 },
     color: "#9aa5af"
   }))),
@@ -348,8 +350,8 @@ export function ladderAt(map: MapName, pos: Vec3): { topY: number; bottomY: numb
 }
 
 function ladderExit(collider: ArenaCollider, topY: number): Vec3 {
-  const zSign = Math.sign(collider.center.z) || 1;
-  return { x: collider.center.x, y: topY, z: collider.center.z - zSign * 2.65 };
+  const normal = collider.ladderNormal ?? { x: 0, z: Math.sign(collider.center.z) || 1 };
+  return { x: collider.center.x - normal.x * 2.65, y: topY, z: collider.center.z - normal.z * 2.65 };
 }
 
 function intersectsXZ(pos: Vec3, collider: ArenaCollider) {

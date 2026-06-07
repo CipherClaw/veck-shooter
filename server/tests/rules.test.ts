@@ -65,9 +65,10 @@ describe("game rules", () => {
     expect(playerState.ammo.watergun).toBe(0);
   });
 
-  it("keeps practice range ladders from snapping players to the roof", () => {
-    const floorPos = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 51.95 }, { x: 44, y: 1.2, z: 50 });
+  it("keeps practice range ladders reachable from the outside without snapping players to the roof", () => {
+    const floorPos = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 52.2 }, { x: 44, y: 1.2, z: 54 });
     expect(floorPos.y).toBeCloseTo(1.2);
+    expect(ladderAt("Practice Range", floorPos)?.bottomY).toBeCloseTo(1.3);
 
     const climbingPos = resolvePlayerPosition("Practice Range", { x: 44, y: 3.4, z: 51.95 }, { x: 44, y: 3.2, z: 51.95 });
     expect(climbingPos.y).toBeCloseTo(3.4);
@@ -77,11 +78,13 @@ describe("game rules", () => {
     expect(ladder?.exit.z).toBeCloseTo(49.3);
   });
 
-  it("blocks movement through practice ladder back strips while keeping the ladder trigger reachable", () => {
-    const blocked = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 52.6 }, { x: 44, y: 1.2, z: 50 });
+  it("blocks movement through practice ladder back strips while keeping the outside trigger reachable", () => {
+    const outside = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 52.2 }, { x: 44, y: 1.2, z: 54 });
+    const blocked = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 51.3 }, { x: 44, y: 1.2, z: 54 });
 
-    expect(blocked.z).toBeLessThan(52.6);
-    expect(ladderAt("Practice Range", { x: 44, y: 1.2, z: blocked.z })?.bottomY).toBeCloseTo(1.3);
+    expect(outside.z).toBeCloseTo(52.2);
+    expect(blocked.z).toBeGreaterThan(51.3);
+    expect(ladderAt("Practice Range", outside)?.bottomY).toBeCloseTo(1.3);
   });
 
   it("supports players after they exit the top of a practice ladder", () => {
