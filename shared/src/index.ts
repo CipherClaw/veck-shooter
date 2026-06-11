@@ -26,6 +26,14 @@ export type ArenaDefinition = {
   rocks?: Vec3[];
 };
 
+export type LadderContact = {
+  topY: number;
+  bottomY: number;
+  exit: Vec3;
+  mount: Vec3;
+  normal: { x: number; z: number };
+};
+
 export type WeaponSpec = {
   id: WeaponId;
   name: string;
@@ -341,17 +349,26 @@ function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2) {
   return y;
 }
 
-export function ladderAt(map: MapName, pos: Vec3): { topY: number; bottomY: number; exit: Vec3 } | null {
+export function ladderAt(map: MapName, pos: Vec3): LadderContact | null {
   const collider = ARENAS[map].colliders.find((candidate) => candidate.ladder && intersectsXZ(pos, candidate));
   if (!collider) return null;
   const bottomY = collider.center.y - collider.size.y / 2 + 1.2;
   const topY = collider.center.y + collider.size.y / 2 + 1.2;
-  return pos.y >= bottomY - 0.2 && pos.y <= topY + 0.35 ? { topY, bottomY, exit: ladderExit(collider, topY) } : null;
+  if (pos.y < bottomY - 0.2 || pos.y > topY + 0.35) return null;
+  const normal = ladderNormal(collider);
+  return { topY, bottomY, exit: ladderExit(collider, topY, normal), mount: ladderMount(collider, normal), normal };
 }
 
-function ladderExit(collider: ArenaCollider, topY: number): Vec3 {
-  const normal = collider.ladderNormal ?? { x: 0, z: Math.sign(collider.center.z) || 1 };
+function ladderNormal(collider: ArenaCollider) {
+  return collider.ladderNormal ?? { x: 0, z: Math.sign(collider.center.z) || 1 };
+}
+
+function ladderExit(collider: ArenaCollider, topY: number, normal = ladderNormal(collider)): Vec3 {
   return { x: collider.center.x - normal.x * 2.65, y: topY, z: collider.center.z - normal.z * 2.65 };
+}
+
+function ladderMount(collider: ArenaCollider, normal = ladderNormal(collider)): Vec3 {
+  return { x: collider.center.x + normal.x * 0.85, y: collider.center.y, z: collider.center.z + normal.z * 0.85 };
 }
 
 function intersectsXZ(pos: Vec3, collider: ArenaCollider) {

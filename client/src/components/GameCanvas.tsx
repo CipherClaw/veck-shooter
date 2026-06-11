@@ -215,7 +215,12 @@ function PlayerController() {
     const pos = localPosition.current.addScaledVector(velocity.current, step);
     const ladder = ladderAt(map, { x: pos.x, y: pos.y, z: pos.z });
     const climbInput = !controlsBlocked() && ladder ? Number(keys.has("KeyW") || keys.has("Space")) - Number(keys.has("KeyS")) : 0;
-    if (ladder) {
+    const climbing = Boolean(ladder && (climbInput !== 0 || pos.y > ladder.bottomY + 0.1));
+    if (ladder && climbing) {
+      velocity.current.x = 0;
+      velocity.current.z = 0;
+      pos.x = THREE.MathUtils.damp(pos.x, ladder.mount.x, 24, step);
+      pos.z = THREE.MathUtils.damp(pos.z, ladder.mount.z, 24, step);
       verticalVelocity.current = climbInput * LADDER_CLIMB_SPEED;
       pos.y = Math.max(ladder.bottomY, Math.min(ladder.topY, pos.y + verticalVelocity.current * step));
       if (climbInput > 0 && pos.y >= ladder.topY - 0.04) {
@@ -227,7 +232,7 @@ function PlayerController() {
       pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
     }
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
-    if (ladder || resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
+    if (climbing || resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
     pos.set(resolved.x, resolved.y, resolved.z);
     const arena = ARENAS[map];
     pos.y = Math.min(pos.y, 12);

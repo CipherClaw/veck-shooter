@@ -76,6 +76,8 @@ describe("game rules", () => {
     expect(ladder?.topY).toBeCloseTo(9.7);
     expect(ladder?.exit).toMatchObject({ x: 44, y: 9.7 });
     expect(ladder?.exit.z).toBeCloseTo(49.3);
+    expect(ladder?.mount).toMatchObject({ x: 44 });
+    expect(ladder?.mount.z).toBeCloseTo(52.8);
   });
 
   it("blocks movement through practice ladder back strips while keeping the outside trigger reachable", () => {
@@ -91,8 +93,19 @@ describe("game rules", () => {
     const ladder = ladderAt("Practice Range", { x: 44, y: 9.68, z: 51.95 });
     expect(ladder?.exit).toMatchObject({ x: 44, y: 9.7 });
     expect(ladder?.exit.z).toBeCloseTo(49.3);
+    expect(ladder?.mount.z).toBeGreaterThan(51.95);
 
     const landed = resolvePlayerPosition("Practice Range", ladder!.exit, { x: 44, y: 9.65, z: 51.95 });
     expect(landed).toMatchObject(ladder!.exit);
+  });
+
+  it("keeps active practice ladder climbing outside the platform face", () => {
+    const ladder = ladderAt("Practice Range", { x: 44, y: 5.5, z: 52.8 });
+    expect(ladder?.mount).toMatchObject({ x: 44 });
+    expect(ladder?.mount.z).toBeCloseTo(52.8);
+
+    const climbing = resolvePlayerPosition("Practice Range", { x: ladder!.mount.x, y: 7.8, z: ladder!.mount.z }, { x: 44, y: 7.5, z: 52.8 });
+    expect(climbing).toMatchObject({ x: 44, y: 7.8 });
+    expect(climbing.z).toBeCloseTo(52.8);
   });
 });
