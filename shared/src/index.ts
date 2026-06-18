@@ -15,6 +15,15 @@ export type ArenaCollider = {
   ladderNormal?: { x: number; z: number };
 };
 
+export type ArenaBouncePad = {
+  id: string;
+  center: Vec3;
+  radius: number;
+  height: number;
+  color: string;
+  launchVelocity: number;
+};
+
 export type ArenaDefinition = {
   floorSize: number;
   bounds: number;
@@ -22,6 +31,7 @@ export type ArenaDefinition = {
   gridColor: string;
   spawns: Vec3[];
   colliders: ArenaCollider[];
+  bouncePads?: ArenaBouncePad[];
   trees?: Vec3[];
   rocks?: Vec3[];
 };
@@ -61,6 +71,7 @@ export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;
 export const LADDER_CLIMB_SPEED = 4.2;
+export const BOUNCE_PAD_LAUNCH_SPEED = 13.8;
 
 export type PlayerStats = {
   kills: number;
@@ -191,7 +202,7 @@ const pyramidColliders: ArenaCollider[] = [
 const practiceColliders: ArenaCollider[] = [
   { id: "practice-mid", center: { x: 0, y: 0.5, z: 0 }, size: { x: 12, y: 1, z: 12 }, color: "#d9e1e8", climbable: true },
   { id: "practice-left-platform", center: { x: -26, y: 3.0, z: 22 }, size: { x: 16, y: 1.1, z: 12 }, color: "#cbd5df", climbable: true },
-  { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9", climbable: true },
+  { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9" },
   { id: "practice-back-platform", center: { x: 0, y: 6.4, z: 43 }, size: { x: 26, y: 1, z: 7 }, color: "#cbd5df", climbable: true },
   ...[-44, 44].flatMap((x) => [-44, 44].flatMap((z) => cornerPlatformColliders(x, z))),
   ...[-44, 44].flatMap((x) => [-51.95, 51.95].map((z) => ({
@@ -225,9 +236,20 @@ const practiceColliders: ArenaCollider[] = [
   { id: "practice-left-wall", center: { x: -55, y: 3.2, z: 0 }, size: { x: 1.6, y: 6.4, z: 104 }, color: "#d6dee7" },
   { id: "practice-right-wall", center: { x: 55, y: 3.2, z: 0 }, size: { x: 1.6, y: 6.4, z: 104 }, color: "#d6dee7" },
   { id: "practice-ramp-a", center: { x: -13, y: 1.5, z: 14 }, size: { x: 5, y: 0.55, z: 16 }, color: "#b7c2ce", climbable: true },
-  { id: "practice-ramp-b", center: { x: 14, y: 2.6, z: -13 }, size: { x: 5, y: 0.55, z: 16 }, color: "#b7c2ce", climbable: true },
+  { id: "practice-ramp-b", center: { x: 14, y: 2.6, z: -13 }, size: { x: 5, y: 0.55, z: 16 }, color: "#b7c2ce" },
   { id: "practice-ramp-c", center: { x: 0, y: 4.1, z: 31 }, size: { x: 7, y: 0.55, z: 18 }, color: "#b7c2ce", climbable: true },
   ...[-38, -28, -18, -8, 8, 18, 28, 38].map((x, i) => ({ id: `practice-barrier-${i}`, center: { x, y: 1, z: -40 + (i % 2) * 14 }, size: { x: 2.6, y: 2, z: 8 }, color: "#ffffff" }))
+];
+
+const practiceBouncePads: ArenaBouncePad[] = [
+  {
+    id: "practice-right-platform-bounce",
+    center: { x: 18.4, y: 0.08, z: -15.6 },
+    radius: 2.15,
+    height: 0.16,
+    color: "#55d66b",
+    launchVelocity: BOUNCE_PAD_LAUNCH_SPEED
+  }
 ];
 
 function cornerPlatformColliders(x: number, z: number): ArenaCollider[] {
@@ -278,7 +300,8 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
       { x: -48, y: 1.2, z: -34 }, { x: 48, y: 1.2, z: 34 }, { x: -24, y: 4.75, z: 22 }, { x: 28, y: 6.55, z: -23 },
       { x: -48, y: 1.2, z: 44 }, { x: 48, y: 1.2, z: -44 }, { x: 0, y: 7.9, z: 43 }, { x: 0, y: 1.2, z: -52 }
     ],
-    colliders: practiceColliders
+    colliders: practiceColliders,
+    bouncePads: practiceBouncePads
   },
   Forest: {
     floorSize: 116,
@@ -357,6 +380,15 @@ export function ladderAt(map: MapName, pos: Vec3): LadderContact | null {
   if (pos.y < bottomY - 0.2 || pos.y > topY + 0.35) return null;
   const normal = ladderNormal(collider);
   return { topY, bottomY, exit: ladderExit(collider, topY, normal), mount: ladderMount(collider, normal), normal };
+}
+
+export function bouncePadAt(map: MapName, pos: Vec3): ArenaBouncePad | null {
+  return ARENAS[map].bouncePads?.find((pad) => {
+    if (pos.y > pad.center.y + 1.35) return false;
+    const dx = pos.x - pad.center.x;
+    const dz = pos.z - pad.center.z;
+    return dx * dx + dz * dz <= pad.radius * pad.radius;
+  }) ?? null;
 }
 
 function ladderNormal(collider: ArenaCollider) {

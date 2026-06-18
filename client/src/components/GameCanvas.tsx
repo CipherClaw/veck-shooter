@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Line, Sky, Stars } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
+import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
 import { ArenaMap } from "./Maps";
@@ -227,7 +227,11 @@ function PlayerController() {
         pos.set(ladder.exit.x, ladder.exit.y, ladder.exit.z);
       }
     } else {
-      if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = 7.8;
+      const bouncePad = bouncePadAt(map, { x: pos.x, y: pos.y, z: pos.z });
+      if (bouncePad && previous.y <= 1.35 && pos.y <= 1.35 && verticalVelocity.current <= 0) {
+        verticalVelocity.current = bouncePad.launchVelocity;
+      }
+      if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = Math.max(verticalVelocity.current, 7.8);
       verticalVelocity.current -= 19 * step;
       pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
     }

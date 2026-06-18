@@ -1,4 +1,4 @@
-import { ARENAS, type ArenaCollider, type MapName } from "@veck/shared";
+import { ARENAS, type ArenaBouncePad, type ArenaCollider, type MapName } from "@veck/shared";
 
 function Tile({ collider }: { collider: ArenaCollider }) {
   const { center, size, color } = collider;
@@ -7,6 +7,21 @@ function Tile({ collider }: { collider: ArenaCollider }) {
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial color={color} roughness={0.74} metalness={0.02} />
     </mesh>
+  );
+}
+
+function BouncePad({ pad }: { pad: ArenaBouncePad }) {
+  return (
+    <group position={[pad.center.x, pad.center.y, pad.center.z]}>
+      <mesh receiveShadow>
+        <cylinderGeometry args={[pad.radius, pad.radius, pad.height, 36]} />
+        <meshStandardMaterial color={pad.color} roughness={0.38} metalness={0.08} />
+      </mesh>
+      <mesh position={[0, pad.height * 0.5 + 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[pad.radius * 0.62, 0.08, 10, 36]} />
+        <meshStandardMaterial color="#f8fff2" emissive={pad.color} emissiveIntensity={0.2} roughness={0.32} />
+      </mesh>
+    </group>
   );
 }
 
@@ -20,6 +35,7 @@ export function ArenaMap({ map }: { map: MapName }) {
       </mesh>
       <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, 0.025, 0]} />
       {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} />)}
+      {arena.bouncePads?.map((pad) => <BouncePad key={pad.id} pad={pad} />)}
       {map === "Pyramid" && <PyramidDetails />}
       {map === "Practice Range" && <PracticeDetails />}
       {map === "Forest" && <ForestDetails />}

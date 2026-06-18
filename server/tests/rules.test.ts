@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GameHub } from "../src/game";
 import { canDamage, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import { StatsStore } from "../src/store";
-import { ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
+import { BOUNCE_PAD_LAUNCH_SPEED, bouncePadAt, ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
   id,
@@ -107,5 +107,22 @@ describe("game rules", () => {
     const climbing = resolvePlayerPosition("Practice Range", { x: ladder!.mount.x, y: 7.8, z: ladder!.mount.z }, { x: 44, y: 7.5, z: 52.8 });
     expect(climbing).toMatchObject({ x: 44, y: 7.8 });
     expect(climbing.z).toBeCloseTo(52.8);
+  });
+
+  it("does not snap floor movement onto the practice right platform or approach ramp", () => {
+    const underPlatform = resolvePlayerPosition("Practice Range", { x: 28, y: 1.2, z: -23 }, { x: 28, y: 1.2, z: -15 });
+    expect(underPlatform.y).toBeCloseTo(1.2);
+
+    const atOldRamp = resolvePlayerPosition("Practice Range", { x: 14, y: 1.2, z: -13 }, { x: 14, y: 1.2, z: -3 });
+    expect(atOldRamp.y).toBeCloseTo(1.2);
+  });
+
+  it("keeps the practice right platform landable from above and exposes its bounce pad", () => {
+    const landed = resolvePlayerPosition("Practice Range", { x: 28, y: 6.55, z: -23 }, { x: 28, y: 6.8, z: -23 });
+    expect(landed).toMatchObject({ x: 28, y: 6.55, z: -23 });
+
+    const pad = bouncePadAt("Practice Range", { x: 18.4, y: 1.2, z: -15.6 });
+    expect(pad?.id).toBe("practice-right-platform-bounce");
+    expect(pad?.launchVelocity).toBe(BOUNCE_PAD_LAUNCH_SPEED);
   });
 });
