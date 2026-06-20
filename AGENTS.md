@@ -22,7 +22,8 @@ The Discord bridge is configured in `/home/ssm-user/work/projects/discord-codex-
 
 Railway CLI auth is non-interactive on this host. Do not rely on cached `railway login` state. Use the shared token wrapper for all Railway commands:
 
-- Token file: `/home/ssm-user/work/secrets/railway.env`
+- Parameter Store path: `/codex/secrets/railway`
+- Fallback token file: `/home/ssm-user/work/secrets/railway.env`
 - Wrapper: `/home/ssm-user/work/shared/scripts/railway-with-token.sh`
 - Linked Railway project: `veck-shooter`
 - Environment: `production`
