@@ -37,7 +37,7 @@ function Lobby() {
       <section className="lobby-shell">
         <header className="brand">
           <div>
-            <h1>Veck Shooter</h1>
+            <h1>Shooter</h1>
             <p>Blocky browser arena FPS</p>
           </div>
           <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
