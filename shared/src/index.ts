@@ -59,7 +59,7 @@ export type WeaponSpec = {
 
 export const WEAPONS: Record<WeaponId, WeaponSpec> = {
   revolver: { id: "revolver", name: "Revolver", ammo: 6, reloadMs: 1300, fireMs: 430, damage: 34, range: 70, spread: 0.018, pellets: 1 },
-  sniper: { id: "sniper", name: "Sniper Rifle", ammo: 4, reloadMs: 1900, fireMs: 1050, damage: 88, range: 150, spread: 0.004, pellets: 1 },
+  sniper: { id: "sniper", name: "Sniper Rifle", ammo: 4, reloadMs: 1900, fireMs: 1050, damage: 88, range: 240, spread: 0.0025, pellets: 1 },
   grenade: { id: "grenade", name: "Grenade", ammo: 2, reloadMs: 2100, fireMs: 900, damage: 115, range: 8, spread: 0.01, pellets: 1, projectile: "grenade" },
   shottie: { id: "shottie", name: "Shottie", ammo: 3, reloadMs: 1500, fireMs: 760, damage: 14, range: 32, spread: 0.15, pellets: 8 },
   watergun: { id: "watergun", name: "Water Gun", ammo: 100, reloadMs: 1800, fireMs: 80, damage: 5, range: 30, spread: 0.04, pellets: 1, projectile: "stream" }

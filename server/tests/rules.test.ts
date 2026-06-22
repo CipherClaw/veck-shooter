@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GameHub } from "../src/game";
 import { canDamage, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import { StatsStore } from "../src/store";
-import { BOUNCE_PAD_LAUNCH_SPEED, bouncePadAt, ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
+import { BOUNCE_PAD_LAUNCH_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
   id,
@@ -47,6 +47,11 @@ describe("game rules", () => {
     expect(weaponDamage("grenade", 0)).toBe(115);
     expect(weaponDamage("grenade", 8)).toBe(28);
     expect(weaponDamage("grenade", 9)).toBe(0);
+  });
+
+  it("lets sniper shots cover long sightlines", () => {
+    expect(WEAPONS.sniper.range).toBeGreaterThanOrEqual(240);
+    expect(WEAPONS.sniper.range).toBeGreaterThan(WEAPONS.revolver.range * 3);
   });
 
   it("does not fire the watergun unless a full stream tick is available", () => {

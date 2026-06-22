@@ -50,7 +50,15 @@ h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff;
 .scoreboard { top: 82px; right: 12px; width: 240px; display:grid; gap:5px; }
 .scoreboard div { display:flex; justify-content:space-between; }
 .scoreboard .mine { color:#86efac; }
-.killfeed { top: 82px; left: 12px; display:grid; gap:6px; min-width: 250px; color:#fef3c7; }
+.killfeed { top: 82px; left: 12px; display:grid; gap:6px; width:min(310px, calc(100vw - 24px)); max-height:152px; overflow:hidden; color:#fef3c7; }
+.killfeed div { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.health-hud { left:50%; bottom:18px; transform:translateX(-50%); display:grid; grid-template-columns:auto minmax(160px, 240px) 38px; align-items:center; gap:10px; color:#e0f2fe; font-weight:900; }
+.health-hud span { color:#bfdbfe; font-size:12px; text-transform:uppercase; }
+.health-hud strong { color:#fff; text-align:right; text-shadow:0 2px 0 #000; }
+.health-track { height:14px; border:3px solid #111827; border-radius:8px; background:#0f172a; overflow:hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,.28); }
+.health-track div { height:100%; border-radius:5px; background:#22c55e; transition:width 140ms ease, background-color 140ms ease; }
+.health-hud.low .health-track div { background:#ef4444; }
+.health-hud.low strong { color:#fecaca; }
 .weapon-hud { right: 12px; bottom: 12px; pointer-events:auto; }
 .ammo-card { margin-top: 9px; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 12px; border:3px solid #111827; border-radius:8px; background:#0f172a; color:#e0f2fe; font-weight:900; }
 .ammo-card span { color:#bfdbfe; font-size:12px; text-transform:uppercase; }

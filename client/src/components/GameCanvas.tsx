@@ -16,11 +16,12 @@ export function GameCanvas() {
   const snapshot = useGame((s) => s.snapshot);
   const playerId = useGame((s) => s.playerId);
   const fx = useGame((s) => s.fx);
+  const scoped = useGame((s) => s.scoped);
   const map = snapshot?.game.map ?? "Pyramid";
   return (
     <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 74, position: [0, 2, 8] }}>
       <color attach="background" args={["#8fd3ff"]} />
-      <fog attach="fog" args={["#b7e5ff", 36, 86]} />
+      <fog attach="fog" args={["#b7e5ff", scoped ? 110 : 36, scoped ? 260 : 104]} />
       <ambientLight intensity={0.55} />
       <hemisphereLight args={["#bfe8ff", "#8f7d62", 0.45]} />
       <directionalLight
@@ -101,7 +102,7 @@ function PlayerController() {
       pitch.current = Math.max(-1.25, Math.min(1.25, pitch.current - e.movementY * 0.0022));
     };
     const requestLock = () => {
-      if (!me?.alive || !matchActive || controlsBlocked() || document.pointerLockElement === gl.domElement || performance.now() < lockCooldown) return;
+      if (!latestPlayer.current?.alive || !matchActive || controlsBlocked() || document.pointerLockElement === gl.domElement || performance.now() < lockCooldown) return;
       gl.domElement.requestPointerLock().catch(() => undefined);
     };
     const fire = (e: MouseEvent) => {
@@ -159,7 +160,7 @@ function PlayerController() {
       window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
-  }, [camera, gl.domElement, lockCooldown, matchActive, weapon]);
+  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, weapon]);
 
   useEffect(() => {
     if (!me?.alive || !matchActive) {
@@ -198,7 +199,7 @@ function PlayerController() {
     }
     const step = Math.min(dt, 0.05);
     const perspective = camera as THREE.PerspectiveCamera;
-    perspective.fov = THREE.MathUtils.damp(perspective.fov, scoped ? 21 : 74, scoped ? 10 : 8, step);
+    perspective.fov = THREE.MathUtils.damp(perspective.fov, scoped ? 16 : 74, scoped ? 10 : 8, step);
     perspective.updateProjectionMatrix();
     const forward = new THREE.Vector3(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     const right = new THREE.Vector3(-forward.z, 0, forward.x);

@@ -167,6 +167,7 @@ function Match() {
         {scores.map((p) => <div key={p.id} className={p.id === playerId ? "mine" : ""}><span>{p.name}</span><b>{p.kills}/{p.deaths}</b></div>)}
       </div>
       <div className="hud killfeed">{snapshot.killFeed.map((k) => <div key={k}>{k}</div>)}</div>
+      {!ended && me?.alive && <HealthBar health={me.health} />}
       {!ended && <div className="hud weapon-hud">
         <WeaponSelect weapon={weapon} setWeapon={setWeapon} compact />
         <div className="ammo-card">
@@ -250,6 +251,17 @@ function ScopeOverlay() {
         <span className="scope-line horizontal" />
         <span className="scope-line vertical" />
       </div>
+    </div>
+  );
+}
+
+function HealthBar({ health }: { health: number }) {
+  const value = Math.max(0, Math.min(100, Math.round(health)));
+  return (
+    <div className={`hud health-hud ${value <= 30 ? "low" : ""}`}>
+      <span>Health</span>
+      <div className="health-track"><div style={{ width: `${value}%` }} /></div>
+      <strong>{value}</strong>
     </div>
   );
 }
