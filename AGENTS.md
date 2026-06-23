@@ -20,23 +20,8 @@ The Discord bridge is configured in `/srv/codex-work/projects/discord-codex-brid
 
 ## Railway
 
-Railway CLI auth is non-interactive on this host. Do not rely on cached `railway login` state. Use the shared token wrapper for all Railway commands:
+Use the shared token wrapper per the workspace root `AGENTS.md` ("Railway Credentials
+And CLI"). Do not rely on cached `railway login`.
 
-- Parameter Store path: `/codex/secrets/railway`
-- Fallback token file: `/srv/codex-work/secrets/railway.env`
-- Wrapper: `/srv/codex-work/shared/scripts/railway-with-token.sh`
-- Linked Railway project: `veck-shooter`
-- Environment: `production`
-- Service: `veck-shooter`
+- Railway project: `veck-shooter`, environment `production`, service `veck-shooter`
 - Public URL: `https://veck-shooter-production.up.railway.app`
-
-Useful commands from this repo:
-
-```sh
-/srv/codex-work/shared/scripts/railway-with-token.sh status
-/srv/codex-work/shared/scripts/railway-with-token.sh up --service veck-shooter --environment production --detach --message "Deploy <commit> <summary>"
-/srv/codex-work/shared/scripts/railway-with-token.sh deployment list --service veck-shooter --environment production --json
-/srv/codex-work/shared/scripts/railway-with-token.sh logs --service veck-shooter --environment production --lines 100
-```
-
-If a future checkout is not linked, run the wrapper with `link <project-id>` or `init` as appropriate instead of `railway login`. Never print Railway token values or copy them into repo files, logs, docs, or hosted environment notes.
