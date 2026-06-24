@@ -1,4 +1,4 @@
-export type MapName = "Pyramid" | "Practice Range" | "Forest";
+export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway";
 export type GameMode = "Free Play" | "Team Mode";
 export type Team = "red" | "green" | "none";
 export type WeaponId = "revolver" | "sniper" | "grenade" | "shottie" | "watergun";
@@ -65,7 +65,7 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
   watergun: { id: "watergun", name: "Water Gun", ammo: 100, reloadMs: 1800, fireMs: 80, damage: 5, range: 30, spread: 0.04, pellets: 1, projectile: "stream" }
 };
 
-export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest"];
+export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway"];
 export const DURATIONS = [3, 5, 10, 15] as const;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
@@ -289,6 +289,57 @@ const forestColliders: ArenaCollider[] = [
   ...[[-18, 5], [18, -10], [9, 34], [-36, -12], [34, 18]].map(([x, z], i) => ({ id: `forest-log-${i}`, center: { x, y: 0.55, z }, size: { x: 8, y: 1.1, z: 2.1 }, color: "#8a8176" }))
 ];
 
+const subwayWalkwayTop = 1.3;
+const subwayDeckTop = 7.0;
+const subwayStepHeight = 0.45;
+const subwayStepStandYs = [3.15, 3.8, 4.45, 5.1, 5.75, 6.4, 7.05, 7.7];
+
+function subwayStairFlight(side: -1 | 1, z: number): ArenaCollider[] {
+  return subwayStepStandYs.map((standY, i) => {
+    const t = subwayStepStandYs.length === 1 ? 0 : i / (subwayStepStandYs.length - 1);
+    const x = side * (16 + t * 14);
+    const top = standY - 1.2;
+    return {
+      id: `subway-stair-${side > 0 ? "east" : "west"}-${z > 0 ? "north" : "south"}-${i}`,
+      center: { x, y: top - subwayStepHeight / 2, z },
+      size: { x: i === subwayStepStandYs.length - 1 ? 12 : 3.4, y: subwayStepHeight, z: 4.2 },
+      color: i % 2 === 0 ? "#8b8f94" : "#747a80",
+      climbable: true
+    };
+  });
+}
+
+const subwayColumnZs = [-48, -36, -24, -12, 0, 12, 24, 36, 48];
+const subwayColliders: ArenaCollider[] = [
+  { id: "subway-platform-west", center: { x: -16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
+  { id: "subway-platform-east", center: { x: 16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
+  { id: "subway-deck-center", center: { x: 0, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 48, y: 0.8, z: 48 }, color: "#2f3236" },
+  { id: "subway-deck-north-road", center: { x: 0, y: subwayDeckTop - 0.4, z: 41 }, size: { x: 48, y: 0.8, z: 34 }, color: "#2f3236" },
+  { id: "subway-deck-south-road", center: { x: 0, y: subwayDeckTop - 0.4, z: -41 }, size: { x: 48, y: 0.8, z: 34 }, color: "#2f3236" },
+  { id: "subway-deck-east-road", center: { x: 41, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 34, y: 0.8, z: 48 }, color: "#2f3236" },
+  { id: "subway-deck-west-road", center: { x: -41, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 34, y: 0.8, z: 48 }, color: "#2f3236" },
+  { id: "subway-wall-west", center: { x: -57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
+  { id: "subway-wall-east", center: { x: 57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
+  { id: "subway-wall-north", center: { x: 0, y: 3.0, z: 57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
+  { id: "subway-wall-south", center: { x: 0, y: 3.0, z: -57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
+  ...subwayColumnZs.map((z) => ({ id: `subway-column-center-${z}`, center: { x: 0, y: 2.95, z }, size: { x: 1.35, y: 5.9, z: 1.35 }, color: "#14532d" })),
+  ...[-11, 11, -21, 21].flatMap((x) => subwayColumnZs.filter((_, i) => i % 2 === 0).map((z) => ({
+    id: `subway-column-edge-${x}-${z}`,
+    center: { x, y: 2.7, z },
+    size: { x: 1.15, y: 5.4, z: 1.15 },
+    color: Math.abs(x) === 11 ? "#36404a" : "#14532d"
+  }))),
+  { id: "subway-train-a", center: { x: -6, y: 1.65, z: -27 }, size: { x: 6.4, y: 3.3, z: 25 }, color: "#b8bcc2" },
+  { id: "subway-train-b", center: { x: 6, y: 1.65, z: 27 }, size: { x: 6.4, y: 3.3, z: 25 }, color: "#b8bcc2" },
+  ...subwayStairFlight(-1, 30),
+  ...subwayStairFlight(-1, -30),
+  ...subwayStairFlight(1, 30),
+  ...subwayStairFlight(1, -30),
+  ...[
+    [-38, -34], [38, 34], [-46, 12], [45, -16]
+  ].map(([x, z], i) => ({ id: `subway-taxi-cover-${i}`, center: { x, y: 7.6, z }, size: { x: 5.2, y: 1.2, z: 2.7 }, color: "#f2c230" }))
+];
+
 export const ARENAS: Record<MapName, ArenaDefinition> = {
   Pyramid: {
     floorSize: 104,
@@ -325,6 +376,17 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     colliders: forestColliders,
     trees: forestTrees,
     rocks: forestRocks
+  },
+  Subway: {
+    floorSize: 124,
+    bounds: 58,
+    floorColor: "#2b2e33",
+    gridColor: "#3f454b",
+    spawns: [
+      { x: 0, y: 8.2, z: 0 }, { x: 0, y: 8.2, z: 42 }, { x: 42, y: 8.2, z: 0 }, { x: -42, y: 8.2, z: 0 },
+      { x: -16.5, y: 2.5, z: -45 }, { x: 16.5, y: 2.5, z: 45 }, { x: -2.8, y: 1.2, z: 8 }, { x: 2.8, y: 1.2, z: -8 }
+    ],
+    colliders: subwayColliders
   }
 };
 

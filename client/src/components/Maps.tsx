@@ -1,3 +1,4 @@
+import { Text } from "@react-three/drei";
 import { ARENAS, type ArenaBouncePad, type ArenaCollider, type MapName } from "@veck/shared";
 
 function Tile({ collider }: { collider: ArenaCollider }) {
@@ -39,12 +40,13 @@ export function ArenaMap({ map }: { map: MapName }) {
       {map === "Pyramid" && <PyramidDetails />}
       {map === "Practice Range" && <PracticeDetails />}
       {map === "Forest" && <ForestDetails />}
+      {map === "Subway" && <SubwayDetails />}
     </group>
   );
 }
 
 function hiddenCollider(id: string) {
-  return id.startsWith("forest-tree") || id.startsWith("forest-rock") || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
+  return id.startsWith("forest-tree") || id.startsWith("forest-rock") || id.startsWith("subway-train") || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
 }
 
 function PyramidDetails() {
@@ -139,6 +141,354 @@ function Tree({ x, z }: { x: number; z: number }) {
         <coneGeometry args={[1.8, 2.55, 6]} />
         <meshStandardMaterial color="#2ea44f" roughness={0.8} />
       </mesh>
+    </group>
+  );
+}
+
+function SubwayDetails() {
+  return (
+    <group>
+      <SubwayTracks />
+      <SubwayPlatforms />
+      <SubwayStationWalls />
+      <SubwayLighting />
+      <StreetMarkings />
+      <SubwayEntrances />
+      <SubwaySigns />
+      <SubwayTrain x={-6} z={-27} route="A" />
+      <SubwayTrain x={6} z={27} route="7" />
+      {[-48, -36, -24, -12, 0, 12, 24, 36, 48].map((z) => (
+        <ColumnWrap key={z} x={0} z={z} route={z % 24 === 0 ? "4" : "N"} />
+      ))}
+      <StreetProps />
+    </group>
+  );
+}
+
+function SubwayTracks() {
+  const ties = Array.from({ length: 23 }, (_, i) => -55 + i * 5);
+  return (
+    <group>
+      {[-6, 6].map((trackX) => (
+        <group key={trackX}>
+          {[-2.7, 2.7].map((railOffset) => (
+            <mesh key={railOffset} position={[trackX + railOffset, 0.12, 0]} castShadow receiveShadow>
+              <boxGeometry args={[0.18, 0.24, 112]} />
+              <meshStandardMaterial color="#8a8f99" roughness={0.38} metalness={0.55} />
+            </mesh>
+          ))}
+          {ties.map((z) => (
+            <mesh key={z} position={[trackX, 0.08, z]} receiveShadow>
+              <boxGeometry args={[7.2, 0.16, 0.55]} />
+              <meshStandardMaterial color="#4a3b2c" roughness={0.86} />
+            </mesh>
+          ))}
+          <mesh position={[trackX + 4.55, 0.23, 0]} castShadow>
+            <boxGeometry args={[0.36, 0.22, 108]} />
+            <meshStandardMaterial color="#c8552b" roughness={0.62} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 0.035, 0]} receiveShadow>
+        <boxGeometry args={[1.8, 0.07, 112]} />
+        <meshStandardMaterial color="#22262b" roughness={0.95} />
+      </mesh>
+    </group>
+  );
+}
+
+function SubwayPlatforms() {
+  return (
+    <group>
+      {[-11.05, 11.05].map((x) => (
+        <mesh key={x} position={[x, 1.34, 0]} receiveShadow>
+          <boxGeometry args={[0.7, 0.08, 108]} />
+          <meshStandardMaterial color="#ffd23f" emissive="#f5c518" emissiveIntensity={0.08} roughness={0.58} />
+        </mesh>
+      ))}
+      {[-16.5, 16.5].map((x) => (
+        <group key={x}>
+          {Array.from({ length: 18 }, (_, i) => (
+            <mesh key={i} position={[x, 1.36, -51 + i * 6]} receiveShadow>
+              <boxGeometry args={[8.8, 0.035, 0.08]} />
+              <meshStandardMaterial color="#b8b1a7" roughness={0.7} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function SubwayStationWalls() {
+  return (
+    <group>
+      {[-56.55, 56.55].map((x) => (
+        <group key={x}>
+          <mesh position={[x, 2.8, 0]} receiveShadow>
+            <boxGeometry args={[0.08, 2.35, 104]} />
+            <meshStandardMaterial color="#f0efe9" roughness={0.28} metalness={0.02} />
+          </mesh>
+          <mesh position={[x - Math.sign(x) * 0.05, 3.15, 0]}>
+            <boxGeometry args={[0.12, 0.24, 104]} />
+            <meshStandardMaterial color="#2850ad" emissive="#2850ad" emissiveIntensity={0.05} roughness={0.44} />
+          </mesh>
+          {[-36, 0, 36].map((z) => (
+            <StationName key={z} x={x - Math.sign(x) * 0.08} z={z} rotationY={x > 0 ? -Math.PI / 2 : Math.PI / 2} />
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function StationName({ x, z, rotationY }: { x: number; z: number; rotationY: number }) {
+  return (
+    <group position={[x, 3.55, z]} rotation={[0, rotationY, 0]}>
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[5.2, 0.9, 0.08]} />
+        <meshStandardMaterial color="#111111" roughness={0.5} />
+      </mesh>
+      <Text position={[0, 0.02, 0.055]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
+        14 ST - UNION SQ
+      </Text>
+    </group>
+  );
+}
+
+function SubwayLighting() {
+  return (
+    <group>
+      {[-16, 0, 16].map((x) => [-42, -24, -6, 12, 30, 48].map((z) => (
+        <group key={`${x}-${z}`} position={[x, 5.95, z]}>
+          <mesh>
+            <boxGeometry args={[5.8, 0.08, 0.7]} />
+            <meshStandardMaterial color="#f6f7e9" emissive="#f6f7e9" emissiveIntensity={0.8} roughness={0.18} />
+          </mesh>
+          <pointLight color="#f6f7e9" intensity={0.18} distance={15} />
+        </group>
+      )))}
+    </group>
+  );
+}
+
+function StreetMarkings() {
+  return (
+    <group>
+      {[-41, 0, 41].map((z) => (
+        <mesh key={`yellow-z-${z}`} position={[0, 7.03, z]} receiveShadow>
+          <boxGeometry args={[1.2, 0.035, 10]} />
+          <meshStandardMaterial color="#f5c518" roughness={0.6} />
+        </mesh>
+      ))}
+      {[-41, 0, 41].map((x) => (
+        <mesh key={`yellow-x-${x}`} position={[x, 7.035, 0]} receiveShadow>
+          <boxGeometry args={[10, 0.035, 1.2]} />
+          <meshStandardMaterial color="#f5c518" roughness={0.6} />
+        </mesh>
+      ))}
+      {[-22, 22].flatMap((z) => [-8, -4, 0, 4, 8].map((x) => (
+        <mesh key={`cross-z-${z}-${x}`} position={[x, 7.05, z]} receiveShadow>
+          <boxGeometry args={[2.4, 0.04, 0.55]} />
+          <meshStandardMaterial color="#e8e8e0" roughness={0.54} />
+        </mesh>
+      )))}
+      {[-22, 22].flatMap((x) => [-8, -4, 0, 4, 8].map((z) => (
+        <mesh key={`cross-x-${x}-${z}`} position={[x, 7.055, z]} receiveShadow>
+          <boxGeometry args={[0.55, 0.04, 2.4]} />
+          <meshStandardMaterial color="#e8e8e0" roughness={0.54} />
+        </mesh>
+      )))}
+      {[-16, 16].flatMap((x) => [-16, 16].map((z) => (
+        <mesh key={`manhole-${x}-${z}`} position={[x, 7.075, z]} rotation={[-Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[1.05, 1.05, 0.06, 36]} />
+          <meshStandardMaterial color="#464a4e" roughness={0.7} metalness={0.22} />
+        </mesh>
+      )))}
+    </group>
+  );
+}
+
+function SubwayEntrances() {
+  return (
+    <group>
+      {[-1, 1].flatMap((side) => [-30, 30].map((z) => (
+        <Entrance key={`${side}-${z}`} x={side * 30} z={z} />
+      )))}
+    </group>
+  );
+}
+
+function Entrance({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 7.05, z]}>
+      {[-2.5, 2.5].map((railZ) => (
+        <mesh key={railZ} position={[0, 0.65, railZ]} castShadow>
+          <boxGeometry args={[5.2, 1.3, 0.18]} />
+          <meshStandardMaterial color="#14532d" roughness={0.54} metalness={0.18} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.35, 0]} castShadow>
+        <boxGeometry args={[5.6, 0.35, 0.42]} />
+        <meshStandardMaterial color="#111111" roughness={0.38} />
+      </mesh>
+      <Text position={[0, 1.58, 0.24]} fontSize={0.38} color="#ffffff" anchorX="center" anchorY="middle">
+        SUBWAY
+      </Text>
+      {[-2.8, 2.8].map((lampX) => (
+        <mesh key={lampX} position={[lampX, 1.78, 0]} castShadow>
+          <sphereGeometry args={[0.42, 20, 12]} />
+          <meshStandardMaterial color="#2bb24c" emissive="#2bb24c" emissiveIntensity={0.75} roughness={0.2} />
+        </mesh>
+      ))}
+      <pointLight color="#2bb24c" intensity={0.35} distance={8} position={[0, 1.9, 0]} />
+    </group>
+  );
+}
+
+function SubwaySigns() {
+  const signs = [
+    { x: -16.5, z: -18, routes: ["1", "2", "3"] },
+    { x: 16.5, z: 18, routes: ["4", "5", "6"] },
+    { x: -16.5, z: 34, routes: ["A", "C", "E"] },
+    { x: 16.5, z: -34, routes: ["N", "Q", "R"] }
+  ];
+  return (
+    <group>
+      {signs.map((sign) => (
+        <group key={`${sign.x}-${sign.z}`} position={[sign.x, 4.65, sign.z]}>
+          <mesh castShadow>
+            <boxGeometry args={[5.8, 1.1, 0.18]} />
+            <meshStandardMaterial color="#050505" roughness={0.42} />
+          </mesh>
+          {sign.routes.map((route, i) => <RouteBullet key={route} route={route} x={-1.8 + i * 1.8} y={0} z={0.12} />)}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function ColumnWrap({ x, z, route }: { x: number; z: number; route: string }) {
+  return (
+    <group position={[x, 3.35, z]}>
+      <mesh position={[0, 0, -0.72]}>
+        <boxGeometry args={[1.5, 0.75, 0.08]} />
+        <meshStandardMaterial color="#111111" roughness={0.45} />
+      </mesh>
+      <RouteBullet route={route} x={0} y={0} z={-0.78} />
+    </group>
+  );
+}
+
+function RouteBullet({ route, x, y, z }: { route: string; x: number; y: number; z: number }) {
+  const color = routeColor(route);
+  return (
+    <group position={[x, y, z]}>
+      <mesh>
+        <circleGeometry args={[0.45, 28]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.22} roughness={0.4} />
+      </mesh>
+      <Text position={[0, 0, 0.025]} fontSize={0.42} color={route === "N" || route === "Q" || route === "R" ? "#111111" : "#ffffff"} anchorX="center" anchorY="middle">
+        {route}
+      </Text>
+    </group>
+  );
+}
+
+function routeColor(route: string) {
+  if (["1", "2", "3"].includes(route)) return "#ee352e";
+  if (["4", "5", "6"].includes(route)) return "#00933c";
+  if (route === "7") return "#b933ad";
+  if (["A", "C", "E"].includes(route)) return "#2850ad";
+  if (["B", "D", "F", "M"].includes(route)) return "#ff6319";
+  if (["N", "Q", "R", "W"].includes(route)) return "#fccc0a";
+  if (route === "G") return "#6cbe45";
+  return "#a7a9ac";
+}
+
+function SubwayTrain({ x, z, route }: { x: number; z: number; route: string }) {
+  return (
+    <group position={[x, 1.65, z]}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[6.4, 3.3, 25]} />
+        <meshStandardMaterial color="#b8bcc2" roughness={0.32} metalness={0.48} />
+      </mesh>
+      <mesh position={[0, 0.78, -12.6]}>
+        <boxGeometry args={[4.8, 1.15, 0.1]} />
+        <meshStandardMaterial color="#1c2733" emissive="#102030" emissiveIntensity={0.12} roughness={0.22} />
+      </mesh>
+      {[-8, -4, 0, 4, 8].map((windowZ) => (
+        <mesh key={windowZ} position={[3.24, 0.65, windowZ]}>
+          <boxGeometry args={[0.1, 0.9, 2.2]} />
+          <meshStandardMaterial color="#1c2733" emissive="#102030" emissiveIntensity={0.08} roughness={0.25} />
+        </mesh>
+      ))}
+      {[-6, 6].map((doorZ) => (
+        <mesh key={doorZ} position={[3.3, -0.25, doorZ]}>
+          <boxGeometry args={[0.08, 2.25, 1.6]} />
+          <meshStandardMaterial color="#d8dce0" roughness={0.36} metalness={0.42} />
+        </mesh>
+      ))}
+      <mesh position={[3.33, 0.18, 0]}>
+        <boxGeometry args={[0.08, 0.18, 22]} />
+        <meshStandardMaterial color="#0039a6" roughness={0.4} />
+      </mesh>
+      <mesh position={[3.34, -0.08, 0]}>
+        <boxGeometry args={[0.08, 0.16, 22]} />
+        <meshStandardMaterial color="#ee352e" roughness={0.4} />
+      </mesh>
+      <group position={[0, 0.72, -12.72]}>
+        <RouteBullet route={route} x={0} y={0} z={0} />
+      </group>
+    </group>
+  );
+}
+
+function StreetProps() {
+  return (
+    <group>
+      {[
+        [-28, -10], [28, 10]
+      ].map(([x, z]) => (
+        <TrafficLight key={`${x}-${z}`} x={x} z={z} />
+      ))}
+      <mesh position={[-12, 7.55, 18]} castShadow>
+        <cylinderGeometry args={[0.28, 0.34, 1, 16]} />
+        <meshStandardMaterial color="#f5c518" roughness={0.48} />
+      </mesh>
+      <mesh position={[-12, 8.15, 18]} castShadow>
+        <sphereGeometry args={[0.38, 16, 10]} />
+        <meshStandardMaterial color="#f5c518" roughness={0.48} />
+      </mesh>
+    </group>
+  );
+}
+
+function TrafficLight({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 7.0, z]}>
+      <mesh position={[0, 2.1, 0]} castShadow>
+        <cylinderGeometry args={[0.1, 0.1, 4.2, 10]} />
+        <meshStandardMaterial color="#36404a" roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[0.85, 4.05, 0]} castShadow>
+        <boxGeometry args={[1.2, 0.35, 0.28]} />
+        <meshStandardMaterial color="#36404a" roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[1.55, 3.65, 0]} castShadow>
+        <boxGeometry args={[0.42, 1.05, 0.32]} />
+        <meshStandardMaterial color="#1f2429" roughness={0.44} />
+      </mesh>
+      {[
+        ["#ef4444", 3.95],
+        ["#f5c518", 3.65],
+        ["#22c55e", 3.35]
+      ].map(([color, y]) => (
+        <mesh key={color} position={[1.56, y as number, -0.18]}>
+          <circleGeometry args={[0.11, 16]} />
+          <meshStandardMaterial color={color as string} emissive={color as string} emissiveIntensity={0.45} roughness={0.28} />
+        </mesh>
+      ))}
     </group>
   );
 }
