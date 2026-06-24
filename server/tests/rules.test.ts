@@ -122,6 +122,16 @@ describe("game rules", () => {
     expect(atOldRamp.y).toBeCloseTo(1.2);
   });
 
+  it("keeps floor movement under the practice left platform from snapping upward", () => {
+    const underPlatform = resolvePlayerPosition("Practice Range", { x: -26, y: 1.2, z: 22 }, { x: -26, y: 1.2, z: 14 });
+    expect(underPlatform.y).toBeCloseTo(1.2);
+  });
+
+  it("keeps floor movement under the practice back platform from snapping upward", () => {
+    const underPlatform = resolvePlayerPosition("Practice Range", { x: 0, y: 1.2, z: 43 }, { x: 0, y: 1.2, z: 36 });
+    expect(underPlatform.y).toBeCloseTo(1.2);
+  });
+
   it("keeps the practice right platform landable from above and exposes its bounce pad", () => {
     const landed = resolvePlayerPosition("Practice Range", { x: 28, y: 6.55, z: -23 }, { x: 28, y: 6.8, z: -23 });
     expect(landed).toMatchObject({ x: 28, y: 6.55, z: -23 });

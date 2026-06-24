@@ -72,6 +72,10 @@ export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;
 export const LADDER_CLIMB_SPEED = 4.2;
 export const BOUNCE_PAD_LAUNCH_SPEED = 13.8;
+export const HEALTH_PACK_HEAL = 35;
+export const HEALTH_PACK_PICKUP_RADIUS = 1.6;
+export const HEALTH_PACK_RESPAWN_MS = 18000;
+export const MAX_HEALTH_PACKS = 3;
 
 export type PlayerStats = {
   kills: number;
@@ -128,6 +132,7 @@ export type GameSnapshot = {
   players: PlayerSnapshot[];
   grenades: GrenadeSnapshot[];
   explosions: ExplosionSnapshot[];
+  healthPacks: HealthPackSnapshot[];
   killFeed: string[];
   winner?: string;
 };
@@ -145,6 +150,11 @@ export type ExplosionSnapshot = {
   position: Vec3;
   createdAt: number;
   radius: number;
+};
+
+export type HealthPackSnapshot = {
+  id: string;
+  position: Vec3;
 };
 
 export type ClientInput = {
@@ -334,7 +344,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     if (collider.ladder) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     const bottom = collider.center.y - collider.size.y / 2;
-    const canStand = collider.climbable || top - lastGround <= 0.95 || resolved.y >= top - 0.1;
+    const canStand = (collider.climbable && bottom <= lastGround + 0.95) || top - lastGround <= 0.95 || resolved.y >= top - 0.1;
     if (canStand && resolved.y >= top - 0.65) {
       resolved.y = Math.max(resolved.y, top);
       ground = Math.max(ground, top);
@@ -367,7 +377,8 @@ function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2) {
     if (collider.ladder) continue;
     if (!intersectsXZ(pos, collider)) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
-    if (collider.climbable || top - previousGround <= 0.95 || pos.y >= top - 0.25) y = Math.max(y, top);
+    const bottom = collider.center.y - collider.size.y / 2;
+    if ((collider.climbable && bottom <= previousGround + 0.95) || top - previousGround <= 0.95 || pos.y >= top - 0.25) y = Math.max(y, top);
   }
   return y;
 }

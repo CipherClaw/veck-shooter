@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
+import { beep } from "../game/audio";
 import { ArenaMap } from "./Maps";
 import { Avatar } from "./Avatar";
 import { WeaponModel } from "./WeaponModels";
@@ -41,6 +42,7 @@ export function GameCanvas() {
         {snapshot?.players.map((p) => <Avatar key={p.id} player={p} mine={p.id === playerId} />)}
         {snapshot?.grenades.map((grenade) => <GrenadeProjectile key={grenade.id} position={grenade.position} />)}
         {snapshot?.explosions.map((explosion) => <ExplosionFx key={explosion.id} explosion={explosion} />)}
+        {snapshot?.healthPacks?.map((pack) => <HealthPack key={pack.id} position={pack.position} />)}
         {fx.map((f) => <ShotFx key={f.id} fx={f} />)}
         <RendererEvents />
         <PlayerController />
@@ -71,6 +73,7 @@ function PlayerController() {
   const latestPlayer = useRef<PlayerSnapshot>();
   const recoil = useRef(0);
   const bob = useRef(0);
+  const scopedRef = useRef(false);
   const [locked, setLocked] = useState(false);
   const [lockCooldown, setLockCooldown] = useState(0);
 
@@ -91,6 +94,10 @@ function PlayerController() {
   }, [scoped, setScoped]);
 
   useEffect(() => {
+    scopedRef.current = scoped;
+  }, [scoped]);
+
+  useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (controlsBlocked()) return;
       keys.add(e.code);
@@ -98,8 +105,9 @@ function PlayerController() {
     const up = (e: KeyboardEvent) => keys.delete(e.code);
     const move = (e: MouseEvent) => {
       if (document.pointerLockElement !== gl.domElement || controlsBlocked()) return;
-      yaw.current -= e.movementX * 0.0022;
-      pitch.current = Math.max(-1.25, Math.min(1.25, pitch.current - e.movementY * 0.0022));
+      const sensitivity = 0.0022 * (scopedRef.current ? 0.32 : 1);
+      yaw.current -= e.movementX * sensitivity;
+      pitch.current = Math.max(-1.25, Math.min(1.25, pitch.current - e.movementY * sensitivity));
     };
     const requestLock = () => {
       if (!latestPlayer.current?.alive || !matchActive || controlsBlocked() || document.pointerLockElement === gl.domElement || performance.now() < lockCooldown) return;
@@ -120,7 +128,7 @@ function PlayerController() {
       if (now - lastLocalFire.current[weapon] < WEAPONS[weapon].fireMs) return;
       lastLocalFire.current[weapon] = now;
       firing.current = false;
-      spendLocalAmmo(optimisticAmmo.current, weapon);
+      if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep("reload", muted);
       recoil.current = Math.min(1, recoil.current + 0.85);
       shoot(camera, weapon, ++shotSeq.current);
     };
@@ -160,7 +168,7 @@ function PlayerController() {
       window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
-  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, weapon]);
+  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, muted, weapon]);
 
   useEffect(() => {
     if (!me?.alive || !matchActive) {
@@ -209,7 +217,7 @@ function PlayerController() {
     if (!controlsBlocked() && keys.has("KeyA")) dir.sub(right);
     if (!controlsBlocked() && keys.has("KeyD")) dir.add(right);
     const sprint = !controlsBlocked() && (keys.has("ShiftLeft") || keys.has("ShiftRight")) ? 1.7 : 1;
-    if (dir.lengthSq()) dir.normalize().multiplyScalar(15 * sprint);
+    if (dir.lengthSq()) dir.normalize().multiplyScalar(15 * sprint * (scoped ? 0.55 : 1));
     const accel = 1 - Math.exp(-18 * step);
     velocity.current.lerp(dir, accel);
     const previous = localPosition.current.clone();
@@ -252,7 +260,7 @@ function PlayerController() {
         setSpraying(false);
       } else if (performance.now() - lastLocalFire.current.watergun >= WEAPONS.watergun.fireMs) {
         lastLocalFire.current.watergun = performance.now();
-        spendLocalAmmo(optimisticAmmo.current, weapon);
+        if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep("reload", muted);
         setSpraying(true);
         recoil.current = Math.min(0.65, recoil.current + 0.14);
         shoot(camera, weapon, ++shotSeq.current);
@@ -360,7 +368,10 @@ function canLocalFire(player: PlayerSnapshot | undefined, weapon: WeaponId, opti
 }
 
 function spendLocalAmmo(ammo: Record<WeaponId, number>, weapon: WeaponId) {
-  ammo[weapon] = Math.max(0, (ammo[weapon] ?? 0) - weaponAmmoCost(weapon));
+  const cost = weaponAmmoCost(weapon);
+  const before = ammo[weapon] ?? 0;
+  ammo[weapon] = Math.max(0, before - cost);
+  return before >= cost && ammo[weapon] < cost;
 }
 
 function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?: Vec3 } }) {
@@ -410,6 +421,32 @@ function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?
       {shot.pellets.map(([start, end], i) => (
         <Line key={i} points={[start, end]} color={shot.color} lineWidth={shot.width} transparent opacity={0.95} />
       ))}
+    </group>
+  );
+}
+
+function HealthPack({ position }: { position: Vec3 }) {
+  const group = useRef<THREE.Group>(null);
+  const phase = useRef(Math.random() * Math.PI * 2);
+  useFrame((state) => {
+    if (!group.current) return;
+    group.current.position.y = position.y + 0.6 + Math.sin(state.clock.elapsedTime * 2.2 + phase.current) * 0.12;
+    group.current.rotation.y += 0.018;
+  });
+  return (
+    <group ref={group} position={[position.x, position.y + 0.6, position.z]} castShadow>
+      <mesh castShadow>
+        <boxGeometry args={[0.92, 0.46, 0.92]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.38} />
+      </mesh>
+      <mesh position={[0, 0.24, 0]} castShadow>
+        <boxGeometry args={[0.18, 0.04, 0.68]} />
+        <meshStandardMaterial color="#ef4444" roughness={0.42} />
+      </mesh>
+      <mesh position={[0, 0.265, 0]} castShadow>
+        <boxGeometry args={[0.68, 0.04, 0.18]} />
+        <meshStandardMaterial color="#ef4444" roughness={0.42} />
+      </mesh>
     </group>
   );
 }

@@ -1,5 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import type { ClientToServerEvents, ServerToClientEvents } from "@veck/shared";
+import type { ClientToServerEvents, ServerToClientEvents, Vec3 } from "@veck/shared";
 import { actions, useGame } from "../state/store";
 import { beep } from "./audio";
 
@@ -15,8 +15,14 @@ socket.on("stats", actions.stats);
 socket.on("joined", actions.joined);
 socket.on("snapshot", (snapshot) => {
   const state = useGame.getState();
+  const previousLocalPlayer = state.snapshot?.players.find((p) => p.id === state.playerId);
+  const nextLocalPlayer = snapshot.players.find((p) => p.id === state.playerId);
+  const listener = previousLocalPlayer?.position ?? nextLocalPlayer?.position;
   const nextExplosionIds = new Set(snapshot.explosions.map((explosion) => explosion.id));
-  if (snapshot.explosions.some((explosion) => !heardExplosionIds.has(explosion.id))) beep("explosion", state.muted);
+  for (const explosion of snapshot.explosions) {
+    if (!heardExplosionIds.has(explosion.id)) beep("explosion", state.muted, spatialVolume(listener, explosion.position));
+  }
+  if (previousLocalPlayer?.alive && nextLocalPlayer?.alive && nextLocalPlayer.health > previousLocalPlayer.health) beep("heal", state.muted);
   heardExplosionIds = nextExplosionIds;
   actions.snapshot(snapshot);
 });
@@ -25,6 +31,7 @@ socket.on("gameChat", actions.gameChat);
 socket.on("rejected", actions.error);
 socket.on("shotFx", (fx) => {
   const state = useGame.getState();
+  const listener = state.snapshot?.players.find((p) => p.id === state.playerId)?.position;
   state.addFx(fx);
   if (state.scoped && fx.weapon === "sniper" && fx.shooterId === state.playerId) {
     const shotAt = Date.now();
@@ -33,7 +40,17 @@ socket.on("shotFx", (fx) => {
       if (useGame.getState().scopeShotAt === shotAt) useGame.getState().setScopeShotAt(0);
     }, 150);
   }
-  beep(fx.explosion ? "explosion" : fx.weapon, state.muted);
+  const source = fx.explosion ?? fx.from;
+  const volume = fx.shooterId === state.playerId ? 1 : spatialVolume(listener, source);
+  beep(fx.explosion ? "explosion" : fx.weapon, state.muted, volume);
 });
 socket.on("hit", () => beep("hit", useGame.getState().muted));
 socket.on("killed", () => beep("kill", useGame.getState().muted));
+
+function spatialVolume(listener: Vec3 | undefined, source: Vec3) {
+  if (!listener) return 1;
+  const distance = Math.hypot(listener.x - source.x, listener.y - source.y, listener.z - source.z);
+  if (distance <= 14) return 1;
+  if (distance >= 75) return 0;
+  return Math.max(0, Math.min(1, 1 - (distance - 14) / 61));
+}

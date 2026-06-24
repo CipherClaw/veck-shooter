@@ -180,7 +180,11 @@ function Match() {
         <div className="modal">
           <h2>Respawning</h2>
           <WeaponSelect weapon={weapon} setWeapon={setWeapon} />
-          <button className="primary" onClick={() => socket.emit("respawn", weapon)}>Respawn</button>
+          <button className="primary" onClick={() => {
+            socket.emit("respawn", weapon);
+            const lock = document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.();
+            lock?.catch(() => undefined);
+          }}>Respawn</button>
           <button onClick={() => { socket.emit("leaveGame"); useGame.setState({ gameId: "", snapshot: undefined }); }}>Back to Lobby</button>
         </div>
       )}

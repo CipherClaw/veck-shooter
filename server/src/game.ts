@@ -1,7 +1,11 @@
 import { v4 as uuid } from "uuid";
 import {
   ARENAS,
+  HEALTH_PACK_HEAL,
+  HEALTH_PACK_PICKUP_RADIUS,
+  HEALTH_PACK_RESPAWN_MS,
   MAPS,
+  MAX_HEALTH_PACKS,
   MAX_PLAYERS,
   PLAYER_RADIUS,
   WEAPONS,
@@ -43,6 +47,11 @@ type RuntimeExplosion = {
   radius: number;
 };
 
+type RuntimeHealthPack = {
+  id: string;
+  position: Vec3;
+};
+
 type DamageEvent = {
   attackerSocketId: string;
   damage: number;
@@ -61,6 +70,8 @@ type RuntimeGame = {
   players: Map<string, RuntimePlayer>;
   grenades: RuntimeGrenade[];
   explosions: RuntimeExplosion[];
+  healthPacks: RuntimeHealthPack[];
+  nextHealthPackAt: number;
   damageEvents: DamageEvent[];
   chat: ChatMessage[];
   killFeed: string[];
@@ -99,6 +110,8 @@ export class GameHub {
       players: new Map(),
       grenades: [],
       explosions: [],
+      healthPacks: [],
+      nextHealthPackAt: now,
       damageEvents: [],
       chat: [],
       killFeed: [],
@@ -129,7 +142,7 @@ export class GameHub {
       deaths: 0,
       score: 0,
       lastFire: { revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0 },
-      ammo: { revolver: 6, sniper: 4, grenade: 2, shottie: 3, watergun: 100 },
+      ammo: fullAmmo(),
       reloadingWeapon: undefined,
       reloadingUntil: undefined,
       lastChat: 0
@@ -174,6 +187,10 @@ export class GameHub {
     if (player.ammo[payload.weapon] < ammoCost) return null;
     player.lastFire[payload.weapon] = now;
     player.ammo[payload.weapon] = Math.max(0, player.ammo[payload.weapon] - ammoCost);
+    if (player.ammo[payload.weapon] < ammoCost && player.reloadingWeapon !== payload.weapon) {
+      player.reloadingWeapon = payload.weapon;
+      player.reloadingUntil = now + spec.reloadMs;
+    }
 
     const dir = normalize(payload.direction);
     let fxTo = add(payload.origin, scale(dir, spec.range));
@@ -227,7 +244,7 @@ export class GameHub {
     player.weapon = weapon;
     player.alive = true;
     player.respawnAt = undefined;
-    player.ammo[weapon] = WEAPONS[weapon].ammo;
+    player.ammo = fullAmmo();
     player.reloadingWeapon = undefined;
     player.reloadingUntil = undefined;
   }
@@ -261,13 +278,17 @@ export class GameHub {
     for (const game of this.games.values()) {
       if (game.status === "active" && now >= game.endsAt) this.endGame(game);
       this.updateReloads(game, now);
-      this.updateGrenades(game, now);
+      if (game.status === "active") {
+        this.updateGrenades(game, now);
+        this.updateHealthPacks(game, now);
+      }
       game.explosions = game.explosions.filter((explosion) => now - explosion.createdAt < 650);
       snapshots.push({
         game: this.summary(game),
         players: [...game.players.values()].map(stripRuntime),
         grenades: game.grenades.map(({ id, ownerId, position, velocity, explodeAt }) => ({ id, ownerId, position, velocity, explodeAt })),
         explosions: game.explosions,
+        healthPacks: game.healthPacks.map(({ id, position }) => ({ id, position })),
         killFeed: game.killFeed,
         winner: game.winner
       });
@@ -351,6 +372,45 @@ export class GameHub {
     game.grenades = active;
   }
 
+  private updateHealthPacks(game: RuntimeGame, now: number) {
+    if (game.healthPacks.length < MAX_HEALTH_PACKS && now >= game.nextHealthPackAt) {
+      const pack = this.randomHealthPack(game);
+      if (pack) {
+        game.healthPacks.push(pack);
+        game.nextHealthPackAt = now + HEALTH_PACK_RESPAWN_MS;
+      }
+    }
+
+    const remaining: RuntimeHealthPack[] = [];
+    let pickedUp = false;
+    for (const pack of game.healthPacks) {
+      const player = [...game.players.values()].find((candidate) => (
+        candidate.alive &&
+        candidate.health < 100 &&
+        distance(candidate.position, pack.position) <= HEALTH_PACK_PICKUP_RADIUS + PLAYER_RADIUS
+      ));
+      if (!player) {
+        remaining.push(pack);
+        continue;
+      }
+      player.health = Math.min(100, player.health + HEALTH_PACK_HEAL);
+      pickedUp = true;
+    }
+    game.healthPacks = remaining;
+    if (pickedUp) game.nextHealthPackAt = Math.max(game.nextHealthPackAt, now + HEALTH_PACK_RESPAWN_MS);
+  }
+
+  private randomHealthPack(game: RuntimeGame): RuntimeHealthPack | null {
+    const arena = ARENAS[game.map];
+    for (let i = 0; i < 12; i += 1) {
+      const x = randomBetween(-arena.bounds + 4, arena.bounds - 4);
+      const z = randomBetween(-arena.bounds + 4, arena.bounds - 4);
+      const resolved = resolvePlayerPosition(game.map, { x, y: 1.2, z }, { x, y: 1.2, z });
+      if (resolved.y <= 1.6) return { id: uuid().slice(0, 8), position: resolved };
+    }
+    return null;
+  }
+
   private explodeGrenade(game: RuntimeGame, grenade: RuntimeGrenade) {
     const attacker = game.players.get(grenade.ownerId);
     if (attacker) {
@@ -404,6 +464,10 @@ function stripRuntime(player: RuntimePlayer): PlayerSnapshot {
   return snapshot;
 }
 
+function fullAmmo(): Record<WeaponId, number> {
+  return Object.fromEntries(Object.entries(WEAPONS).map(([id, spec]) => [id, spec.ammo])) as Record<WeaponId, number>;
+}
+
 function normalize(v: Vec3): Vec3 {
   const len = Math.hypot(v.x, v.y, v.z) || 1;
   return { x: v.x / len, y: v.y / len, z: v.z / len };
@@ -415,4 +479,8 @@ function scale(v: Vec3, n: number): Vec3 {
 
 function add(a: Vec3, b: Vec3): Vec3 {
   return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+}
+
+function randomBetween(min: number, max: number) {
+  return min + Math.random() * (max - min);
 }
