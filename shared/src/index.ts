@@ -294,15 +294,18 @@ const subwayDeckTop = 7.0;
 const subwayStepHeight = 0.45;
 const subwayStepStandYs = [3.15, 3.8, 4.45, 5.1, 5.75, 6.4, 7.05, 7.7];
 
-function subwayStairFlight(side: -1 | 1, z: number): ArenaCollider[] {
+function subwayStairFlight(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
+  const x = side * 16.5;
+  const zBottom = zSign * 24;
+  const zTop = zSign * 38;
   return subwayStepStandYs.map((standY, i) => {
     const t = subwayStepStandYs.length === 1 ? 0 : i / (subwayStepStandYs.length - 1);
-    const x = side * (16 + t * 14);
+    const z = zBottom + (zTop - zBottom) * t;
     const top = standY - 1.2;
     return {
-      id: `subway-stair-${side > 0 ? "east" : "west"}-${z > 0 ? "north" : "south"}-${i}`,
+      id: `subway-stair-${side > 0 ? "east" : "west"}-${zSign > 0 ? "north" : "south"}-${i}`,
       center: { x, y: top - subwayStepHeight / 2, z },
-      size: { x: i === subwayStepStandYs.length - 1 ? 12 : 3.4, y: subwayStepHeight, z: 4.2 },
+      size: { x: 9, y: subwayStepHeight, z: 3.4 },
       color: i % 2 === 0 ? "#8b8f94" : "#747a80",
       climbable: true
     };
@@ -314,14 +317,26 @@ const subwayColliders: ArenaCollider[] = [
   { id: "subway-platform-west", center: { x: -16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
   { id: "subway-platform-east", center: { x: 16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
   { id: "subway-deck-center", center: { x: 0, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 48, y: 0.8, z: 48 }, color: "#2f3236" },
-  { id: "subway-deck-north-road", center: { x: 0, y: subwayDeckTop - 0.4, z: 41 }, size: { x: 48, y: 0.8, z: 34 }, color: "#2f3236" },
-  { id: "subway-deck-south-road", center: { x: 0, y: subwayDeckTop - 0.4, z: -41 }, size: { x: 48, y: 0.8, z: 34 }, color: "#2f3236" },
+  { id: "subway-deck-north-back", center: { x: 0, y: subwayDeckTop - 0.4, z: 49 }, size: { x: 48, y: 0.8, z: 18 }, color: "#2f3236" },
+  { id: "subway-deck-north-front-left", center: { x: -22.5, y: subwayDeckTop - 0.4, z: 32 }, size: { x: 3, y: 0.8, z: 16 }, color: "#2f3236" },
+  { id: "subway-deck-north-front-mid", center: { x: 0, y: subwayDeckTop - 0.4, z: 32 }, size: { x: 24, y: 0.8, z: 16 }, color: "#2f3236" },
+  { id: "subway-deck-north-front-right", center: { x: 22.5, y: subwayDeckTop - 0.4, z: 32 }, size: { x: 3, y: 0.8, z: 16 }, color: "#2f3236" },
+  { id: "subway-deck-south-back", center: { x: 0, y: subwayDeckTop - 0.4, z: -49 }, size: { x: 48, y: 0.8, z: 18 }, color: "#2f3236" },
+  { id: "subway-deck-south-front-left", center: { x: -22.5, y: subwayDeckTop - 0.4, z: -32 }, size: { x: 3, y: 0.8, z: 16 }, color: "#2f3236" },
+  { id: "subway-deck-south-front-mid", center: { x: 0, y: subwayDeckTop - 0.4, z: -32 }, size: { x: 24, y: 0.8, z: 16 }, color: "#2f3236" },
+  { id: "subway-deck-south-front-right", center: { x: 22.5, y: subwayDeckTop - 0.4, z: -32 }, size: { x: 3, y: 0.8, z: 16 }, color: "#2f3236" },
   { id: "subway-deck-east-road", center: { x: 41, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 34, y: 0.8, z: 48 }, color: "#2f3236" },
   { id: "subway-deck-west-road", center: { x: -41, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 34, y: 0.8, z: 48 }, color: "#2f3236" },
+  { id: "subway-deck-corner-ne", center: { x: 41, y: subwayDeckTop - 0.4, z: 41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
+  { id: "subway-deck-corner-nw", center: { x: -41, y: subwayDeckTop - 0.4, z: 41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
+  { id: "subway-deck-corner-se", center: { x: 41, y: subwayDeckTop - 0.4, z: -41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
+  { id: "subway-deck-corner-sw", center: { x: -41, y: subwayDeckTop - 0.4, z: -41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
   { id: "subway-wall-west", center: { x: -57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
   { id: "subway-wall-east", center: { x: 57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
   { id: "subway-wall-north", center: { x: 0, y: 3.0, z: 57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
   { id: "subway-wall-south", center: { x: 0, y: 3.0, z: -57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
+  { id: "subway-station-back-west", center: { x: -23.5, y: 2.55, z: 0 }, size: { x: 0.6, y: 2.5, z: 100 }, color: "#5a5f63" },
+  { id: "subway-station-back-east", center: { x: 23.5, y: 2.55, z: 0 }, size: { x: 0.6, y: 2.5, z: 100 }, color: "#5a5f63" },
   ...subwayColumnZs.map((z) => ({ id: `subway-column-center-${z}`, center: { x: 0, y: 2.95, z }, size: { x: 1.35, y: 5.9, z: 1.35 }, color: "#14532d" })),
   ...[-11, 11, -21, 21].flatMap((x) => subwayColumnZs.filter((_, i) => i % 2 === 0).map((z) => ({
     id: `subway-column-edge-${x}-${z}`,
@@ -331,10 +346,10 @@ const subwayColliders: ArenaCollider[] = [
   }))),
   { id: "subway-train-a", center: { x: -6, y: 1.65, z: -27 }, size: { x: 6.4, y: 3.3, z: 25 }, color: "#b8bcc2" },
   { id: "subway-train-b", center: { x: 6, y: 1.65, z: 27 }, size: { x: 6.4, y: 3.3, z: 25 }, color: "#b8bcc2" },
-  ...subwayStairFlight(-1, 30),
-  ...subwayStairFlight(-1, -30),
-  ...subwayStairFlight(1, 30),
-  ...subwayStairFlight(1, -30),
+  ...subwayStairFlight(-1, 1),
+  ...subwayStairFlight(-1, -1),
+  ...subwayStairFlight(1, 1),
+  ...subwayStairFlight(1, -1),
   ...[
     [-38, -34], [38, 34], [-46, 12], [45, -16]
   ].map(([x, z], i) => ({ id: `subway-taxi-cover-${i}`, center: { x, y: 7.6, z }, size: { x: 5.2, y: 1.2, z: 2.7 }, color: "#f2c230" }))

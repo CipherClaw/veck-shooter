@@ -223,28 +223,31 @@ function SubwayPlatforms() {
 function SubwayStationWalls() {
   return (
     <group>
-      {[-56.55, 56.55].map((x) => (
-        <group key={x}>
-          <mesh position={[x, 2.8, 0]} receiveShadow>
-            <boxGeometry args={[0.08, 2.35, 104]} />
-            <meshStandardMaterial color="#f0efe9" roughness={0.28} metalness={0.02} />
-          </mesh>
-          <mesh position={[x - Math.sign(x) * 0.05, 3.15, 0]}>
-            <boxGeometry args={[0.12, 0.24, 104]} />
-            <meshStandardMaterial color="#2850ad" emissive="#2850ad" emissiveIntensity={0.05} roughness={0.44} />
-          </mesh>
-          {[-36, 0, 36].map((z) => (
-            <StationName key={z} x={x - Math.sign(x) * 0.08} z={z} rotationY={x > 0 ? -Math.PI / 2 : Math.PI / 2} />
-          ))}
-        </group>
-      ))}
+      {[-23.5, 23.5].map((wallX) => {
+        const faceX = wallX - Math.sign(wallX) * 0.36;
+        return (
+          <group key={wallX}>
+            <mesh position={[faceX, 3.65, 0]} receiveShadow>
+              <boxGeometry args={[0.08, 4.35, 104]} />
+              <meshStandardMaterial color="#f0efe9" roughness={0.28} metalness={0.02} />
+            </mesh>
+            <mesh position={[faceX - Math.sign(wallX) * 0.05, 3.05, 0]}>
+              <boxGeometry args={[0.12, 0.24, 104]} />
+              <meshStandardMaterial color="#2850ad" emissive="#2850ad" emissiveIntensity={0.05} roughness={0.44} />
+            </mesh>
+            {[-36, 0, 36].map((z) => (
+              <StationName key={z} x={faceX - Math.sign(wallX) * 0.08} z={z} rotationY={wallX > 0 ? -Math.PI / 2 : Math.PI / 2} />
+            ))}
+          </group>
+        );
+      })}
     </group>
   );
 }
 
 function StationName({ x, z, rotationY }: { x: number; z: number; rotationY: number }) {
   return (
-    <group position={[x, 3.55, z]} rotation={[0, rotationY, 0]}>
+    <group position={[x, 3.2, z]} rotation={[0, rotationY, 0]}>
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[5.2, 0.9, 0.08]} />
         <meshStandardMaterial color="#111111" roughness={0.5} />
@@ -312,36 +315,36 @@ function StreetMarkings() {
 function SubwayEntrances() {
   return (
     <group>
-      {[-1, 1].flatMap((side) => [-30, 30].map((z) => (
-        <Entrance key={`${side}-${z}`} x={side * 30} z={z} />
+      {[-1, 1].flatMap((side) => [-1, 1].map((zSign) => (
+        <Entrance key={`${side}-${zSign}`} x={side * 16.5} z={zSign * 42} zSign={zSign} />
       )))}
     </group>
   );
 }
 
-function Entrance({ x, z }: { x: number; z: number }) {
+function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
   return (
-    <group position={[x, 7.05, z]}>
-      {[-2.5, 2.5].map((railZ) => (
-        <mesh key={railZ} position={[0, 0.65, railZ]} castShadow>
-          <boxGeometry args={[5.2, 1.3, 0.18]} />
+    <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? Math.PI : 0, 0]}>
+      {[-4.2, 4.2].map((railX) => (
+        <mesh key={railX} position={[railX, 0.65, 2]} castShadow>
+          <boxGeometry args={[0.18, 1.3, 5.2]} />
           <meshStandardMaterial color="#14532d" roughness={0.54} metalness={0.18} />
         </mesh>
       ))}
-      <mesh position={[0, 1.35, 0]} castShadow>
+      <mesh position={[0, 1.35, 3.05]} castShadow>
         <boxGeometry args={[5.6, 0.35, 0.42]} />
         <meshStandardMaterial color="#111111" roughness={0.38} />
       </mesh>
-      <Text position={[0, 1.58, 0.24]} fontSize={0.38} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 1.58, 3.3]} fontSize={0.38} color="#ffffff" anchorX="center" anchorY="middle">
         SUBWAY
       </Text>
       {[-2.8, 2.8].map((lampX) => (
-        <mesh key={lampX} position={[lampX, 1.78, 0]} castShadow>
+        <mesh key={lampX} position={[lampX, 1.78, 3.05]} castShadow>
           <sphereGeometry args={[0.42, 20, 12]} />
           <meshStandardMaterial color="#2bb24c" emissive="#2bb24c" emissiveIntensity={0.75} roughness={0.2} />
         </mesh>
       ))}
-      <pointLight color="#2bb24c" intensity={0.35} distance={8} position={[0, 1.9, 0]} />
+      <pointLight color="#2bb24c" intensity={0.35} distance={8} position={[0, 1.9, 3.05]} />
     </group>
   );
 }
@@ -350,8 +353,8 @@ function SubwaySigns() {
   const signs = [
     { x: -16.5, z: -18, routes: ["1", "2", "3"] },
     { x: 16.5, z: 18, routes: ["4", "5", "6"] },
-    { x: -16.5, z: 34, routes: ["A", "C", "E"] },
-    { x: 16.5, z: -34, routes: ["N", "Q", "R"] }
+    { x: -16.5, z: 44, routes: ["A", "C", "E"] },
+    { x: 16.5, z: -44, routes: ["N", "Q", "R"] }
   ];
   return (
     <group>
