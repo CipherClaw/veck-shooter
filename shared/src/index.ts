@@ -490,7 +490,7 @@ function collisionDirection(delta: number, previousDelta: number) {
 }
 
 export type ClientToServerEvents = {
-  hello: (payload: { playerId: string; name: string }) => void;
+  hello: (payload: { playerId: string; name: string; glToken?: string }) => void;
   setName: (name: string) => void;
   createGame: (payload: { map: MapName; mode: GameMode; durationMinutes: number; weapon: WeaponId }) => void;
   joinGame: (payload: { gameId: string; weapon: WeaponId }) => void;

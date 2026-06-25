@@ -40,7 +40,10 @@ function Lobby() {
             <h1>Shooter</h1>
             <p>Blocky browser arena FPS</p>
           </div>
-          <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <a className="icon-btn" href="https://games.greglab.net" title="Back to Games Hub" style={{ textDecoration: "none", display: "grid", placeItems: "center" }}>🕹️</a>
+            <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
+          </div>
         </header>
         {error && <div className="error">{error}</div>}
         <div className="lobby-grid">

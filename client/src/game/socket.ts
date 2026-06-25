@@ -2,13 +2,14 @@ import { io, type Socket } from "socket.io-client";
 import type { ClientToServerEvents, ServerToClientEvents, Vec3 } from "@veck/shared";
 import { actions, useGame } from "../state/store";
 import { beep } from "./audio";
+import { glIdentity } from "../greglab";
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
 let heardExplosionIds = new Set<string>();
 
 socket.on("connect", () => {
   const s = useGame.getState();
-  socket.emit("hello", { playerId: s.playerId, name: s.name });
+  socket.emit("hello", { playerId: s.playerId, name: s.name, glToken: glIdentity.token ?? undefined });
 });
 socket.on("games", actions.games);
 socket.on("stats", actions.stats);

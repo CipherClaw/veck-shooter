@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { glIdentity } from "../greglab";
 import type { ChatMessage, GameSnapshot, GameSummary, PlayerStats, WeaponId } from "@veck/shared";
 
 const savedId = localStorage.getItem("veck.playerId") ?? crypto.randomUUID();
@@ -32,7 +33,7 @@ type State = {
 
 export const useGame = create<State>((set) => ({
   playerId: savedId,
-  name: localStorage.getItem("veck.name") ?? "Guest" + Math.floor(Math.random() * 900 + 100),
+  name: glIdentity.name ?? localStorage.getItem("veck.name") ?? "Guest" + Math.floor(Math.random() * 900 + 100),
   stats: JSON.parse(localStorage.getItem("veck.stats") ?? "{\"kills\":0,\"deaths\":0,\"wins\":0,\"gamesPlayed\":0,\"coins\":0}"),
   games: [],
   gameId: "",

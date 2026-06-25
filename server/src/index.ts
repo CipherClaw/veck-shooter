@@ -8,6 +8,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from "@veck/shared";
 import { validateName } from "./filter.js";
 import { GameHub } from "./game.js";
 import { StatsStore } from "./store.js";
+import { ProfileHub } from "./profile.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -15,7 +16,8 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: { origin: process.env.CORS_ORIGIN?.split(",") ?? "*" }
 });
 const store = new StatsStore();
-const hub = new GameHub(store);
+const profile = ProfileHub.fromEnv("veck-shooter");
+const hub = new GameHub(store, profile);
 let lobbyChat: Parameters<ServerToClientEvents["lobbyChat"]>[0] = [];
 
 app.use(cors());
@@ -34,14 +36,22 @@ io.on("connection", (socket) => {
   socket.emit("games", hub.summaries());
   socket.emit("lobbyChat", lobbyChat);
 
-  socket.on("hello", ({ playerId: id, name }) => {
+  socket.on("hello", async ({ playerId: id, name, glToken }) => {
     const valid = validateName(name);
     if (!valid.ok) {
       socket.emit("rejected", valid.reason);
       return;
     }
     playerId = id;
-    socket.emit("stats", hub.hello(playerId, valid.name));
+    let stats = hub.hello(playerId, valid.name);
+    if (glToken && profile) {
+      const linked = await profile.resolve(glToken);
+      if (linked) {
+        hub.linkHub(playerId, linked.id, linked.coins);
+        stats = { ...stats, coins: linked.coins };
+      }
+    }
+    socket.emit("stats", stats);
     socket.emit("games", hub.summaries());
   });
 
@@ -117,6 +127,7 @@ setInterval(() => {
       if (event.killed) io.to(event.attackerSocketId).emit("killed", event.killed);
     }
   }
+  for (const emit of hub.drainStatsEmits()) io.to(emit.socketId).emit("stats", emit.stats);
   io.emit("games", hub.summaries());
 }, 1000 / 20);
 

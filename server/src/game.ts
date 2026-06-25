@@ -17,6 +17,7 @@ import {
   type GameSummary,
   type MapName,
   type PlayerSnapshot,
+  type PlayerStats,
   type Vec3,
   type WeaponId,
   resolvePlayerPosition
@@ -24,6 +25,7 @@ import {
 import { canDamage, distance, nextTeam, rayPointDistance, validateJoin, weaponDamage, winner } from "./rules.js";
 import { cleanText } from "./filter.js";
 import type { StatsStore } from "./store.js";
+import type { ProfileHub } from "./profile.js";
 
 type RuntimePlayer = PlayerSnapshot & {
   socketId: string;
@@ -83,12 +85,37 @@ type RuntimeGame = {
 export class GameHub {
   private games = new Map<string, RuntimeGame>();
   private playerNames = new Map<string, string>();
+  // greglab-games hub integration: map veck playerId -> canonical hub id, the
+  // shared wallet balance, and a queue of post-game stats to push to clients.
+  private hubIdByPlayer = new Map<string, string>();
+  private hubCoins = new Map<string, number>();
+  private statsEmits: { socketId: string; stats: PlayerStats }[] = [];
 
-  constructor(private stats: StatsStore) {}
+  constructor(private stats: StatsStore, private profile: ProfileHub | null = null) {}
 
   hello(playerId: string, name: string) {
     this.playerNames.set(playerId, name);
-    return this.stats.ensure(playerId, name);
+    return this.statsForPlayer(playerId, name);
+  }
+
+  // Link a hub-resolved profile to a local veck playerId (called from the hello path).
+  linkHub(playerId: string, hubId: string, coins: number) {
+    this.hubIdByPlayer.set(playerId, hubId);
+    this.hubCoins.set(playerId, coins);
+  }
+
+  // Local SQLite stats, but with coins overridden by the shared hub wallet when linked.
+  statsForPlayer(playerId: string, name?: string): PlayerStats {
+    const base = name !== undefined ? this.stats.ensure(playerId, name) : this.stats.get(playerId);
+    const coins = this.hubCoins.get(playerId);
+    return coins != null ? { ...base, coins } : base;
+  }
+
+  // Drained by the server tick loop to emit refreshed stats after each game.
+  drainStatsEmits() {
+    const out = this.statsEmits;
+    this.statsEmits = [];
+    return out;
   }
 
   summaries(): GameSummary[] {
@@ -333,7 +360,31 @@ export class GameHub {
     game.grenades = [];
     for (const player of game.players.values()) {
       const won = game.mode === "Team Mode" ? `${player.team === "red" ? "Red" : "Green"} Team` === game.winner : player.name === game.winner;
-      this.stats.add(player.id, { wins: won ? 1 : 0, gamesPlayed: 1, coins: won ? 25 : 10 });
+      const coins = won ? 25 : 10;
+      const localStats = this.stats.add(player.id, { wins: won ? 1 : 0, gamesPlayed: 1, coins });
+      const hubId = this.hubIdByPlayer.get(player.id);
+      const socketId = player.socketId;
+      if (this.profile && hubId) {
+        // Report this game's aggregate to the shared profile; emit refreshed
+        // stats (with the shared wallet balance) once the hub confirms.
+        this.profile
+          .report(hubId, {
+            coinsDelta: coins,
+            statsDelta: { kills: player.kills, deaths: player.deaths, wins: won ? 1 : 0 },
+            gamesPlayedDelta: 1,
+            reason: won ? "won round" : "round end"
+          })
+          .then((result) => {
+            if (result) {
+              this.hubCoins.set(player.id, result.coins);
+              this.statsEmits.push({ socketId, stats: { ...localStats, coins: result.coins } });
+            } else {
+              this.statsEmits.push({ socketId, stats: this.statsForPlayer(player.id) });
+            }
+          });
+      } else {
+        this.statsEmits.push({ socketId, stats: localStats });
+      }
     }
   }
 
