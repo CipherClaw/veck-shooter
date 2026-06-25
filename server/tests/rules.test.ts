@@ -141,10 +141,14 @@ describe("game rules", () => {
     expect(pad?.launchVelocity).toBe(BOUNCE_PAD_LAUNCH_SPEED);
   });
 
-  it("blocks subway stair flights from the side and underneath while keeping both ends open", () => {
-    const sideBlocked = resolvePlayerPosition("Subway", { x: 11.6, y: 2.5, z: 30 }, { x: 10.6, y: 2.5, z: 30 });
-    expect(sideBlocked.x).toBeLessThan(11.6);
-    expect(sideBlocked.y).toBeCloseTo(2.5);
+  it("keeps subway stair sides open while blocking underneath and the lower back wall", () => {
+    const sideOpen = resolvePlayerPosition("Subway", { x: 11.6, y: 2.5, z: 30 }, { x: 10.6, y: 2.5, z: 30 });
+    expect(sideOpen.x).toBeCloseTo(11.6);
+    expect(sideOpen.y).toBeCloseTo(2.5);
+
+    const backBlocked = resolvePlayerPosition("Subway", { x: 16.5, y: 2.5, z: 39.1 }, { x: 16.5, y: 2.5, z: 40 });
+    expect(backBlocked.z).toBeGreaterThan(39.5);
+    expect(backBlocked.y).toBeCloseTo(2.5);
 
     let underBlocked = { x: 24, y: 2.5, z: 30 };
     for (let i = 0; i < 30; i++) underBlocked = resolvePlayerPosition("Subway", { x: underBlocked.x - 0.6, y: underBlocked.y, z: underBlocked.z }, underBlocked);

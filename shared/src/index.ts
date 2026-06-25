@@ -312,23 +312,16 @@ function subwayStairFlight(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
   });
 }
 
-function subwayStairWalls(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
+function subwayStairBackWall(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
   const x = side * 16.5;
   const sideName = side > 0 ? "east" : "west";
   const endName = zSign > 0 ? "north" : "south";
-  const color = "#263238";
   return [
     {
-      id: `subway-stair-wall-${sideName}-${endName}-left`,
-      center: { x: x - 4.7, y: 5.5, z: zSign * 30.5 },
-      size: { x: 0.4, y: 9, z: 17 },
-      color
-    },
-    {
-      id: `subway-stair-wall-${sideName}-${endName}-right`,
-      center: { x: x + 4.7, y: 5.5, z: zSign * 30.5 },
-      size: { x: 0.4, y: 9, z: 17 },
-      color
+      id: `subway-stair-back-${sideName}-${endName}`,
+      center: { x, y: 2.85, z: zSign * 39.1 },
+      size: { x: 9, y: 3.7, z: 0.8 },
+      color: "#20282d"
     }
   ];
 }
@@ -393,10 +386,10 @@ const subwayColliders: ArenaCollider[] = [
   ...subwayStairFlight(-1, -1),
   ...subwayStairFlight(1, 1),
   ...subwayStairFlight(1, -1),
-  ...subwayStairWalls(-1, 1),
-  ...subwayStairWalls(-1, -1),
-  ...subwayStairWalls(1, 1),
-  ...subwayStairWalls(1, -1),
+  ...subwayStairBackWall(-1, 1),
+  ...subwayStairBackWall(-1, -1),
+  ...subwayStairBackWall(1, 1),
+  ...subwayStairBackWall(1, -1),
   ...subwayStairUndersideFill(-1, 1),
   ...subwayStairUndersideFill(-1, -1),
   ...subwayStairUndersideFill(1, 1),

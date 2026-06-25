@@ -49,7 +49,6 @@ function hiddenCollider(id: string) {
   return id.startsWith("forest-tree")
     || id.startsWith("forest-rock")
     || id.startsWith("subway-train")
-    || id.startsWith("subway-stair-wall")
     || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
 }
 
@@ -333,7 +332,6 @@ function SubwayEntrances() {
     <group>
       {[-1, 1].flatMap((side) => [-1, 1].map((zSign) => (
         <group key={`${side}-${zSign}`}>
-          <StairwellRailings side={side} zSign={zSign} />
           <Entrance x={side * 16.5} z={zSign * 40.8} zSign={zSign} />
         </group>
       )))}
@@ -341,98 +339,55 @@ function SubwayEntrances() {
   );
 }
 
-function StairwellRailings({ side, zSign }: { side: number; zSign: number }) {
-  const green = "#14532d";
-  const x = side * 16.5;
-  const railXs = [x - 4.55, x + 4.55];
-  const zBottom = zSign * 22;
-  const zTop = zSign * 39;
-  const yBottom = 3.7;
-  const yTop = 8.05;
-  const zMid = (zBottom + zTop) / 2;
-  const yMid = (yBottom + yTop) / 2;
-  const zSpan = Math.abs(zTop - zBottom);
-  const railLength = Math.hypot(zSpan, yTop - yBottom);
-  const railTilt = -zSign * Math.atan2(yTop - yBottom, zSpan);
-  const postHeight = 1.3;
-  const posts = Array.from({ length: 8 }, (_, i) => i / 7);
-
-  return (
-    <group>
-      {railXs.map((railX) => (
-        <group key={railX}>
-          <mesh position={[railX, yMid, zMid]} rotation={[railTilt, 0, 0]} castShadow>
-            <boxGeometry args={[0.22, 0.16, railLength]} />
-            <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
-          </mesh>
-          <mesh position={[railX, yMid - 0.58, zMid]} rotation={[railTilt, 0, 0]} castShadow>
-            <boxGeometry args={[0.14, 0.1, railLength]} />
-            <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
-          </mesh>
-          {posts.map((t) => {
-            const y = yBottom + (yTop - yBottom) * t;
-            const z = zBottom + (zTop - zBottom) * t;
-            return (
-              <mesh key={t} position={[railX, y - postHeight / 2, z]} castShadow>
-                <boxGeometry args={[0.2, postHeight, 0.2]} />
-                <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
-              </mesh>
-            );
-          })}
-        </group>
-      ))}
-    </group>
-  );
-}
-
 function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
   const green = "#14532d";
   const lampGreen = "#2bb24c";
-  const posts = [
-    [-4.65, -2.8],
-    [-4.65, -0.8],
-    [-4.65, 1.2],
-    [4.65, -2.8],
-    [4.65, -0.8],
-    [4.65, 1.2],
-    [-2.35, -2.8],
-    [0, -2.8],
-    [2.35, -2.8]
-  ];
+  const frontZ = -16.8;
+  const backZ = -0.8;
+  const sideRailZ = (frontZ + backZ) / 2;
+  const sideRailLength = backZ - frontZ;
+  const sidePosts = [frontZ, -12.8, -8.8, -4.8, backZ];
+  const backPosts = [-2.35, 0, 2.35];
 
   return (
     <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]}>
       {[-4.65, 4.65].map((railX) => (
         <group key={railX}>
-          <mesh position={[railX, 1.08, -0.8]} castShadow>
-            <boxGeometry args={[0.18, 0.16, 4.05]} />
+          <mesh position={[railX, 1.08, sideRailZ]} castShadow>
+            <boxGeometry args={[0.18, 0.16, sideRailLength]} />
             <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
           </mesh>
-          <mesh position={[railX, 0.55, -0.8]} castShadow>
-            <boxGeometry args={[0.12, 0.1, 4.05]} />
+          <mesh position={[railX, 0.55, sideRailZ]} castShadow>
+            <boxGeometry args={[0.12, 0.1, sideRailLength]} />
             <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
           </mesh>
+          {sidePosts.map((postZ) => (
+            <mesh key={postZ} position={[railX, 0.57, postZ]} castShadow>
+              <boxGeometry args={[0.18, 1.14, 0.18]} />
+              <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+            </mesh>
+          ))}
         </group>
       ))}
-      <mesh position={[0, 1.08, -2.8]} castShadow>
+      <mesh position={[0, 1.08, backZ]} castShadow>
         <boxGeometry args={[9.45, 0.16, 0.18]} />
         <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
       </mesh>
-      <mesh position={[0, 0.55, -2.8]} castShadow>
+      <mesh position={[0, 0.55, backZ]} castShadow>
         <boxGeometry args={[9.45, 0.1, 0.12]} />
         <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
       </mesh>
-      {posts.map(([postX, postZ], i) => (
-        <mesh key={`${postX}-${postZ}-${i}`} position={[postX, 0.57, postZ]} castShadow>
+      {backPosts.map((postX) => (
+        <mesh key={postX} position={[postX, 0.57, backZ]} castShadow>
           <boxGeometry args={[0.18, 1.14, 0.18]} />
           <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
         </mesh>
       ))}
-      <mesh position={[0, 0.92, -2.92]} castShadow>
+      <mesh position={[0, 0.92, -1.0]} castShadow>
         <boxGeometry args={[3.9, 0.72, 0.14]} />
         <meshStandardMaterial color="#111111" roughness={0.38} />
       </mesh>
-      <Text position={[0, 0.95, -3.02]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0.95, -1.1]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
         SUBWAY
       </Text>
       {[-5.15, 5.15].map((lampX) => (
