@@ -174,15 +174,19 @@ function SubwayTracks() {
           {[-2.7, 2.7].map((railOffset) => (
             <mesh key={railOffset} position={[trackX + railOffset, 0.12, 0]} castShadow receiveShadow>
               <boxGeometry args={[0.18, 0.24, 112]} />
-              <meshStandardMaterial color="#8a8f99" roughness={0.38} metalness={0.55} />
+              <meshStandardMaterial color="#c4cad4" emissive="#8d949f" emissiveIntensity={0.15} roughness={0.32} metalness={0.68} />
             </mesh>
           ))}
           {ties.map((z) => (
             <mesh key={z} position={[trackX, 0.08, z]} receiveShadow>
               <boxGeometry args={[7.2, 0.16, 0.55]} />
-              <meshStandardMaterial color="#4a3b2c" roughness={0.86} />
+              <meshStandardMaterial color="#6b5238" roughness={0.82} />
             </mesh>
           ))}
+          <mesh position={[trackX, 0.025, 0]} receiveShadow>
+            <boxGeometry args={[7.8, 0.05, 112]} />
+            <meshStandardMaterial color="#54585e" roughness={0.94} />
+          </mesh>
           <mesh position={[trackX + 4.55, 0.23, 0]} castShadow>
             <boxGeometry args={[0.36, 0.22, 108]} />
             <meshStandardMaterial color="#c8552b" roughness={0.62} />
@@ -191,7 +195,7 @@ function SubwayTracks() {
       ))}
       <mesh position={[0, 0.035, 0]} receiveShadow>
         <boxGeometry args={[1.8, 0.07, 112]} />
-        <meshStandardMaterial color="#22262b" roughness={0.95} />
+        <meshStandardMaterial color="#54585e" roughness={0.95} />
       </mesh>
     </group>
   );
@@ -260,15 +264,20 @@ function StationName({ x, z, rotationY }: { x: number; z: number; rotationY: num
 }
 
 function SubwayLighting() {
+  const lightRows = [-24, -6, 12, 30];
   return (
     <group>
-      {[-16, 0, 16].map((x) => [-42, -24, -6, 12, 30, 48].map((z) => (
-        <group key={`${x}-${z}`} position={[x, 5.95, z]}>
-          <mesh>
-            <boxGeometry args={[5.8, 0.08, 0.7]} />
+      {[-16, 0, 16].map((x) => lightRows.map((z) => (
+        <group key={`${x}-${z}`} position={[x, 6.55, z]}>
+          <mesh receiveShadow>
+            <boxGeometry args={[6.15, 0.12, 1.02]} />
+            <meshStandardMaterial color="#1a1e22" roughness={0.64} metalness={0.18} />
+          </mesh>
+          <mesh position={[0, -0.075, 0]}>
+            <boxGeometry args={[5.65, 0.045, 0.62]} />
             <meshStandardMaterial color="#f6f7e9" emissive="#f6f7e9" emissiveIntensity={0.8} roughness={0.18} />
           </mesh>
-          <pointLight color="#f6f7e9" intensity={0.18} distance={15} />
+          <pointLight color="#f6f7e9" intensity={0.18} distance={15} position={[0, -0.18, 0]} />
         </group>
       )))}
     </group>
@@ -323,28 +332,68 @@ function SubwayEntrances() {
 }
 
 function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
+  const green = "#14532d";
+  const lampGreen = "#2bb24c";
+  const posts = [
+    [-4.65, -2.8],
+    [-4.65, -0.8],
+    [-4.65, 1.2],
+    [4.65, -2.8],
+    [4.65, -0.8],
+    [4.65, 1.2],
+    [-2.35, -2.8],
+    [0, -2.8],
+    [2.35, -2.8]
+  ];
+
   return (
     <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? Math.PI : 0, 0]}>
-      {[-4.2, 4.2].map((railX) => (
-        <mesh key={railX} position={[railX, 0.65, 2]} castShadow>
-          <boxGeometry args={[0.18, 1.3, 5.2]} />
-          <meshStandardMaterial color="#14532d" roughness={0.54} metalness={0.18} />
+      {[-4.65, 4.65].map((railX) => (
+        <group key={railX}>
+          <mesh position={[railX, 1.08, -0.8]} castShadow>
+            <boxGeometry args={[0.18, 0.16, 4.05]} />
+            <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+          </mesh>
+          <mesh position={[railX, 0.55, -0.8]} castShadow>
+            <boxGeometry args={[0.12, 0.1, 4.05]} />
+            <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 1.08, -2.8]} castShadow>
+        <boxGeometry args={[9.45, 0.16, 0.18]} />
+        <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+      </mesh>
+      <mesh position={[0, 0.55, -2.8]} castShadow>
+        <boxGeometry args={[9.45, 0.1, 0.12]} />
+        <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+      </mesh>
+      {posts.map(([postX, postZ], i) => (
+        <mesh key={`${postX}-${postZ}-${i}`} position={[postX, 0.57, postZ]} castShadow>
+          <boxGeometry args={[0.18, 1.14, 0.18]} />
+          <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
         </mesh>
       ))}
-      <mesh position={[0, 1.35, 3.05]} castShadow>
-        <boxGeometry args={[5.6, 0.35, 0.42]} />
+      <mesh position={[0, 0.92, -2.92]} castShadow>
+        <boxGeometry args={[3.9, 0.72, 0.14]} />
         <meshStandardMaterial color="#111111" roughness={0.38} />
       </mesh>
-      <Text position={[0, 1.58, 3.3]} fontSize={0.38} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0.95, -3.02]} rotation={[0, Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
         SUBWAY
       </Text>
-      {[-2.8, 2.8].map((lampX) => (
-        <mesh key={lampX} position={[lampX, 1.78, 3.05]} castShadow>
+      {[-5.15, 5.15].map((lampX) => (
+        <group key={lampX} position={[lampX, 0, 1.9]}>
+          <mesh position={[0, 1.45, 0]} castShadow>
+            <cylinderGeometry args={[0.08, 0.1, 2.9, 12]} />
+            <meshStandardMaterial color={green} roughness={0.46} metalness={0.36} />
+          </mesh>
+          <mesh position={[0, 2.9, 0]} castShadow>
           <sphereGeometry args={[0.42, 20, 12]} />
-          <meshStandardMaterial color="#2bb24c" emissive="#2bb24c" emissiveIntensity={0.75} roughness={0.2} />
-        </mesh>
+            <meshStandardMaterial color={lampGreen} emissive={lampGreen} emissiveIntensity={0.75} roughness={0.2} />
+          </mesh>
+          <pointLight color={lampGreen} intensity={0.24} distance={7} position={[0, 2.9, 0]} />
+        </group>
       ))}
-      <pointLight color="#2bb24c" intensity={0.35} distance={8} position={[0, 1.9, 3.05]} />
     </group>
   );
 }
