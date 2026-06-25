@@ -140,4 +140,32 @@ describe("game rules", () => {
     expect(pad?.id).toBe("practice-right-platform-bounce");
     expect(pad?.launchVelocity).toBe(BOUNCE_PAD_LAUNCH_SPEED);
   });
+
+  it("blocks subway stair flights from the side and back while keeping the low front open", () => {
+    const sideBlocked = resolvePlayerPosition("Subway", { x: 11.6, y: 2.5, z: 30 }, { x: 10.6, y: 2.5, z: 30 });
+    expect(sideBlocked.x).toBeLessThan(11.6);
+    expect(sideBlocked.y).toBeCloseTo(2.5);
+
+    const backBlocked = resolvePlayerPosition("Subway", { x: 16.5, y: 8.2, z: 39.8 }, { x: 16.5, y: 8.2, z: 42 });
+    expect(backBlocked.z).toBeGreaterThan(39.8);
+    expect(backBlocked.y).toBeCloseTo(8.2);
+
+    const frontStep = resolvePlayerPosition("Subway", { x: 16.5, y: 2.5, z: 24 }, { x: 16.5, y: 2.5, z: 20 });
+    expect(frontStep.z).toBeCloseTo(24);
+    expect(frontStep.y).toBeGreaterThan(2.5);
+  });
+
+  it("does not award solo round wins or coins", () => {
+    const store = new StatsStore(":memory:");
+    const hub = new GameHub(store);
+    hub.hello("solo", "Solo");
+    const gameId = hub.create("solo", "socket-solo", { map: "Pyramid", mode: "Free Play", durationMinutes: 3, weapon: "revolver" });
+    const game = (hub as any).games.get(gameId);
+
+    game.endsAt = Date.now() - 1;
+    hub.tick();
+
+    expect(store.get("solo")).toMatchObject({ wins: 0, gamesPlayed: 1, coins: 0 });
+    expect(hub.drainStatsEmits()).toHaveLength(1);
+  });
 });

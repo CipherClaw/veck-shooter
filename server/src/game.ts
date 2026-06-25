@@ -358,10 +358,12 @@ export class GameHub {
     game.returnToLobbyAt = game.endedAt + 13_000;
     game.winner = winner([...game.players.values()], game.mode);
     game.grenades = [];
+    const isSolo = game.players.size < 2;
     for (const player of game.players.values()) {
-      const won = game.mode === "Team Mode" ? `${player.team === "red" ? "Red" : "Green"} Team` === game.winner : player.name === game.winner;
+      const won = !isSolo && (game.mode === "Team Mode" ? `${player.team === "red" ? "Red" : "Green"} Team` === game.winner : player.name === game.winner);
       const coins = won ? 25 : 10;
-      const localStats = this.stats.add(player.id, { wins: won ? 1 : 0, gamesPlayed: 1, coins });
+      const earnedCoins = isSolo ? 0 : coins;
+      const localStats = this.stats.add(player.id, { wins: won ? 1 : 0, gamesPlayed: 1, coins: earnedCoins });
       const hubId = this.hubIdByPlayer.get(player.id);
       const socketId = player.socketId;
       if (this.profile && hubId) {
@@ -369,7 +371,7 @@ export class GameHub {
         // stats (with the shared wallet balance) once the hub confirms.
         this.profile
           .report(hubId, {
-            coinsDelta: coins,
+            coinsDelta: earnedCoins,
             statsDelta: { kills: player.kills, deaths: player.deaths, wins: won ? 1 : 0 },
             gamesPlayedDelta: 1,
             reason: won ? "won round" : "round end"

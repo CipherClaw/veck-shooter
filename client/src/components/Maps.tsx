@@ -180,12 +180,12 @@ function SubwayTracks() {
           {ties.map((z) => (
             <mesh key={z} position={[trackX, 0.08, z]} receiveShadow>
               <boxGeometry args={[7.2, 0.16, 0.55]} />
-              <meshStandardMaterial color="#6b5238" roughness={0.82} />
+              <meshStandardMaterial color="#9a7047" emissive="#5b351f" emissiveIntensity={0.18} roughness={0.78} />
             </mesh>
           ))}
           <mesh position={[trackX, 0.025, 0]} receiveShadow>
             <boxGeometry args={[7.8, 0.05, 112]} />
-            <meshStandardMaterial color="#54585e" roughness={0.94} />
+            <meshStandardMaterial color="#686f76" roughness={0.9} />
           </mesh>
           <mesh position={[trackX + 4.55, 0.23, 0]} castShadow>
             <boxGeometry args={[0.36, 0.22, 108]} />
@@ -195,7 +195,7 @@ function SubwayTracks() {
       ))}
       <mesh position={[0, 0.035, 0]} receiveShadow>
         <boxGeometry args={[1.8, 0.07, 112]} />
-        <meshStandardMaterial color="#54585e" roughness={0.95} />
+        <meshStandardMaterial color="#626970" roughness={0.92} />
       </mesh>
     </group>
   );
@@ -239,7 +239,7 @@ function SubwayStationWalls() {
               <boxGeometry args={[0.12, 0.24, 104]} />
               <meshStandardMaterial color="#2850ad" emissive="#2850ad" emissiveIntensity={0.05} roughness={0.44} />
             </mesh>
-            {[-36, 0, 36].map((z) => (
+            {[-42, -18, 18, 42].map((z) => (
               <StationName key={z} x={faceX - Math.sign(wallX) * 0.08} z={z} rotationY={wallX > 0 ? -Math.PI / 2 : Math.PI / 2} />
             ))}
           </group>
@@ -279,6 +279,9 @@ function SubwayLighting() {
           </mesh>
           <pointLight color="#f6f7e9" intensity={0.18} distance={15} position={[0, -0.18, 0]} />
         </group>
+      )))}
+      {[-6, 6].map((x) => [-36, -12, 12, 36].map((z) => (
+        <pointLight key={`track-${x}-${z}`} color="#dfe7dd" intensity={0.08} distance={12} position={[x, 3.15, z]} />
       )))}
     </group>
   );
@@ -325,7 +328,7 @@ function SubwayEntrances() {
   return (
     <group>
       {[-1, 1].flatMap((side) => [-1, 1].map((zSign) => (
-        <Entrance key={`${side}-${zSign}`} x={side * 16.5} z={zSign * 42} zSign={zSign} />
+        <Entrance key={`${side}-${zSign}`} x={side * 16.5} z={zSign * 40.8} zSign={zSign} />
       )))}
     </group>
   );
