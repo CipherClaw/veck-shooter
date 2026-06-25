@@ -15,17 +15,11 @@ export default function App() {
 
 function Lobby() {
   const { name, setName, stats, games, lobbyChat, weapon, setWeapon, muted, setMuted, error } = useGame();
-  const [draft, setDraft] = useState(name);
   const [map, setMap] = useState<MapName>("Pyramid");
   const [mode, setMode] = useState<GameMode>("Free Play");
   const [durationMinutes, setDuration] = useState(5);
 
-  const saveName = () => {
-    setName(draft);
-    socket.emit("setName", draft);
-  };
   const create = () => {
-    saveName();
     socket.emit("createGame", { map, mode, durationMinutes, weapon });
   };
 
@@ -41,7 +35,7 @@ function Lobby() {
             <p>Blocky browser arena FPS</p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <a className="icon-btn" href="https://games.greglab.net" title="Back to Games Hub" style={{ textDecoration: "none", display: "grid", placeItems: "center" }}>🕹️</a>
+            <a className="icon-btn" href="https://games.greglab.net" title="Back to Games Hub" style={{ textDecoration: "none", display: "grid", placeItems: "center", width: "auto", padding: "0 12px" }}>← Hub</a>
             <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
           </div>
         </header>
@@ -50,9 +44,9 @@ function Lobby() {
           <Panel title="Player">
             <label>Name</label>
             <div className="row">
-              <input value={draft} minLength={3} maxLength={18} onChange={(e) => setDraft(e.target.value)} onBlur={saveName} />
-              <button onClick={saveName}>Save</button>
+              <strong style={{ fontSize: 18 }}>{name}</strong>
             </div>
+            <a href="https://games.greglab.net" style={{ fontSize: 12, opacity: 0.85, textDecoration: "none" }}>Manage your profile at the Games Hub →</a>
             <div className="stats">
               <Stat label="Kills" value={stats.kills} />
               <Stat label="Deaths" value={stats.deaths} />
@@ -102,6 +96,23 @@ function Match() {
   const me = snapshot?.players.find((p) => p.id === playerId);
   const scores = useMemo(() => snapshot?.players.slice().sort((a, b) => b.kills - a.kills) ?? [], [snapshot]);
   const ended = snapshot?.game.status === "ended";
+
+  // Tick the round timer locally so it counts down smoothly and stays correct
+  // even if snapshot delivery stalls; re-anchor only when a new snapshot arrives.
+  const [, forceTick] = useState(0);
+  const endsAtRef = useRef(0);
+  useEffect(() => {
+    if (snapshot && snapshot.game.status === "active") endsAtRef.current = Date.now() + snapshot.game.timeRemainingMs;
+  }, [snapshot?.game.timeRemainingMs, snapshot?.game.status]);
+  useEffect(() => {
+    const i = window.setInterval(() => forceTick((n) => n + 1), 500);
+    return () => window.clearInterval(i);
+  }, []);
+  const remainingMs = snapshot
+    ? snapshot.game.status === "active" && endsAtRef.current > 0
+      ? Math.max(0, endsAtRef.current - Date.now())
+      : snapshot.game.timeRemainingMs
+    : 0;
 
   const returnToLobby = () => {
     socket.emit("leaveGame");
@@ -160,7 +171,7 @@ function Match() {
       <GameCanvas />
       <div className="hud topbar">
         <div>{snapshot.game.map}</div>
-        <strong>{formatTime(snapshot.game.timeRemainingMs)}</strong>
+        <strong>{formatTime(remainingMs)}</strong>
         <div>{snapshot.game.mode}</div>
       </div>
       {scoped && <ScopeOverlay />}
@@ -192,7 +203,7 @@ function Match() {
         </div>
       )}
       {ended && <RoundSummary snapshot={snapshot} playerId={playerId} returnSeconds={returnSeconds} onReturn={returnToLobby} />}
-      {paused && <div className="modal help"><h2>Paused</h2><p>WASD move, mouse look, click fire, right click sniper scope, R reload, Shift sprint, Space jump, Enter opens chat, Enter sends, Escape closes chat, 1-5 weapons.</p><button onClick={() => setPaused(false)}>Resume</button></div>}
+      {paused && <div className="modal help"><h2>Paused</h2><p>WASD move, mouse look, click fire, right click sniper scope, R reload, Shift sprint, Space jump, Enter opens chat, Enter sends, Escape closes chat, 1-5 weapons.</p><button onClick={() => setPaused(false)}>Resume</button><button onClick={returnToLobby}>Leave to Lobby</button></div>}
     </main>
   );
 }
