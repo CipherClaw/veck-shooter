@@ -35,7 +35,7 @@ function Lobby() {
             <p>Blocky browser arena FPS</p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <a className="icon-btn" href="https://games.greglab.net" title="Back to Games Hub" style={{ textDecoration: "none", display: "grid", placeItems: "center", width: "auto", padding: "0 12px" }}>← Hub</a>
+            <a className="gl-btn gl-btn--ghost gl-btn--sm" href="https://games.greglab.net" title="Back to Games Hub">← Games Hub</a>
             <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
           </div>
         </header>
@@ -46,7 +46,7 @@ function Lobby() {
             <div className="row">
               <strong style={{ fontSize: 18 }}>{name}</strong>
             </div>
-            <a href="https://games.greglab.net" style={{ fontSize: 12, opacity: 0.85, textDecoration: "none" }}>Manage your profile at the Games Hub →</a>
+            <a className="gl-btn gl-btn--ghost gl-btn--sm" href="https://games.greglab.net" style={{ marginTop: 8 }}>Manage profile at Hub →</a>
             <div className="stats">
               <Stat label="Kills" value={stats.kills} />
               <Stat label="Deaths" value={stats.deaths} />
@@ -119,6 +119,29 @@ function Match() {
     useGame.setState({ gameId: "", snapshot: undefined });
   };
 
+  const chatOpenRef = useRef(chatOpen);
+  chatOpenRef.current = chatOpen;
+  const endedRef = useRef(ended);
+  endedRef.current = ended;
+  const resumePlay = () => {
+    setPaused(false);
+    document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.();
+  };
+  const openPause = () => {
+    document.exitPointerLock?.();
+    setPaused(true);
+  };
+  // Exiting pointer lock (one Esc) opens the pause menu; locking dismisses it.
+  useEffect(() => {
+    const onPlc = () => {
+      const locked = document.pointerLockElement != null;
+      if (locked) setPaused(false);
+      else if (!endedRef.current && !chatOpenRef.current) setPaused(true);
+    };
+    document.addEventListener("pointerlockchange", onPlc);
+    return () => document.removeEventListener("pointerlockchange", onPlc);
+  }, []);
+
   useEffect(() => {
     if (!ended) return;
     setChatOpen(false);
@@ -150,7 +173,6 @@ function Match() {
       }
       if (e.code === "Escape") {
         if (chatOpen) setChatOpen(false);
-        else if (!ended) setPaused((p) => !p);
         return;
       }
       if (ended) return;
@@ -174,6 +196,7 @@ function Match() {
         <strong>{formatTime(remainingMs)}</strong>
         <div>{snapshot.game.mode}</div>
       </div>
+      {!ended && !paused && <button className="gl-btn gl-btn--ghost gl-btn--sm esc-hint" onClick={openPause}>Esc · pause / exit</button>}
       {scoped && <ScopeOverlay />}
       {scoped && scopeShotAt > 0 && <div className="scope-shot-cue" />}
       {!ended && !scoped && <div className="crosshair"><Crosshair size={28} /></div>}
@@ -203,7 +226,7 @@ function Match() {
         </div>
       )}
       {ended && <RoundSummary snapshot={snapshot} playerId={playerId} returnSeconds={returnSeconds} onReturn={returnToLobby} />}
-      {paused && <div className="modal help"><h2>Paused</h2><p>WASD move, mouse look, click fire, right click sniper scope, R reload, Shift sprint, Space jump, Enter opens chat, Enter sends, Escape closes chat, 1-5 weapons.</p><button onClick={() => setPaused(false)}>Resume</button><button onClick={returnToLobby}>Leave to Lobby</button></div>}
+      {paused && <div className="modal help"><h2>Paused</h2><p>WASD move, mouse look, click fire, right click sniper scope, R reload, Shift sprint, Space jump, Enter opens chat, Enter sends, Escape closes chat, 1-5 weapons.</p><div className="pause-actions"><button className="gl-btn" onClick={resumePlay}>Resume</button><button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button></div></div>}
     </main>
   );
 }
