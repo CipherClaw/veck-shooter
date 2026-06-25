@@ -58,6 +58,7 @@ function PlayerController() {
   const weapon = useGame((s) => s.weapon);
   const muted = useGame((s) => s.muted);
   const setScoped = useGame((s) => s.setScoped);
+  const paused = useGame((s) => s.paused);
   const [zoom, setZoom] = useState(false);
   const [spraying, setSpraying] = useState(false);
   const velocity = useRef(new THREE.Vector3());
@@ -279,7 +280,7 @@ function PlayerController() {
   return (
     <>
       <FirstPersonRig weapon={weapon} velocity={velocity} bob={bob} recoil={recoil} scoped={scoped} spraying={spraying && weapon === "watergun"} playerColor={me?.team === "green" ? "#22c55e" : me?.team === "red" ? "#ef4444" : "#3b82f6"} />
-      {me?.alive && matchActive && !locked && (
+      {me?.alive && matchActive && !locked && !paused && (
         <Html fullscreen>
           <button className="play-overlay" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => {
             e.stopPropagation();

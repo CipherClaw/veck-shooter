@@ -20,6 +20,7 @@ type State = {
   muted: boolean;
   scoped: boolean;
   scopeShotAt: number;
+  paused: boolean;
   fx: Fx[];
   error: string;
   setName: (name: string) => void;
@@ -29,6 +30,7 @@ type State = {
   setMuted: (muted: boolean) => void;
   setScoped: (scoped: boolean) => void;
   setScopeShotAt: (scopeShotAt: number) => void;
+  setPaused: (paused: boolean) => void;
 };
 
 export const useGame = create<State>((set) => ({
@@ -43,6 +45,7 @@ export const useGame = create<State>((set) => ({
   muted: localStorage.getItem("veck.muted") === "true",
   scoped: false,
   scopeShotAt: 0,
+  paused: false,
   fx: [],
   error: "",
   setName: (name) => {
@@ -61,7 +64,8 @@ export const useGame = create<State>((set) => ({
     set({ muted });
   },
   setScoped: (scoped) => set({ scoped }),
-  setScopeShotAt: (scopeShotAt) => set({ scopeShotAt })
+  setScopeShotAt: (scopeShotAt) => set({ scopeShotAt }),
+  setPaused: (paused) => set({ paused })
 }));
 
 export const actions = {

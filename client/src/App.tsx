@@ -89,9 +89,8 @@ function Lobby() {
 }
 
 function Match() {
-  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped, scopeShotAt } = useGame();
+  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped, scopeShotAt, paused, setPaused } = useGame();
   const [chatOpen, setChatOpen] = useState(false);
-  const [paused, setPaused] = useState(false);
   const [returnSeconds, setReturnSeconds] = useState(13);
   const me = snapshot?.players.find((p) => p.id === playerId);
   const scores = useMemo(() => snapshot?.players.slice().sort((a, b) => b.kills - a.kills) ?? [], [snapshot]);
@@ -226,7 +225,7 @@ function Match() {
         </div>
       )}
       {ended && <RoundSummary snapshot={snapshot} playerId={playerId} returnSeconds={returnSeconds} onReturn={returnToLobby} />}
-      {paused && <div className="modal help"><h2>Paused</h2><p>WASD move, mouse look, click fire, right click sniper scope, R reload, Shift sprint, Space jump, Enter opens chat, Enter sends, Escape closes chat, 1-5 weapons.</p><div className="pause-actions"><button className="gl-btn" onClick={resumePlay}>Resume</button><button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button></div></div>}
+      {paused && <div className="gl-pause-overlay"><div className="gl-pause-card"><h2>Paused</h2><p className="pause-controls">WASD move · Mouse look · Click fire · R reload · Shift sprint · Space jump · Enter chat</p><div className="gl-pause-actions"><button className="gl-btn" onClick={resumePlay}>Resume</button><button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button></div></div></div>}
     </main>
   );
 }

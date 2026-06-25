@@ -11,6 +11,11 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .gl-btn--sm { padding: 6px 10px; font-size: 12px; }
 .esc-hint { position: absolute; top: 12px; left: 12px; z-index: 6; }
 .pause-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+.gl-pause-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: rgba(5,8,16,.82); }
+.gl-pause-card { background: #0f1830; border: 1px solid rgba(255,255,255,.15); border-radius: 16px; padding: 26px 30px; text-align: center; color: #e8ecf6; box-shadow: 0 20px 60px rgba(0,0,0,.5); max-width: min(460px, calc(100vw - 30px)); }
+.gl-pause-card h2 { margin: 0 0 12px; text-shadow: none; }
+.gl-pause-card .pause-controls { margin: 0 0 18px; font-size: 13px; color: #9aa6c2; }
+.gl-pause-actions { display: flex; gap: 12px; justify-content: center; }
 input { width: 100%; border: 3px solid #101827; border-radius: 8px; padding: 11px 12px; background: #fff; color: #111827; font-weight: 700; outline: none; }
 label { display: block; margin: 12px 0 6px; color: #dbeafe; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
 .lobby, .match { width: 100vw; height: 100vh; position: relative; }
