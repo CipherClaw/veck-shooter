@@ -332,7 +332,7 @@ function SubwayEntrances() {
     <group>
       {[-1, 1].flatMap((side) => [-1, 1].map((zSign) => (
         <group key={`${side}-${zSign}`}>
-          <Entrance x={side * 16.5} z={zSign * 40.8} zSign={zSign} />
+          <Entrance x={side * 16.5} z={zSign * 23.2} zSign={zSign} />
         </group>
       )))}
     </group>
@@ -350,7 +350,7 @@ function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
   const backPosts = [-2.35, 0, 2.35];
 
   return (
-    <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]}>
+    <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? Math.PI : 0, 0]}>
       {[-4.65, 4.65].map((railX) => (
         <group key={railX}>
           <mesh position={[railX, 1.08, sideRailZ]} castShadow>
@@ -387,7 +387,7 @@ function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
         <boxGeometry args={[3.9, 0.72, 0.14]} />
         <meshStandardMaterial color="#111111" roughness={0.38} />
       </mesh>
-      <Text position={[0, 0.95, -1.1]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0.95, -1.1]} rotation={[0, zSign > 0 ? Math.PI : 0, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
         SUBWAY
       </Text>
       {[-5.15, 5.15].map((lampX) => (
