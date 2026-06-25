@@ -387,7 +387,10 @@ function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
         <boxGeometry args={[3.9, 0.72, 0.14]} />
         <meshStandardMaterial color="#111111" roughness={0.38} />
       </mesh>
-      <Text position={[0, 0.95, -1.1]} rotation={[0, zSign > 0 ? Math.PI : 0, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0.95, -0.91]} rotation={[0, 0, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
+        SUBWAY
+      </Text>
+      <Text position={[0, 0.95, -1.09]} rotation={[0, Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
         SUBWAY
       </Text>
       {[-5.15, 5.15].map((lampX) => (
