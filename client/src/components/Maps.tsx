@@ -350,7 +350,7 @@ function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
   ];
 
   return (
-    <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? Math.PI : 0, 0]}>
+    <group position={[x, 7.05, z]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]}>
       {[-4.65, 4.65].map((railX) => (
         <group key={railX}>
           <mesh position={[railX, 1.08, -0.8]} castShadow>
@@ -381,7 +381,7 @@ function Entrance({ x, z, zSign }: { x: number; z: number; zSign: number }) {
         <boxGeometry args={[3.9, 0.72, 0.14]} />
         <meshStandardMaterial color="#111111" roughness={0.38} />
       </mesh>
-      <Text position={[0, 0.95, -3.02]} rotation={[0, Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
+      <Text position={[0, 0.95, -3.02]} rotation={[0, zSign > 0 ? 0 : Math.PI, 0]} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle">
         SUBWAY
       </Text>
       {[-5.15, 5.15].map((lampX) => (

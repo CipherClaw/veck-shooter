@@ -141,18 +141,24 @@ describe("game rules", () => {
     expect(pad?.launchVelocity).toBe(BOUNCE_PAD_LAUNCH_SPEED);
   });
 
-  it("blocks subway stair flights from the side and back while keeping the low front open", () => {
+  it("blocks subway stair flights from the side and underneath while keeping both ends open", () => {
     const sideBlocked = resolvePlayerPosition("Subway", { x: 11.6, y: 2.5, z: 30 }, { x: 10.6, y: 2.5, z: 30 });
     expect(sideBlocked.x).toBeLessThan(11.6);
     expect(sideBlocked.y).toBeCloseTo(2.5);
 
-    const backBlocked = resolvePlayerPosition("Subway", { x: 16.5, y: 8.2, z: 39.8 }, { x: 16.5, y: 8.2, z: 42 });
-    expect(backBlocked.z).toBeGreaterThan(39.8);
-    expect(backBlocked.y).toBeCloseTo(8.2);
+    let underBlocked = { x: 24, y: 2.5, z: 30 };
+    for (let i = 0; i < 30; i++) underBlocked = resolvePlayerPosition("Subway", { x: underBlocked.x - 0.6, y: underBlocked.y, z: underBlocked.z }, underBlocked);
+    expect(underBlocked.x).toBeGreaterThan(21);
+    expect(underBlocked.y).toBeCloseTo(2.5);
 
     const frontStep = resolvePlayerPosition("Subway", { x: 16.5, y: 2.5, z: 24 }, { x: 16.5, y: 2.5, z: 20 });
     expect(frontStep.z).toBeCloseTo(24);
     expect(frontStep.y).toBeGreaterThan(2.5);
+
+    let down = { x: 16.5, y: 8.2, z: 46 };
+    for (let i = 0; i < 60; i++) down = resolvePlayerPosition("Subway", { x: down.x, y: down.y, z: down.z - 0.6 }, down);
+    expect(down.y).toBeCloseTo(2.5);
+    expect(down.z).toBeLessThan(24);
   });
 
   it("does not award solo round wins or coins", () => {

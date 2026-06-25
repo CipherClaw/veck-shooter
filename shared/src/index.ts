@@ -329,14 +329,30 @@ function subwayStairWalls(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
       center: { x: x + 4.7, y: 5.5, z: zSign * 30.5 },
       size: { x: 0.4, y: 9, z: 17 },
       color
-    },
-    {
-      id: `subway-stair-wall-${sideName}-${endName}-back`,
-      center: { x, y: 5.5, z: zSign * 40 },
-      size: { x: 9.6, y: 9, z: 0.4 },
-      color
     }
   ];
+}
+
+function subwayStairUndersideFill(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
+  const x = side * 16.5;
+  const zBottom = zSign * 24;
+  const zTop = zSign * 38;
+  const bottom = 1.0;
+  const sideName = side > 0 ? "east" : "west";
+  const endName = zSign > 0 ? "north" : "south";
+
+  return subwayStepStandYs.slice(2).map((standY, index) => {
+    const i = index + 2;
+    const t = subwayStepStandYs.length === 1 ? 0 : i / (subwayStepStandYs.length - 1);
+    const z = zBottom + (zTop - zBottom) * t;
+    const top = standY - 1.2 - subwayStepHeight - 0.05;
+    return {
+      id: `subway-stair-fill-${sideName}-${endName}-${i}`,
+      center: { x, y: (bottom + top) / 2, z },
+      size: { x: 8, y: top - bottom, z: 3.4 },
+      color: "#20282d"
+    };
+  });
 }
 
 const subwayColumnZs = [-48, -36, -24, -12, 0, 12, 24, 36, 48];
@@ -381,6 +397,10 @@ const subwayColliders: ArenaCollider[] = [
   ...subwayStairWalls(-1, -1),
   ...subwayStairWalls(1, 1),
   ...subwayStairWalls(1, -1),
+  ...subwayStairUndersideFill(-1, 1),
+  ...subwayStairUndersideFill(-1, -1),
+  ...subwayStairUndersideFill(1, 1),
+  ...subwayStairUndersideFill(1, -1),
   ...[
     [-38, -34], [38, 34], [-46, 12], [45, -16]
   ].map(([x, z], i) => ({ id: `subway-taxi-cover-${i}`, center: { x, y: 7.6, z }, size: { x: 5.2, y: 1.2, z: 2.7 }, color: "#f2c230" }))
@@ -475,7 +495,12 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   }
   resolved.x = clamp(resolved.x, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS);
   resolved.z = clamp(resolved.z, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS);
-  resolved.y = Math.max(resolved.y, supportY(arena, resolved, ground));
+  const finalGround = supportY(arena, resolved, ground);
+  if (map === "Subway" && next.y <= last.y + 0.05 && resolved.y - finalGround <= 0.8) {
+    resolved.y = finalGround;
+  } else {
+    resolved.y = Math.max(resolved.y, finalGround);
+  }
   return resolved;
 }
 
