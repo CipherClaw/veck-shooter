@@ -28,3 +28,22 @@ And CLI"). Do not rely on cached `railway login`.
 
 - Railway project: `veck-shooter`, environment `production`, service `veck-shooter`
 - Public URL: `https://veck-shooter-production.up.railway.app`
+
+## greglab-games shared profile integration
+
+This game is integrated with the cross-game profile hub at https://games.greglab.net
+(project `greglab-games`). See that repo's `docs/integration.md`.
+
+- Client reads the shared `.greglab.net` cookie (`gl_player`) via `client/src/greglab.ts`
+  and forwards the token as `glToken` in the socket `hello`. Display name defaults to
+  the hub name (`gl_name`).
+- Server (`server/src/profile.ts` = `ProfileHub`) resolves the token to the canonical
+  hub profile; `GameHub` shows the **shared coin wallet** and reports per-game
+  coins/kills/deaths/wins to the hub on game end (`endGame`). Refreshed stats are pushed
+  to clients via the tick loop after each game.
+- Fully backward-compatible: with no token or an unreachable hub, the game falls back to
+  the local SQLite/guest behavior unchanged.
+- Veck's own matchmaking identity (`veck.playerId`) is unchanged; the hub id is tracked
+  separately for reporting only.
+- Env on the Railway `veck-shooter` service: `PROFILE_API_URL=https://games.greglab.net`
+  and `PROFILE_API_KEY` (same value as the hub; secret, set via `variable set --stdin`).
