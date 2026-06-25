@@ -46,7 +46,11 @@ export function ArenaMap({ map }: { map: MapName }) {
 }
 
 function hiddenCollider(id: string) {
-  return id.startsWith("forest-tree") || id.startsWith("forest-rock") || id.startsWith("subway-train") || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
+  return id.startsWith("forest-tree")
+    || id.startsWith("forest-rock")
+    || id.startsWith("subway-train")
+    || id.startsWith("subway-stair-wall")
+    || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
 }
 
 function PyramidDetails() {
@@ -328,8 +332,55 @@ function SubwayEntrances() {
   return (
     <group>
       {[-1, 1].flatMap((side) => [-1, 1].map((zSign) => (
-        <Entrance key={`${side}-${zSign}`} x={side * 16.5} z={zSign * 40.8} zSign={zSign} />
+        <group key={`${side}-${zSign}`}>
+          <StairwellRailings side={side} zSign={zSign} />
+          <Entrance x={side * 16.5} z={zSign * 40.8} zSign={zSign} />
+        </group>
       )))}
+    </group>
+  );
+}
+
+function StairwellRailings({ side, zSign }: { side: number; zSign: number }) {
+  const green = "#14532d";
+  const x = side * 16.5;
+  const railXs = [x - 4.55, x + 4.55];
+  const zBottom = zSign * 22;
+  const zTop = zSign * 39;
+  const yBottom = 3.7;
+  const yTop = 8.05;
+  const zMid = (zBottom + zTop) / 2;
+  const yMid = (yBottom + yTop) / 2;
+  const zSpan = Math.abs(zTop - zBottom);
+  const railLength = Math.hypot(zSpan, yTop - yBottom);
+  const railTilt = -zSign * Math.atan2(yTop - yBottom, zSpan);
+  const postHeight = 1.3;
+  const posts = Array.from({ length: 8 }, (_, i) => i / 7);
+
+  return (
+    <group>
+      {railXs.map((railX) => (
+        <group key={railX}>
+          <mesh position={[railX, yMid, zMid]} rotation={[railTilt, 0, 0]} castShadow>
+            <boxGeometry args={[0.22, 0.16, railLength]} />
+            <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+          </mesh>
+          <mesh position={[railX, yMid - 0.58, zMid]} rotation={[railTilt, 0, 0]} castShadow>
+            <boxGeometry args={[0.14, 0.1, railLength]} />
+            <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+          </mesh>
+          {posts.map((t) => {
+            const y = yBottom + (yTop - yBottom) * t;
+            const z = zBottom + (zTop - zBottom) * t;
+            return (
+              <mesh key={t} position={[railX, y - postHeight / 2, z]} castShadow>
+                <boxGeometry args={[0.2, postHeight, 0.2]} />
+                <meshStandardMaterial color={green} roughness={0.54} metalness={0.18} />
+              </mesh>
+            );
+          })}
+        </group>
+      ))}
     </group>
   );
 }
