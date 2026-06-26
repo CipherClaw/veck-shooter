@@ -484,6 +484,47 @@ function blueprintTower(id: string, x: number, z: number, width: number, depth: 
   ];
 }
 
+function blueprintTowerClimb(id: string, cx: number, cz: number, width: number, depth: number, levels: number[]): ArenaCollider[] {
+  const halfW = (width - 3.2) / 2;
+  const halfD = (depth - 3.2) / 2;
+  const ladderOut = 1.0;
+  const ledgeOut = 1.25;
+  const ledgeThick = 0.7;
+  const faces = [
+    { x: 0, z: -1 },
+    { x: 1, z: 0 },
+    { x: 0, z: 1 },
+    { x: -1, z: 0 }
+  ];
+  const out: ArenaCollider[] = [];
+
+  for (let i = 0; i < levels.length; i++) {
+    const n = faces[i % faces.length];
+    const bottomY = i === 0 ? 1.2 : levels[i - 1];
+    const topY = levels[i];
+    const lx = cx + n.x * (halfW + ladderOut);
+    const lz = cz + n.z * (halfD + ladderOut);
+
+    out.push(blueprintLadder(`blueprint-ladder-${id}-${i}`, lx, lz, bottomY, topY, { x: n.x, z: n.z }));
+
+    if (i > 0) {
+      const ex = cx + n.x * (halfW + ledgeOut);
+      const ez = cz + n.z * (halfD + ledgeOut);
+      const alongX = n.z !== 0;
+
+      out.push({
+        id: `blueprint-ledge-${id}-${i}`,
+        center: { x: ex, y: bottomY - 1.2 - ledgeThick / 2, z: ez },
+        size: { x: alongX ? 3.6 : 3.2, y: ledgeThick, z: alongX ? 3.2 : 3.6 },
+        color: "#1d4ed8",
+        climbable: true
+      });
+    }
+  }
+
+  return out;
+}
+
 const blueprintColliders: ArenaCollider[] = [
   ...blueprintTower("central", -18, -10, 22, 20, [7, 14, 21, 28]),
   ...blueprintTower("east", 28, 18, 18, 24, [7, 14, 21]),
@@ -494,24 +535,11 @@ const blueprintColliders: ArenaCollider[] = [
   blueprintDeck("blueprint-skybridge-east", 5, 4, 30, 6, 21, "#1e3a8a"),
   blueprintDeck("blueprint-low-bridge-south", 4, -36, 54, 5, 7, "#1d4ed8"),
   blueprintDeck("blueprint-mid-overlook", 16, -14, 18, 10, 14, "#2563eb"),
-  ...[
-    blueprintLadder("blueprint-ladder-central-1", -22, -21.4, 1.2, 7, { x: 0, z: -1 }),
-    blueprintLadder("blueprint-ladder-central-2", -8.6, -14, 7, 14, { x: 1, z: 0 }),
-    blueprintLadder("blueprint-ladder-central-3", -14, -1.4, 14, 21, { x: 0, z: 1 }),
-    blueprintLadder("blueprint-ladder-central-4", -29.4, -6, 21, 28, { x: -1, z: 0 }),
-    blueprintLadder("blueprint-ladder-east-1", 24, 4.6, 1.2, 7, { x: 0, z: -1 }),
-    blueprintLadder("blueprint-ladder-east-2", 19.6, 14, 7, 14, { x: -1, z: 0 }),
-    blueprintLadder("blueprint-ladder-east-3", 32, 31.4, 14, 21, { x: 0, z: 1 }),
-    blueprintLadder("blueprint-ladder-northwest-1", -44, 21.6, 1.2, 7, { x: 0, z: -1 }),
-    blueprintLadder("blueprint-ladder-northwest-2", -29.6, 29, 7, 14, { x: 1, z: 0 }),
-    blueprintLadder("blueprint-ladder-northwest-3", -36, 42.4, 14, 21, { x: 0, z: 1 }),
-    blueprintLadder("blueprint-ladder-northwest-4", -50.4, 35, 21, 28, { x: -1, z: 0 }),
-    blueprintLadder("blueprint-ladder-southeast-1", 38, -44.4, 1.2, 7, { x: 0, z: -1 }),
-    blueprintLadder("blueprint-ladder-southeast-2", 51.4, -38, 7, 14, { x: 1, z: 0 }),
-    blueprintLadder("blueprint-ladder-southwest-1", -39, -47.4, 1.2, 7, { x: 0, z: -1 }),
-    blueprintLadder("blueprint-ladder-southwest-2", -21.4, -41, 7, 14, { x: 1, z: 0 }),
-    blueprintLadder("blueprint-ladder-southwest-3", -30, -28.6, 14, 21, { x: 0, z: 1 })
-  ],
+  ...blueprintTowerClimb("central", -18, -10, 22, 20, [7, 14, 21, 28]),
+  ...blueprintTowerClimb("east", 28, 18, 18, 24, [7, 14, 21]),
+  ...blueprintTowerClimb("northwest", -40, 32, 20, 18, [7, 14, 21, 28]),
+  ...blueprintTowerClimb("southeast", 42, -34, 18, 18, [7, 14]),
+  ...blueprintTowerClimb("southwest", -34, -38, 24, 16, [7, 14, 21]),
   ...[
     [-56, 0, 1.8, 7.2, 112, "blueprint-wall-west"],
     [56, 0, 1.8, 7.2, 112, "blueprint-wall-east"],
