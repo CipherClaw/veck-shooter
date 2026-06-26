@@ -546,8 +546,11 @@ function blueprintTowerClimb(id: string, cx: number, cz: number, width: number, 
   const halfW = (width - 3.2) / 2;
   const halfD = (depth - 3.2) / 2;
   const ladderOut = 1.0;
-  const ledgeOut = 1.25;
-  const ledgeThick = 0.7;
+  const ledgeOut = 3.0;
+  const ledgeIn = 1.2;
+  const ledgeSpan = 5.8;
+  const ledgeDepth = ledgeOut + ledgeIn;
+  const ledgeThick = 0.8;
   const faces = [
     { x: 0, z: -1 },
     { x: 1, z: 0 },
@@ -566,14 +569,15 @@ function blueprintTowerClimb(id: string, cx: number, cz: number, width: number, 
     out.push(blueprintLadder(`blueprint-ladder-${id}-${i}`, lx, lz, bottomY, topY, { x: n.x, z: n.z }));
 
     if (i > 0) {
-      const ex = cx + n.x * (halfW + ledgeOut);
-      const ez = cz + n.z * (halfD + ledgeOut);
+      const ledgeCenterOut = (ledgeOut - ledgeIn) / 2;
+      const ex = cx + n.x * (halfW + ledgeCenterOut);
+      const ez = cz + n.z * (halfD + ledgeCenterOut);
       const alongX = n.z !== 0;
 
       out.push({
         id: `blueprint-ledge-${id}-${i}`,
         center: { x: ex, y: bottomY - 1.2 - ledgeThick / 2, z: ez },
-        size: { x: alongX ? 3.6 : 3.2, y: ledgeThick, z: alongX ? 3.2 : 3.6 },
+        size: { x: alongX ? ledgeSpan : ledgeDepth, y: ledgeThick, z: alongX ? ledgeDepth : ledgeSpan },
         color: "#1d4ed8",
         climbable: true
       });
@@ -589,9 +593,9 @@ const blueprintColliders: ArenaCollider[] = [
   ...blueprintTower("northwest", -40, 32, 20, 18, [7, 14, 21, 28]),
   ...blueprintTower("southeast", 42, -34, 18, 18, [7, 14]),
   ...blueprintTower("southwest", -34, -38, 24, 16, [7, 14, 21]),
-  blueprintDeck("blueprint-skybridge-west", -29, 11, 6, 38, 14, "#1e3a8a"),
-  blueprintDeck("blueprint-skybridge-east", 5, 4, 30, 6, 21, "#1e3a8a"),
-  blueprintDeck("blueprint-low-bridge-south", 4, -36, 54, 5, 7, "#1d4ed8"),
+  blueprintDeck("blueprint-skybridge-west", -29.5, 11, 7, 38, 14, "#1e3a8a"),
+  blueprintDeck("blueprint-skybridge-east", 5.5, 3, 30.2, 11.2, 21, "#1e3a8a"),
+  blueprintDeck("blueprint-low-bridge-south", 5.5, -36, 60.2, 5, 7, "#1d4ed8"),
   blueprintDeck("blueprint-mid-overlook", 16, -14, 18, 10, 14, "#2563eb"),
   ...blueprintTowerClimb("central", -18, -10, 22, 20, [7, 14, 21, 28]),
   ...blueprintTowerClimb("east", 28, 18, 18, 24, [7, 14, 21]),
