@@ -122,6 +122,8 @@ function Match() {
   chatOpenRef.current = chatOpen;
   const endedRef = useRef(ended);
   endedRef.current = ended;
+  const aliveRef = useRef(me?.alive);
+  aliveRef.current = me?.alive;
   const resumePlay = () => {
     setPaused(false);
     document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.();
@@ -135,11 +137,15 @@ function Match() {
     const onPlc = () => {
       const locked = document.pointerLockElement != null;
       if (locked) setPaused(false);
-      else if (!endedRef.current && !chatOpenRef.current) setPaused(true);
+      else if (!endedRef.current && !chatOpenRef.current && aliveRef.current) setPaused(true);
     };
     document.addEventListener("pointerlockchange", onPlc);
     return () => document.removeEventListener("pointerlockchange", onPlc);
   }, []);
+
+  useEffect(() => {
+    if (!ended && me?.alive === false) document.exitPointerLock?.();
+  }, [ended, me?.alive]);
 
   useEffect(() => {
     if (!ended) return;
