@@ -314,7 +314,7 @@ const practiceColliders: ArenaCollider[] = [
   practiceDeck("practice-overlook-west", -31, 0, 11, 30, 8, "#ffffff"),
   practiceDeck("practice-overlook-east", 31, 0, 11, 30, 8, "#f8fafc"),
   practiceDeck("practice-right-platform", 28, -23, 18, 12, 6.55, "#f1f5f9"),
-  practiceDeck("practice-corner-ladder-ledge-southeast", 44, 49.3, 13, 5, 9.7, "#ffffff"),
+  practiceDeck("practice-corner-ladder-ledge-southeast", 45.2, 49.3, 5.4, 5, 9.7, "#ffffff"),
   practiceBlock("practice-overlook-west-support-a", -31, -12, 2.4, 2.4, 6.8, "#9aa5af"),
   practiceBlock("practice-overlook-west-support-b", -31, 12, 2.4, 2.4, 6.8, "#9aa5af"),
   practiceBlock("practice-overlook-east-support-a", 31, -12, 2.4, 2.4, 6.8, "#8f9aa5"),

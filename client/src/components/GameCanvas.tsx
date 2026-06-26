@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Line, Sky, Stars } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
@@ -55,11 +55,13 @@ export function GameCanvas() {
 }
 
 function PlayerController() {
-  const { camera, gl } = useThree();
+  const { camera, gl, scene } = useThree();
   const playerId = useGame((s) => s.playerId);
   const snapshot = useGame((s) => s.snapshot);
   const weapon = useGame((s) => s.weapon);
   const muted = useGame((s) => s.muted);
+  const hitPracticeTarget = useGame((s) => s.hitPracticeTarget);
+  const resetPracticeTargets = useGame((s) => s.resetPracticeTargets);
   const setScoped = useGame((s) => s.setScoped);
   const setStamina = useGame((s) => s.setStamina);
   const paused = useGame((s) => s.paused);
@@ -80,6 +82,9 @@ function PlayerController() {
   const recoil = useRef(0);
   const bob = useRef(0);
   const scopedRef = useRef(false);
+  const practiceRaycaster = useRef(new THREE.Raycaster());
+  const practiceRayCenter = useRef(new THREE.Vector2(0, 0));
+  const practiceRayHits = useRef<THREE.Intersection[]>([]);
   const stamina = useRef(1);
   const sprintLocked = useRef(false);
   const lastStaminaEmit = useRef(1);
@@ -105,6 +110,25 @@ function PlayerController() {
   useEffect(() => {
     scopedRef.current = scoped;
   }, [scoped]);
+
+  useEffect(() => {
+    if (map !== "Practice Range") resetPracticeTargets();
+    return () => resetPracticeTargets();
+  }, [map, resetPracticeTargets]);
+
+  const hitPracticeTargetAtCrosshair = useCallback(() => {
+    if (map !== "Practice Range") return;
+    const hits = practiceRayHits.current;
+    hits.length = 0;
+    practiceRaycaster.current.setFromCamera(practiceRayCenter.current, camera);
+    practiceRaycaster.current.intersectObjects(scene.children, true, hits);
+    const firstWorldHit = hits.find((hit) => hit.object instanceof THREE.Mesh && !isDescendantOf(hit.object, camera) && !hasUserDataFlag(hit.object, "ignorePracticeTargetRaycast"));
+    if (!firstWorldHit) return;
+    const targetId = practiceTargetId(firstWorldHit.object);
+    if (!targetId) return;
+    const hitPoint = firstWorldHit.point;
+    if (hitPracticeTarget(targetId, { x: hitPoint.x, y: hitPoint.y, z: hitPoint.z })) beep("explosion", muted, 0.24);
+  }, [camera, hitPracticeTarget, map, muted, scene]);
 
   useEffect(() => {
     if (me?.alive && matchActive) return;
@@ -147,6 +171,7 @@ function PlayerController() {
       firing.current = false;
       if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep("reload", muted);
       recoil.current = Math.min(1, recoil.current + 0.85);
+      hitPracticeTargetAtCrosshair();
       shoot(camera, weapon, ++shotSeq.current);
     };
     const stopFire = (e: MouseEvent) => {
@@ -185,7 +210,7 @@ function PlayerController() {
       window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
-  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, muted, paused, weapon]);
+  }, [camera, gl.domElement, hitPracticeTargetAtCrosshair, lockCooldown, matchActive, me?.alive, muted, paused, weapon]);
 
   useEffect(() => {
     if (!me?.alive || !matchActive) {
@@ -298,6 +323,7 @@ function PlayerController() {
         if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep("reload", muted);
         setSpraying(true);
         recoil.current = Math.min(0.65, recoil.current + 0.14);
+        hitPracticeTargetAtCrosshair();
         shoot(camera, weapon, ++shotSeq.current);
       }
     }
@@ -389,6 +415,34 @@ function shoot(camera: THREE.Camera, weapon: string, seq: number) {
     weapon: weapon as never,
     seq
   });
+}
+
+function practiceTargetId(object: THREE.Object3D): string | null {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    const targetId = current.userData.practiceTargetId;
+    if (typeof targetId === "string") return targetId;
+    current = current.parent;
+  }
+  return null;
+}
+
+function hasUserDataFlag(object: THREE.Object3D, flag: string) {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    if (current.userData[flag]) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+function isDescendantOf(object: THREE.Object3D, ancestor: THREE.Object3D) {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    if (current === ancestor) return true;
+    current = current.parent;
+  }
+  return false;
 }
 
 function weaponAmmoCost(weapon: WeaponId) {

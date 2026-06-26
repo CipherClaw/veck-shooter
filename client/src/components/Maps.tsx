@@ -1,5 +1,9 @@
 import { Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import * as THREE from "three";
 import { ARENAS, type ArenaBouncePad, type ArenaCollider, type MapName } from "@veck/shared";
+import { useGame, type PracticeTargetFx } from "../state/store";
 
 function Tile({ collider }: { collider: ArenaCollider }) {
   const { center, size, color } = collider;
@@ -77,11 +81,13 @@ function PracticeDetails() {
   const colliders = ARENAS["Practice Range"].colliders;
   const visibleColliders = colliders.filter((collider) => !hiddenCollider(collider.id));
   const ladders = colliders.filter((collider) => collider.ladder && collider.id.startsWith("practice-ladder"));
+  const practiceTargetFx = useGame((s) => s.practiceTargetFx);
   return (
     <group>
       {visibleColliders.map((collider) => <PracticeGridBox key={`grid-${collider.id}`} collider={collider} />)}
       {ladders.map((collider) => <CornerLadder key={collider.id} collider={collider} />)}
       {practiceTargets.map((target) => <PracticeTarget key={target.id} {...target} />)}
+      {practiceTargetFx.map((fx) => <PracticeTargetBurst key={fx.id} fx={fx} />)}
       {ARENAS["Practice Range"].bouncePads?.map((pad) => (
         <pointLight key={`light-${pad.id}`} color={pad.color} intensity={0.45} distance={15} position={[pad.center.x, 1.4, pad.center.z]} />
       ))}
@@ -111,9 +117,11 @@ const practiceTargets: PracticeTargetSpec[] = [
   { id: "float-center", position: [0, 31.5, -10], rotation: [0, 0, 0], scale: 1.15 }
 ];
 
-function PracticeTarget({ position, rotation, scale = 1 }: PracticeTargetSpec) {
+function PracticeTarget({ id, position, rotation, scale = 1 }: PracticeTargetSpec) {
+  const hidden = useGame((s) => Boolean(s.hiddenPracticeTargets[id]));
+  if (hidden) return null;
   return (
-    <group position={position} rotation={rotation} scale={[scale, scale, scale]}>
+    <group position={position} rotation={rotation} scale={[scale, scale, scale]} userData={{ practiceTargetId: id }}>
       <mesh castShadow>
         <torusGeometry args={[0.82, 0.09, 12, 42]} />
         <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.12} roughness={0.44} />
@@ -130,6 +138,39 @@ function PracticeTarget({ position, rotation, scale = 1 }: PracticeTargetSpec) {
         <circleGeometry args={[0.12, 24]} />
         <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.12} roughness={0.4} />
       </mesh>
+    </group>
+  );
+}
+
+function PracticeTargetBurst({ fx }: { fx: PracticeTargetFx }) {
+  const group = useRef<THREE.Group>(null);
+  const shards = useRef(
+    Array.from({ length: 9 }, (_, i) => {
+      const angle = i * 2.399;
+      return new THREE.Vector3(Math.cos(angle) * (0.55 + (i % 3) * 0.18), Math.sin(i * 1.7) * 0.36, Math.sin(angle) * (0.55 + (i % 2) * 0.22));
+    })
+  );
+  useFrame(() => {
+    const age = Math.min(1, (performance.now() - fx.createdAt) / 480);
+    if (!group.current) return;
+    group.current.scale.setScalar(0.7 + age * 1.8);
+    group.current.children.forEach((child, i) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+      const dir = shards.current[i] ?? shards.current[0];
+      mesh.position.set(dir.x * age, dir.y * age, dir.z * age);
+      mesh.rotation.x += 0.12;
+      mesh.rotation.y += 0.09;
+      mesh.material.opacity = Math.max(0, 1 - age);
+    });
+  });
+  return (
+    <group ref={group} position={[fx.position.x, fx.position.y, fx.position.z]} userData={{ ignorePracticeTargetRaycast: true }}>
+      {shards.current.map((_, i) => (
+        <mesh key={i} castShadow>
+          <boxGeometry args={[0.16, 0.16, 0.05]} />
+          <meshStandardMaterial color={i % 2 === 0 ? "#ef4444" : "#f8fafc"} emissive={i % 2 === 0 ? "#ef4444" : "#ffffff"} emissiveIntensity={0.35} roughness={0.44} transparent opacity={1} />
+        </mesh>
+      ))}
     </group>
   );
 }
