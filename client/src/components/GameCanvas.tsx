@@ -503,11 +503,18 @@ function GrenadeProjectile({ position }: { position: Vec3 }) {
 }
 
 function ExplosionFx({ explosion }: { explosion: { position: Vec3; createdAt: number; radius: number } }) {
-  const age = Math.min(1, (Date.now() - explosion.createdAt) / 650);
+  const meshRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>>(null);
+  useFrame(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const age = Math.min(1, (Date.now() - explosion.createdAt) / 650);
+    mesh.scale.setScalar(1.2 + age * explosion.radius);
+    mesh.material.opacity = Math.max(0, 0.48 - age * 0.42);
+  });
   return (
-    <mesh position={[explosion.position.x, explosion.position.y, explosion.position.z]}>
-      <sphereGeometry args={[1.2 + age * explosion.radius, 24, 16]} />
-      <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={Math.max(0, 0.48 - age * 0.42)} />
+    <mesh ref={meshRef} position={[explosion.position.x, explosion.position.y, explosion.position.z]} scale={1.2}>
+      <sphereGeometry args={[1, 24, 16]} />
+      <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={0.48} />
     </mesh>
   );
 }
@@ -521,18 +528,40 @@ function isTextInputActive() {
 
 function RendererEvents() {
   const { gl } = useThree();
+  const [showReload, setShowReload] = useState(false);
   useEffect(() => {
+    let restorePrompt: number | undefined;
     const lost = (event: Event) => {
       event.preventDefault();
-      console.warn("WebGL context lost; rendering will resume when the browser restores it.");
+      console.warn("WebGL context lost; attempting renderer recovery.");
+      window.clearTimeout(restorePrompt);
+      restorePrompt = window.setTimeout(() => setShowReload(true), 1500);
+      if (typeof gl.forceContextRestore === "function") gl.forceContextRestore();
+      else setShowReload(true);
     };
-    const restored = () => console.info("WebGL context restored.");
+    const restored = () => {
+      window.clearTimeout(restorePrompt);
+      setShowReload(false);
+      console.info("WebGL context restored.");
+    };
     gl.domElement.addEventListener("webglcontextlost", lost, false);
     gl.domElement.addEventListener("webglcontextrestored", restored, false);
     return () => {
+      window.clearTimeout(restorePrompt);
       gl.domElement.removeEventListener("webglcontextlost", lost);
       gl.domElement.removeEventListener("webglcontextrestored", restored);
     };
-  }, [gl.domElement]);
-  return null;
+  }, [gl]);
+  if (!showReload) return null;
+  return (
+    <Html fullscreen>
+      <div className="gl-pause-overlay">
+        <div className="gl-pause-card">
+          <h2>Graphics reset</h2>
+          <p className="pause-controls">The renderer needs a page reload to recover.</p>
+          <button className="gl-btn" onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      </div>
+    </Html>
+  );
 }

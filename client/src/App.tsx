@@ -123,9 +123,14 @@ function Match() {
   endedRef.current = ended;
   const aliveRef = useRef(me?.alive);
   aliveRef.current = me?.alive;
+  const pointerLockWasEngagedRef = useRef(false);
+  useEffect(() => {
+    pointerLockWasEngagedRef.current = false;
+    setPaused(false);
+  }, [gameId, setPaused]);
   const resumePlay = () => {
     setPaused(false);
-    document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.();
+    document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.().catch(() => undefined);
   };
   const openPause = () => {
     document.exitPointerLock?.();
@@ -134,13 +139,20 @@ function Match() {
   // Exiting pointer lock (one Esc) opens the pause menu; locking dismisses it.
   useEffect(() => {
     const onPlc = () => {
-      const locked = document.pointerLockElement != null;
-      if (locked) setPaused(false);
-      else if (!endedRef.current && !chatOpenRef.current && aliveRef.current) setPaused(true);
+      const canvas = document.querySelector<HTMLCanvasElement>("main.match canvas");
+      const locked = document.pointerLockElement === canvas;
+      if (locked) {
+        pointerLockWasEngagedRef.current = true;
+        setPaused(false);
+        return;
+      }
+      const shouldPause = pointerLockWasEngagedRef.current && !endedRef.current && !chatOpenRef.current && aliveRef.current;
+      pointerLockWasEngagedRef.current = false;
+      if (shouldPause) setPaused(true);
     };
     document.addEventListener("pointerlockchange", onPlc);
     return () => document.removeEventListener("pointerlockchange", onPlc);
-  }, []);
+  }, [setPaused]);
 
   useEffect(() => {
     if (!ended && me?.alive === false) document.exitPointerLock?.();
