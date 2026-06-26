@@ -594,7 +594,7 @@ const blueprintColliders: ArenaCollider[] = [
   ...blueprintTower("southeast", 42, -34, 18, 18, [7, 14]),
   ...blueprintTower("southwest", -34, -38, 24, 16, [7, 14, 21]),
   blueprintDeck("blueprint-skybridge-west", -29.5, 11, 7, 38, 14, "#1e3a8a"),
-  blueprintDeck("blueprint-skybridge-east", 5.5, 3, 30.2, 11.2, 21, "#1e3a8a"),
+  blueprintDeck("blueprint-skybridge-east", 6, 3, 31.2, 11.2, 21, "#1e3a8a"),
   blueprintDeck("blueprint-low-bridge-south", 5.5, -36, 60.2, 5, 7, "#1d4ed8"),
   blueprintDeck("blueprint-mid-overlook", 16, -14, 18, 10, 14, "#2563eb"),
   ...blueprintTowerClimb("central", -18, -10, 22, 20, [7, 14, 21, 28]),
