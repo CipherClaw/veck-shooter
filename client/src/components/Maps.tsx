@@ -41,6 +41,7 @@ export function ArenaMap({ map }: { map: MapName }) {
       {map === "Practice Range" && <PracticeDetails />}
       {map === "Forest" && <ForestDetails />}
       {map === "Subway" && <SubwayDetails />}
+      {map === "Blueprint" && <BlueprintDetails />}
     </group>
   );
 }
@@ -50,6 +51,7 @@ function hiddenCollider(id: string) {
     || id.startsWith("forest-rock")
     || id.startsWith("subway-train")
     || id.startsWith("subway-railing")
+    || id.startsWith("blueprint-ladder")
     || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
 }
 
@@ -109,6 +111,83 @@ function CornerLadder({ x, z }: { x: number; z: number }) {
         <mesh key={i} position={[0, 0.55 + i * 0.68, outsideZ * 0.16]} castShadow>
           <boxGeometry args={[1.9, 0.16, 0.2]} />
           <meshStandardMaterial color="#e2e8f0" roughness={0.5} metalness={0.08} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function BlueprintDetails() {
+  const colliders = ARENAS.Blueprint.colliders;
+  const visibleBlueprint = colliders.filter((collider) => collider.id.startsWith("blueprint-") && !collider.ladder);
+  const slabs = visibleBlueprint.filter((collider) => collider.id.includes("-slab"));
+  const ladders = colliders.filter((collider) => collider.ladder && collider.id.startsWith("blueprint-ladder"));
+  return (
+    <group>
+      {visibleBlueprint.map((collider) => <BlueprintWireBox key={`wire-${collider.id}`} collider={collider} />)}
+      {slabs.map((collider) => <BlueprintGridLines key={`grid-${collider.id}`} collider={collider} />)}
+      {ladders.map((collider) => <BlueprintLadder key={collider.id} collider={collider} />)}
+      {ARENAS.Blueprint.bouncePads?.map((pad) => (
+        <pointLight key={`light-${pad.id}`} color={pad.color} intensity={0.55} distance={14} position={[pad.center.x, 1.2, pad.center.z]} />
+      ))}
+    </group>
+  );
+}
+
+function BlueprintWireBox({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  return (
+    <mesh position={[center.x, center.y, center.z]} scale={[size.x * 1.006, size.y * 1.006, size.z * 1.006]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial color="#e0f2fe" wireframe transparent opacity={0.46} depthWrite={false} />
+    </mesh>
+  );
+}
+
+function BlueprintGridLines({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  const horizontalYs = Array.from({ length: Math.max(2, Math.floor(size.y / 3.5)) }, (_, i) => 1.7 + i * 3.5).filter((y) => y < size.y - 0.6);
+  const longX = size.x >= size.z;
+  const verticalCount = Math.max(2, Math.floor((longX ? size.x : size.z) / 4));
+  const verticalOffsets = Array.from({ length: verticalCount + 1 }, (_, i) => -(longX ? size.x : size.z) / 2 + i * ((longX ? size.x : size.z) / verticalCount));
+  const faceOffset = 0.73;
+  return (
+    <group position={[center.x, center.y - size.y / 2, center.z]}>
+      {horizontalYs.map((y) => (
+        <mesh key={`h-${y}`} position={longX ? [0, y, Math.sign(center.z || 1) * faceOffset] : [Math.sign(center.x || 1) * faceOffset, y, 0]}>
+          <boxGeometry args={longX ? [size.x + 0.08, 0.055, 0.08] : [0.08, 0.055, size.z + 0.08]} />
+          <meshStandardMaterial color="#dff6ff" emissive="#7dd3fc" emissiveIntensity={0.18} roughness={0.38} />
+        </mesh>
+      ))}
+      {verticalOffsets.map((offset) => (
+        <mesh key={`v-${offset}`} position={longX ? [offset, size.y / 2, Math.sign(center.z || 1) * faceOffset] : [Math.sign(center.x || 1) * faceOffset, size.y / 2, offset]}>
+          <boxGeometry args={longX ? [0.055, size.y, 0.08] : [0.08, size.y, 0.055]} />
+          <meshStandardMaterial color="#bfdbfe" emissive="#60a5fa" emissiveIntensity={0.12} roughness={0.42} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function BlueprintLadder({ collider }: { collider: ArenaCollider }) {
+  const normal = collider.ladderNormal ?? { x: 0, z: 1 };
+  const height = collider.size.y;
+  const centerY = collider.center.y + 1.2;
+  const rungCount = Math.max(5, Math.floor(height / 0.68));
+  const rungStart = -height / 2 + 0.42;
+  const zFacing = Math.abs(normal.z) >= Math.abs(normal.x);
+  return (
+    <group position={[collider.center.x, centerY, collider.center.z]}>
+      {[-0.72, 0.72].map((offset) => (
+        <mesh key={offset} position={zFacing ? [offset, 0, normal.z * 0.14] : [normal.x * 0.14, 0, offset]} castShadow>
+          <boxGeometry args={zFacing ? [0.16, height, 0.16] : [0.16, height, 0.16]} />
+          <meshStandardMaterial color="#e0f2fe" emissive="#38bdf8" emissiveIntensity={0.16} roughness={0.42} metalness={0.08} />
+        </mesh>
+      ))}
+      {Array.from({ length: rungCount }, (_, i) => (
+        <mesh key={i} position={zFacing ? [0, rungStart + i * 0.68, normal.z * 0.2] : [normal.x * 0.2, rungStart + i * 0.68, 0]} castShadow>
+          <boxGeometry args={zFacing ? [1.7, 0.12, 0.16] : [0.16, 0.12, 1.7]} />
+          <meshStandardMaterial color="#ffffff" emissive="#bae6fd" emissiveIntensity={0.14} roughness={0.36} metalness={0.08} />
         </mesh>
       ))}
     </group>

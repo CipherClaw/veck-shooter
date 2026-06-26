@@ -1,4 +1,4 @@
-export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway";
+export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway" | "Blueprint";
 export type GameMode = "Free Play" | "Team Mode" | "Gun Game";
 export type Team = "red" | "green" | "none";
 export type WeaponId = "revolver" | "sniper" | "grenade" | "shottie" | "watergun";
@@ -27,6 +27,7 @@ export type ArenaBouncePad = {
 export type ArenaDefinition = {
   floorSize: number;
   bounds: number;
+  ceiling?: number;
   floorColor: string;
   gridColor: string;
   spawns: Vec3[];
@@ -65,7 +66,7 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
   watergun: { id: "watergun", name: "Water Gun", ammo: 100, reloadMs: 1800, fireMs: 80, damage: 5, range: 30, spread: 0.04, pellets: 1, projectile: "stream" }
 };
 
-export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway"];
+export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway", "Blueprint"];
 export const DURATIONS = [3, 5, 10, 15] as const;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
@@ -437,6 +438,113 @@ const subwayColliders: ArenaCollider[] = [
   ].map(([x, z], i) => ({ id: `subway-taxi-cover-${i}`, center: { x, y: 7.6, z }, size: { x: 5.2, y: 1.2, z: 2.7 }, color: "#f2c230" }))
 ];
 
+const blueprintDeckHeight = 0.8;
+const blueprintWallColor = "#1e40af";
+const blueprintDeckColor = "#2563eb";
+const blueprintBrightColor = "#3b82f6";
+
+function blueprintDeck(id: string, x: number, z: number, width: number, depth: number, standY: number, color = blueprintDeckColor): ArenaCollider {
+  return {
+    id,
+    center: { x, y: standY - 1.2 - blueprintDeckHeight / 2, z },
+    size: { x: width, y: blueprintDeckHeight, z: depth },
+    color
+  };
+}
+
+function blueprintLadder(
+  id: string,
+  x: number,
+  z: number,
+  bottomY: number,
+  topY: number,
+  ladderNormal: { x: number; z: number }
+): ArenaCollider {
+  return {
+    id,
+    center: { x, y: (bottomY + topY) / 2 - 1.2, z },
+    size: { x: 1.9, y: topY - bottomY, z: 1.9 },
+    color: "#bfdbfe",
+    ladder: true,
+    ladderNormal
+  };
+}
+
+function blueprintTower(id: string, x: number, z: number, width: number, depth: number, levels: number[]): ArenaCollider[] {
+  const topStand = Math.max(...levels);
+  const wallHeight = topStand - 1.2;
+  const wallY = wallHeight / 2;
+  const pillar = 1.4;
+  return [
+    { id: `blueprint-${id}-northwest-slab`, center: { x: x - width / 2 + pillar / 2, y: wallY, z: z - depth / 2 + pillar / 2 }, size: { x: pillar, y: wallHeight, z: pillar }, color: blueprintWallColor },
+    { id: `blueprint-${id}-northeast-slab`, center: { x: x + width / 2 - pillar / 2, y: wallY, z: z - depth / 2 + pillar / 2 }, size: { x: pillar, y: wallHeight, z: pillar }, color: "#1d4ed8" },
+    { id: `blueprint-${id}-southwest-slab`, center: { x: x - width / 2 + pillar / 2, y: wallY, z: z + depth / 2 - pillar / 2 }, size: { x: pillar, y: wallHeight, z: pillar }, color: blueprintBrightColor },
+    { id: `blueprint-${id}-southeast-slab`, center: { x: x + width / 2 - pillar / 2, y: wallY, z: z + depth / 2 - pillar / 2 }, size: { x: pillar, y: wallHeight, z: pillar }, color: "#60a5fa" },
+    ...levels.map((standY, i) => blueprintDeck(`blueprint-${id}-deck-${i + 1}`, x, z, width - 3.2, depth - 3.2, standY, i % 2 === 0 ? blueprintDeckColor : "#1d4ed8"))
+  ];
+}
+
+const blueprintColliders: ArenaCollider[] = [
+  ...blueprintTower("central", -18, -10, 22, 20, [7, 14, 21, 28]),
+  ...blueprintTower("east", 28, 18, 18, 24, [7, 14, 21]),
+  ...blueprintTower("northwest", -40, 32, 20, 18, [7, 14, 21, 28]),
+  ...blueprintTower("southeast", 42, -34, 18, 18, [7, 14]),
+  ...blueprintTower("southwest", -34, -38, 24, 16, [7, 14, 21]),
+  blueprintDeck("blueprint-skybridge-west", -29, 11, 6, 38, 14, "#1e3a8a"),
+  blueprintDeck("blueprint-skybridge-east", 5, 4, 30, 6, 21, "#1e3a8a"),
+  blueprintDeck("blueprint-low-bridge-south", 4, -36, 54, 5, 7, "#1d4ed8"),
+  blueprintDeck("blueprint-mid-overlook", 16, -14, 18, 10, 14, "#2563eb"),
+  ...[
+    blueprintLadder("blueprint-ladder-central-1", -22, -21.4, 1.2, 7, { x: 0, z: -1 }),
+    blueprintLadder("blueprint-ladder-central-2", -8.6, -14, 7, 14, { x: 1, z: 0 }),
+    blueprintLadder("blueprint-ladder-central-3", -14, -1.4, 14, 21, { x: 0, z: 1 }),
+    blueprintLadder("blueprint-ladder-central-4", -29.4, -6, 21, 28, { x: -1, z: 0 }),
+    blueprintLadder("blueprint-ladder-east-1", 24, 4.6, 1.2, 7, { x: 0, z: -1 }),
+    blueprintLadder("blueprint-ladder-east-2", 19.6, 14, 7, 14, { x: -1, z: 0 }),
+    blueprintLadder("blueprint-ladder-east-3", 32, 31.4, 14, 21, { x: 0, z: 1 }),
+    blueprintLadder("blueprint-ladder-northwest-1", -44, 21.6, 1.2, 7, { x: 0, z: -1 }),
+    blueprintLadder("blueprint-ladder-northwest-2", -29.6, 29, 7, 14, { x: 1, z: 0 }),
+    blueprintLadder("blueprint-ladder-northwest-3", -36, 42.4, 14, 21, { x: 0, z: 1 }),
+    blueprintLadder("blueprint-ladder-northwest-4", -50.4, 35, 21, 28, { x: -1, z: 0 }),
+    blueprintLadder("blueprint-ladder-southeast-1", 38, -44.4, 1.2, 7, { x: 0, z: -1 }),
+    blueprintLadder("blueprint-ladder-southeast-2", 51.4, -38, 7, 14, { x: 1, z: 0 }),
+    blueprintLadder("blueprint-ladder-southwest-1", -39, -47.4, 1.2, 7, { x: 0, z: -1 }),
+    blueprintLadder("blueprint-ladder-southwest-2", -21.4, -41, 7, 14, { x: 1, z: 0 }),
+    blueprintLadder("blueprint-ladder-southwest-3", -30, -28.6, 14, 21, { x: 0, z: 1 })
+  ],
+  ...[
+    [-56, 0, 1.8, 7.2, 112, "blueprint-wall-west"],
+    [56, 0, 1.8, 7.2, 112, "blueprint-wall-east"],
+    [0, -56, 112, 7.2, 1.8, "blueprint-wall-north"],
+    [0, 56, 112, 7.2, 1.8, "blueprint-wall-south"]
+  ].map(([x, z, sx, sy, sz, id]) => ({
+    id: id as string,
+    center: { x: x as number, y: (sy as number) / 2, z: z as number },
+    size: { x: sx as number, y: sy as number, z: sz as number },
+    color: "#1e3a8a"
+  })),
+  ...[
+    [-4, 30, 10, 2.2, 4],
+    [14, 38, 5, 5.4, 5],
+    [48, 3, 6, 3.2, 8],
+    [-12, -50, 12, 2.4, 4],
+    [-51, -8, 4, 4.6, 10],
+    [0, 0, 8, 2.0, 8]
+  ].map(([x, z, sx, sy, sz], i) => ({
+    id: `blueprint-base-cover-${i}`,
+    center: { x, y: sy / 2, z },
+    size: { x: sx, y: sy, z: sz },
+    color: i % 2 === 0 ? "#3b82f6" : "#1e40af"
+  }))
+];
+
+const blueprintBouncePads: ArenaBouncePad[] = [
+  { id: "blueprint-bounce-central", center: { x: -3, y: 0.1, z: -18 }, radius: 2.7, height: 0.2, color: "#22d3ee", launchVelocity: 33 },
+  { id: "blueprint-bounce-east", center: { x: 12, y: 0.1, z: 30 }, radius: 2.5, height: 0.2, color: "#38bdf8", launchVelocity: 32 },
+  { id: "blueprint-bounce-west", center: { x: -48, y: 0.1, z: -18 }, radius: 2.5, height: 0.2, color: "#67e8f9", launchVelocity: 32 },
+  { id: "blueprint-bounce-south", center: { x: 30, y: 0.1, z: -48 }, radius: 2.7, height: 0.2, color: "#22d3ee", launchVelocity: 33 }
+];
+
 export const ARENAS: Record<MapName, ArenaDefinition> = {
   Pyramid: {
     floorSize: 104,
@@ -484,15 +592,29 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
       { x: -16.5, y: 2.5, z: -45 }, { x: 16.5, y: 2.5, z: 45 }, { x: -2.8, y: 1.2, z: 8 }, { x: 2.8, y: 1.2, z: -8 }
     ],
     colliders: subwayColliders
+  },
+  Blueprint: {
+    floorSize: 140,
+    bounds: 62,
+    ceiling: 34,
+    floorColor: "#1d4ed8",
+    gridColor: "#bae6fd",
+    spawns: [
+      { x: -52, y: 1.2, z: -52 }, { x: 52, y: 1.2, z: 52 }, { x: 52, y: 1.2, z: -12 }, { x: -8, y: 1.2, z: 52 },
+      { x: -3, y: 1.2, z: -31 }, { x: 18, y: 7, z: -36 }, { x: 28, y: 14, z: 18 }, { x: -40, y: 21, z: 32 }
+    ],
+    colliders: blueprintColliders,
+    bouncePads: blueprintBouncePads
   }
 };
 
 export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3): Vec3 {
   const arena = ARENAS[map];
+  const ceiling = arena.ceiling ?? 12;
   const last = previous ?? next;
   const resolved = {
     x: clamp(next.x, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS),
-    y: clamp(next.y, 1.2, 12),
+    y: clamp(next.y, 1.2, ceiling),
     z: clamp(next.z, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS)
   };
   const lastGround = supportY(arena, last);

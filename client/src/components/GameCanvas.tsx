@@ -253,6 +253,8 @@ function PlayerController() {
     if (dir.lengthSq()) dir.normalize().multiplyScalar(15 * sprint * (scoped ? 0.55 : 1));
     const accel = 1 - Math.exp(-18 * step);
     velocity.current.lerp(dir, accel);
+    const arena = ARENAS[map];
+    const ceiling = arena.ceiling ?? 12;
     const previous = localPosition.current.clone();
     const pos = localPosition.current.addScaledVector(velocity.current, step);
     const ladder = ladderAt(map, { x: pos.x, y: pos.y, z: pos.z });
@@ -275,14 +277,13 @@ function PlayerController() {
       }
       if (!controlsBlocked() && keys.has("Space") && grounded.current) verticalVelocity.current = Math.max(verticalVelocity.current, 7.8);
       verticalVelocity.current -= 19 * step;
-      pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
+      pos.y = Math.max(1.2, Math.min(ceiling, pos.y + verticalVelocity.current * step));
     }
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
     grounded.current = !climbing && (resolved.y > pos.y || resolved.y <= 1.21);
     if (climbing || grounded.current) verticalVelocity.current = 0;
     pos.set(resolved.x, resolved.y, resolved.z);
-    const arena = ARENAS[map];
-    pos.y = Math.min(pos.y, 12);
+    pos.y = Math.min(pos.y, ceiling);
     pos.x = Math.max(-arena.bounds, Math.min(arena.bounds, pos.x));
     pos.z = Math.max(-arena.bounds, Math.min(arena.bounds, pos.z));
     const moving = velocity.current.length();
