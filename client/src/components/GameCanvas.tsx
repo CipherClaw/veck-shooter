@@ -463,13 +463,17 @@ function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?
 function HealthPack({ position }: { position: Vec3 }) {
   const group = useRef<THREE.Group>(null);
   const phase = useRef(Math.random() * Math.PI * 2);
-  useFrame((state) => {
+  const startedAt = useRef(performance.now());
+  const baseY = position.y - 0.97;
+  const initialY = baseY + 0.08 + Math.sin(phase.current) * 0.06;
+  useFrame(() => {
     if (!group.current) return;
-    group.current.position.y = position.y + 0.6 + Math.sin(state.clock.elapsedTime * 2.2 + phase.current) * 0.12;
+    const elapsed = (performance.now() - startedAt.current) / 1000;
+    group.current.position.y = baseY + 0.08 + Math.sin(elapsed * 2.2 + phase.current) * 0.06;
     group.current.rotation.y += 0.018;
   });
   return (
-    <group ref={group} position={[position.x, position.y + 0.6, position.z]} castShadow>
+    <group ref={group} position={[position.x, initialY, position.z]} castShadow>
       <mesh castShadow>
         <boxGeometry args={[0.92, 0.46, 0.92]} />
         <meshStandardMaterial color="#f8fafc" roughness={0.38} />
