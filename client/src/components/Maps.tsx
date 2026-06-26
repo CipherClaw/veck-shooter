@@ -191,7 +191,7 @@ function PracticeGridBox({ collider }: { collider: ArenaCollider }) {
 function CornerLadder({ collider }: { collider: ArenaCollider }) {
   const normal = collider.ladderNormal ?? { x: 0, z: 1 };
   const height = collider.size.y;
-  const centerY = collider.center.y + 1.2;
+  const centerY = collider.center.y;
   const rungCount = Math.max(8, Math.floor(height / 0.72));
   const rungStart = -height / 2 + 0.48;
   const zFacing = Math.abs(normal.z) >= Math.abs(normal.x);
@@ -272,7 +272,7 @@ function BlueprintGridLines({ collider }: { collider: ArenaCollider }) {
 function BlueprintLadder({ collider }: { collider: ArenaCollider }) {
   const normal = collider.ladderNormal ?? { x: 0, z: 1 };
   const height = collider.size.y;
-  const centerY = collider.center.y + 1.2;
+  const centerY = collider.center.y;
   const rungCount = Math.max(5, Math.floor(height / 0.68));
   const rungStart = -height / 2 + 0.42;
   const zFacing = Math.abs(normal.z) >= Math.abs(normal.x);
