@@ -293,8 +293,60 @@ const forestColliders: ArenaCollider[] = [
 
 const subwayWalkwayTop = 1.3;
 const subwayDeckTop = 7.0;
+const subwaySidewalkTop = subwayDeckTop + 0.2;
+const subwayCurbTop = subwayDeckTop + 0.32;
+const subwaySidewalkColor = "#9b978d";
+const subwayCurbColor = "#c7c3b6";
 const subwayStepHeight = 0.45;
 const subwayStepStandYs = [3.15, 3.8, 4.45, 5.1, 5.75, 6.4, 7.05, 7.7];
+
+function subwayRaisedSurface(id: string, x: number, z: number, width: number, depth: number, top: number, color: string): ArenaCollider {
+  const height = Math.max(0.12, top - subwayDeckTop);
+  return {
+    id,
+    center: { x, y: top - height / 2, z },
+    size: { x: width, y: height, z: depth },
+    color
+  };
+}
+
+function subwayCornerName(sx: -1 | 1, sz: -1 | 1) {
+  return `${sz > 0 ? "n" : "s"}${sx > 0 ? "e" : "w"}`;
+}
+
+function subwayCornerSidewalk(sx: -1 | 1, sz: -1 | 1): ArenaCollider[] {
+  const corner = subwayCornerName(sx, sz);
+  const localX = (min: number, max: number) => sx * ((min + max) / 2);
+  const localZ = (min: number, max: number) => sz * ((min + max) / 2);
+  const surface = (id: string, minX: number, maxX: number, minZ: number, maxZ: number, top = subwaySidewalkTop, color = subwaySidewalkColor) =>
+    subwayRaisedSurface(`${id}-${corner}`, localX(minX, maxX), localZ(minZ, maxZ), maxX - minX, maxZ - minZ, top, color);
+
+  return [
+    surface("subway-sidewalk-inner", 24.5, 56.5, 24.5, 32),
+    surface("subway-sidewalk-mid-inside", 24.5, 34.8, 32, 36),
+    surface("subway-sidewalk-mid-outside", 41.2, 56.5, 32, 36),
+    surface("subway-sidewalk-outer", 24.5, 56.5, 36, 56.5),
+    surface("subway-curb-x", 24.5, 25.15, 24.5, 56.5, subwayCurbTop, subwayCurbColor),
+    surface("subway-curb-z", 24.5, 56.5, 24.5, 25.15, subwayCurbTop, subwayCurbColor)
+  ];
+}
+
+function subwayEntranceSidewalk(zSign: -1 | 1): ArenaCollider[] {
+  const end = zSign > 0 ? "north" : "south";
+  const surface = (id: string, x: number, z: number, width: number, depth: number, top = subwaySidewalkTop, color = subwaySidewalkColor) =>
+    subwayRaisedSurface(`${id}-${end}`, x, z, width, depth, top, color);
+
+  return [-1, 1].flatMap((side) => {
+    const sideName = side > 0 ? "east" : "west";
+    const sidewalkCenterX = side * 23.85;
+    const curbCenterX = side * 23.525;
+    const z = zSign * 40.5;
+    return [
+      surface(`subway-sidewalk-arm-${sideName}`, sidewalkCenterX, z, 1.3, 32),
+      surface(`subway-curb-arm-${sideName}`, curbCenterX, z, 0.65, 32, subwayCurbTop, subwayCurbColor)
+    ];
+  });
+}
 
 function subwayStairFlight(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
   const x = side * 16.5;
@@ -402,6 +454,12 @@ const subwayColliders: ArenaCollider[] = [
   { id: "subway-deck-corner-nw", center: { x: -41, y: subwayDeckTop - 0.4, z: 41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
   { id: "subway-deck-corner-se", center: { x: 41, y: subwayDeckTop - 0.4, z: -41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
   { id: "subway-deck-corner-sw", center: { x: -41, y: subwayDeckTop - 0.4, z: -41 }, size: { x: 34, y: 0.8, z: 34 }, color: "#2f3236" },
+  ...subwayCornerSidewalk(1, 1),
+  ...subwayCornerSidewalk(-1, 1),
+  ...subwayCornerSidewalk(1, -1),
+  ...subwayCornerSidewalk(-1, -1),
+  ...subwayEntranceSidewalk(1),
+  ...subwayEntranceSidewalk(-1),
   { id: "subway-wall-west", center: { x: -57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
   { id: "subway-wall-east", center: { x: 57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
   { id: "subway-wall-north", center: { x: 0, y: 3.0, z: 57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
