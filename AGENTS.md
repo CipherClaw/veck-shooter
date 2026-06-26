@@ -21,6 +21,16 @@ The Discord bridge is configured in `/srv/codex-work/projects/discord-codex-brid
 - After code or deploy-relevant config changes, confirm whether Railway needs an update. If the change should be live, push the GitHub commit and trigger/verify the Railway deployment as needed.
 - Do not store secrets, tokens, private keys, or passwords in this file.
 
+## Definition of Done (finish every job)
+
+Every job must end with the working tree clean, all work committed and pushed to origin, and build/test/lint green. Run `npm run finish-check` before declaring a job done, and do not report a job complete while changes sit uncommitted.
+
+- Run `npm run build`, `npm test`, and `npm run lint`.
+- Commit all intended changes with a clear message.
+- Push the commit(s) to origin.
+- Run `npm run finish-check` and confirm it passes.
+- Deploy or verify deployment when the change should go live.
+
 ## Railway
 
 Use the shared token wrapper per the workspace root `AGENTS.md` ("Railway Credentials

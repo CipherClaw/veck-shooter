@@ -13,6 +13,7 @@
     "start": "npm run start -w @veck/server",
     "test": "npm run test -w @veck/server",
     "lint": "npm run lint -w @veck/client && npm run lint -w @veck/server",
+    "finish-check": "sh scripts/finish-check.sh",
     "railway:build": "npm ci && npm run build",
     "railway:start": "npm start"
   },
