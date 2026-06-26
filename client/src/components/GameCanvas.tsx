@@ -90,7 +90,7 @@ function PlayerController() {
   const map = snapshot?.game.map ?? "Pyramid";
   const matchActive = snapshot?.game.status === "active";
   const scoped = Boolean(matchActive && zoom && weapon === "sniper");
-  const controlsBlocked = () => !matchActive || isTextInputActive();
+  const controlsBlocked = () => !matchActive || paused || isTextInputActive();
 
   useEffect(() => {
     latestPlayer.current = me;
@@ -185,7 +185,7 @@ function PlayerController() {
       window.removeEventListener("mouseup", right);
       gl.domElement.removeEventListener("contextmenu", context);
     };
-  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, muted, weapon]);
+  }, [camera, gl.domElement, lockCooldown, matchActive, me?.alive, muted, paused, weapon]);
 
   useEffect(() => {
     if (!me?.alive || !matchActive) {

@@ -99,6 +99,54 @@ describe("game rules", () => {
     expect(attacker.ammo.sniper).toBe(WEAPONS.sniper.ammo);
   });
 
+  it("rejoins existing players without resetting match state", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Shooter");
+    const gameId = hub.create("p1", "socket1", { map: "Pyramid", mode: "Free Play", durationMinutes: 3, weapon: "watergun" });
+    const game = (hub as any).games.get(gameId);
+    const playerState = game.players.get("p1");
+    playerState.health = 37;
+    playerState.kills = 4;
+    playerState.ammo.watergun = 12;
+
+    hub.markDisconnected("p1", "socket1");
+    expect(hub.join("p1", "socket2", gameId, "sniper")).toEqual({ ok: true, gameId });
+
+    expect(game.players.size).toBe(1);
+    expect(playerState.socketId).toBe("socket2");
+    expect(playerState.disconnectedAt).toBeUndefined();
+    expect(playerState.health).toBe(37);
+    expect(playerState.kills).toBe(4);
+    expect(playerState.weapon).toBe("watergun");
+    expect(playerState.ammo.watergun).toBe(12);
+
+    hub.markDisconnected("p1", "socket1");
+    expect(playerState.disconnectedAt).toBeUndefined();
+  });
+
+  it("removes disconnected players only after the reconnect grace period", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Shooter");
+    const gameId = hub.create("p1", "socket1", { map: "Pyramid", mode: "Free Play", durationMinutes: 3, weapon: "revolver" });
+    const game = (hub as any).games.get(gameId);
+
+    hub.markDisconnected("p1", "socket1");
+    expect(hub.tick()).toHaveLength(1);
+    expect(game.players.has("p1")).toBe(true);
+
+    game.players.get("p1").disconnectedAt = Date.now() - 12_001;
+    expect(hub.tick()).toHaveLength(0);
+    expect((hub as any).games.has(gameId)).toBe(false);
+  });
+
+  it("clamps players to perimeter wall inner faces on sealed maps", () => {
+    expect(resolvePlayerPosition("Pyramid", { x: 49, y: 1.2, z: 0 }).x).toBeCloseTo(44.55);
+    expect(resolvePlayerPosition("Practice Range", { x: 0, y: 1.2, z: -63 }).z).toBeCloseTo(-60.45);
+    expect(resolvePlayerPosition("Subway", { x: 57, y: 8.2, z: 0 }).x).toBeCloseTo(55.95);
+    expect(resolvePlayerPosition("Blueprint", { x: -60, y: 1.2, z: 0 }).x).toBeCloseTo(-54.45);
+    expect(resolvePlayerPosition("Forest", { x: 60, y: 1.2, z: 0 }).x).toBeCloseTo(53.35);
+  });
+
   it("keeps practice range ladders reachable from the outside without snapping players to the roof", () => {
     const floorPos = resolvePlayerPosition("Practice Range", { x: 44, y: 1.2, z: 52.2 }, { x: 44, y: 1.2, z: 54 });
     expect(floorPos.y).toBeCloseTo(1.2);

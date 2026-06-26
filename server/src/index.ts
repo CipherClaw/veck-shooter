@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     if (!playerId) return;
-    hub.leave(playerId);
+    hub.markDisconnected(playerId, socket.id);
     io.emit("games", hub.summaries());
   });
 });

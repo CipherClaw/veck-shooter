@@ -32,6 +32,7 @@ type RuntimePlayer = PlayerSnapshot & {
   socketId: string;
   lastFire: Record<WeaponId, number>;
   lastChat: number;
+  disconnectedAt?: number;
 };
 
 type RuntimeGrenade = {
@@ -82,6 +83,8 @@ type RuntimeGame = {
   endedAt?: number;
   returnToLobbyAt?: number;
 };
+
+const RECONNECT_GRACE_MS = 12_000;
 
 export class GameHub {
   private games = new Map<string, RuntimeGame>();
@@ -154,6 +157,13 @@ export class GameHub {
     if (!game || game.status === "ended") return { ok: false, reason: "That match is no longer available." };
     const full = validateJoin(game.players.size);
     if (full && !game.players.has(playerId)) return { ok: false, reason: full };
+    const existing = game.players.get(playerId);
+    if (existing) {
+      existing.socketId = socketId;
+      existing.disconnectedAt = undefined;
+      existing.name = this.playerNames.get(playerId) ?? existing.name;
+      return { ok: true, gameId };
+    }
     const name = this.playerNames.get(playerId) ?? "Guest";
     const spawn = ARENAS[game.map].spawns[game.players.size % ARENAS[game.map].spawns.length];
     const player: RuntimePlayer = {
@@ -184,6 +194,11 @@ export class GameHub {
       game.players.delete(playerId);
       if (game.players.size === 0) this.games.delete(game.id);
     }
+  }
+
+  markDisconnected(playerId: string, socketId: string) {
+    const found = this.find(playerId);
+    if (found?.player.socketId === socketId) found.player.disconnectedAt = Date.now();
   }
 
   input(playerId: string, input: ClientInput) {
@@ -306,6 +321,11 @@ export class GameHub {
     const now = Date.now();
     const snapshots: GameSnapshot[] = [];
     for (const game of this.games.values()) {
+      this.removeExpiredDisconnectedPlayers(game, now);
+      if (game.players.size === 0) {
+        this.games.delete(game.id);
+        continue;
+      }
       if (game.status === "active" && now >= game.endsAt) this.endGame(game);
       this.updateReloads(game, now);
       if (game.status === "active") {
@@ -409,6 +429,12 @@ export class GameHub {
       player.ammo[weapon] = WEAPONS[weapon].ammo;
       player.reloadingWeapon = undefined;
       player.reloadingUntil = undefined;
+    }
+  }
+
+  private removeExpiredDisconnectedPlayers(game: RuntimeGame, now: number) {
+    for (const player of game.players.values()) {
+      if (player.disconnectedAt && now - player.disconnectedAt >= RECONNECT_GRACE_MS) game.players.delete(player.id);
     }
   }
 
@@ -537,7 +563,7 @@ export class GameHub {
 }
 
 function stripRuntime(player: RuntimePlayer): PlayerSnapshot {
-  const { socketId: _socketId, lastFire: _lastFire, lastChat: _lastChat, ...snapshot } = player;
+  const { socketId: _socketId, lastFire: _lastFire, lastChat: _lastChat, disconnectedAt: _disconnectedAt, ...snapshot } = player;
   return snapshot;
 }
 

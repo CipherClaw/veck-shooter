@@ -10,6 +10,7 @@ let heardExplosionIds = new Set<string>();
 socket.on("connect", () => {
   const s = useGame.getState();
   socket.emit("hello", { playerId: s.playerId, name: s.name, glToken: glIdentity.token ?? undefined });
+  if (s.gameId) socket.emit("joinGame", { gameId: s.gameId, weapon: s.weapon });
 });
 socket.on("games", actions.games);
 socket.on("stats", actions.stats);
@@ -29,7 +30,11 @@ socket.on("snapshot", (snapshot) => {
 });
 socket.on("lobbyChat", actions.lobbyChat);
 socket.on("gameChat", actions.gameChat);
-socket.on("rejected", actions.error);
+socket.on("rejected", (reason) => {
+  const s = useGame.getState();
+  if (s.gameId) useGame.setState({ gameId: "", snapshot: undefined, paused: false });
+  actions.error(reason);
+});
 socket.on("shotFx", (fx) => {
   const state = useGame.getState();
   const listener = state.snapshot?.players.find((p) => p.id === state.playerId)?.position;

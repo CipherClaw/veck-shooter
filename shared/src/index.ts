@@ -27,6 +27,7 @@ export type ArenaBouncePad = {
 export type ArenaDefinition = {
   floorSize: number;
   bounds: number;
+  playBounds?: number;
   ceiling?: number;
   floorColor: string;
   gridColor: string;
@@ -713,6 +714,7 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
   Pyramid: {
     floorSize: 104,
     bounds: 50,
+    playBounds: 44.55,
     floorColor: "#d8c38e",
     gridColor: "#b9995d",
     spawns: [
@@ -724,6 +726,7 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
   "Practice Range": {
     floorSize: 140,
     bounds: 64,
+    playBounds: 60.45,
     ceiling: 38,
     floorColor: "#d9e1e8",
     gridColor: "#a8b4c1",
@@ -750,6 +753,7 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
   Subway: {
     floorSize: 124,
     bounds: 58,
+    playBounds: 55.95,
     floorColor: "#2b2e33",
     gridColor: "#3f454b",
     spawns: [
@@ -761,6 +765,7 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
   Blueprint: {
     floorSize: 140,
     bounds: 62,
+    playBounds: 54.45,
     ceiling: 34,
     floorColor: "#1d4ed8",
     gridColor: "#bae6fd",
@@ -776,11 +781,12 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
 export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3): Vec3 {
   const arena = ARENAS[map];
   const ceiling = arena.ceiling ?? 12;
+  const bounds = arena.playBounds ?? arena.bounds - PLAYER_RADIUS;
   const last = previous ?? next;
   const resolved = {
-    x: clamp(next.x, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS),
+    x: clamp(next.x, -bounds, bounds),
     y: clamp(next.y, 1.2, ceiling),
-    z: clamp(next.z, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS)
+    z: clamp(next.z, -bounds, bounds)
   };
   const lastGround = supportY(arena, last);
   let ground = supportY(arena, resolved, lastGround);
@@ -811,8 +817,8 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
       resolved.z += collisionDirection(dz, previousDz) * overlapZ;
     }
   }
-  resolved.x = clamp(resolved.x, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS);
-  resolved.z = clamp(resolved.z, -arena.bounds + PLAYER_RADIUS, arena.bounds - PLAYER_RADIUS);
+  resolved.x = clamp(resolved.x, -bounds, bounds);
+  resolved.z = clamp(resolved.z, -bounds, bounds);
   const finalGround = supportY(arena, resolved, ground);
   if (map === "Subway" && next.y <= last.y + 0.05 && resolved.y - finalGround <= 0.8) {
     resolved.y = finalGround;

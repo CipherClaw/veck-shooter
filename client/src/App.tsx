@@ -132,7 +132,7 @@ function Match() {
   }, [gameId, setPaused]);
   const resumePlay = () => {
     setPaused(false);
-    document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.().catch(() => undefined);
+    if (me?.alive && !ended) document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.().catch(() => undefined);
   };
   const openPause = () => {
     document.exitPointerLock?.();
@@ -157,8 +157,12 @@ function Match() {
   }, [setPaused]);
 
   useEffect(() => {
-    if (!ended && me?.alive === false) document.exitPointerLock?.();
-  }, [ended, me?.alive]);
+    if (!ended && me?.alive === false) {
+      pointerLockWasEngagedRef.current = false;
+      setPaused(false);
+      document.exitPointerLock?.();
+    }
+  }, [ended, me?.alive, setPaused]);
 
   useEffect(() => {
     if (!ended) return;
@@ -243,6 +247,7 @@ function Match() {
           <h2>Respawning</h2>
           {mode !== "Gun Game" && <WeaponSelect weapon={weapon} setWeapon={setWeapon} />}
           <button className="primary" onClick={() => {
+            setPaused(false);
             socket.emit("respawn", weapon);
             const lock = document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.();
             lock?.catch(() => undefined);
