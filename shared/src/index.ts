@@ -74,7 +74,7 @@ export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;
 export const GRENADE_RADIUS = 0.2;
 export const LADDER_CLIMB_SPEED = 4.2;
-export const BOUNCE_PAD_LAUNCH_SPEED = 13.8;
+export const BOUNCE_PAD_LAUNCH_SPEED = 17;
 export const HEALTH_PACK_HEAL = 35;
 export const HEALTH_PACK_PICKUP_RADIUS = 1.6;
 export const HEALTH_PACK_RESPAWN_MS = 18000;
@@ -314,18 +314,11 @@ const practiceColliders: ArenaCollider[] = [
   practiceDeck("practice-overlook-west", -31, 0, 11, 30, 8, "#ffffff"),
   practiceDeck("practice-overlook-east", 31, 0, 11, 30, 8, "#f8fafc"),
   practiceDeck("practice-right-platform", 28, -23, 18, 12, 6.55, "#f1f5f9"),
-  practiceDeck("practice-corner-ladder-ledge-southeast", 45.2, 49.3, 5.4, 5, 9.7, "#ffffff"),
   practiceBlock("practice-overlook-west-support-a", -31, -12, 2.4, 2.4, 6.8, "#9aa5af"),
   practiceBlock("practice-overlook-west-support-b", -31, 12, 2.4, 2.4, 6.8, "#9aa5af"),
   practiceBlock("practice-overlook-east-support-a", 31, -12, 2.4, 2.4, 6.8, "#8f9aa5"),
   practiceBlock("practice-overlook-east-support-b", 31, 12, 2.4, 2.4, 6.8, "#8f9aa5"),
-  practiceLadder("practice-ladder-legacy-southeast", 44, 51.95, 1.3, 9.7, { x: 0, z: 1 }),
-  {
-    id: "practice-corner-ladder-strip-legacy-southeast",
-    center: { x: 44, y: 4.3, z: 51.37 },
-    size: { x: 2.7, y: 8.4, z: 0.34 },
-    color: "#9aa5af"
-  },
+  practiceLadder("practice-ladder-legacy-southeast", 50, 42.15, 1.2, 12, { x: 0, z: -1 }),
   ...[
     [-43, -8, 5, 2.2, 12],
     [43, 9, 5, 2.2, 12],
@@ -348,8 +341,8 @@ const practiceBouncePads: ArenaBouncePad[] = [
   { id: "practice-right-platform-bounce", center: { x: 18.4, y: 0.08, z: -15.6 }, radius: 2.15, height: 0.16, color: "#55d66b", launchVelocity: BOUNCE_PAD_LAUNCH_SPEED },
   { id: "practice-house-bounce-north", center: { x: 0, y: 0.1, z: -26 }, radius: 2.8, height: 0.2, color: "#55d66b", launchVelocity: 33 },
   { id: "practice-house-bounce-south", center: { x: 0, y: 0.1, z: 26 }, radius: 2.8, height: 0.2, color: "#55d66b", launchVelocity: 33 },
-  { id: "practice-house-bounce-west", center: { x: -26, y: 0.1, z: 0 }, radius: 2.6, height: 0.2, color: "#63e6be", launchVelocity: 33 },
-  { id: "practice-house-bounce-east", center: { x: 26, y: 0.1, z: 0 }, radius: 2.6, height: 0.2, color: "#63e6be", launchVelocity: 33 }
+  { id: "practice-house-bounce-west", center: { x: -39.3, y: 0.1, z: 0 }, radius: 2.6, height: 0.2, color: "#63e6be", launchVelocity: 18.2 },
+  { id: "practice-house-bounce-east", center: { x: 39.3, y: 0.1, z: 0 }, radius: 2.6, height: 0.2, color: "#63e6be", launchVelocity: 18.2 }
 ];
 
 const forestTrees = [
