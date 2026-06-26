@@ -414,14 +414,29 @@ export class GameHub {
 
   private updateGrenades(game: RuntimeGame, now: number) {
     const dt = 1 / 20;
+    const maxStep = 0.15;
+    const maxSteps = 16;
     const active: RuntimeGrenade[] = [];
     for (const grenade of game.grenades) {
-      grenade.velocity.y -= 18 * dt;
-      grenade.position = add(grenade.position, scale(grenade.velocity, dt));
-      const resolved = resolveGrenade(game.map, grenade.position, grenade.velocity);
-      grenade.position = resolved.position;
-      grenade.velocity = resolved.velocity;
-      if (resolved.collided) {
+      const speed = Math.sqrt(
+        grenade.velocity.x * grenade.velocity.x +
+        grenade.velocity.y * grenade.velocity.y +
+        grenade.velocity.z * grenade.velocity.z
+      );
+      const steps = Math.min(maxSteps, Math.max(1, Math.ceil((speed * dt) / maxStep)));
+      const sub = dt / steps;
+      let collided = false;
+
+      for (let i = 0; i < steps; i += 1) {
+        grenade.velocity.y -= 18 * sub;
+        grenade.position = add(grenade.position, scale(grenade.velocity, sub));
+        const resolved = resolveGrenade(game.map, grenade.position, grenade.velocity);
+        grenade.position = resolved.position;
+        grenade.velocity = resolved.velocity;
+        collided ||= resolved.collided;
+      }
+
+      if (collided) {
         grenade.bounces += 1;
       }
       const out = Math.abs(grenade.position.x) > ARENAS[game.map].bounds || Math.abs(grenade.position.z) > ARENAS[game.map].bounds;
