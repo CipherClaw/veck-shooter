@@ -1,5 +1,5 @@
 export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway";
-export type GameMode = "Free Play" | "Team Mode";
+export type GameMode = "Free Play" | "Team Mode" | "Gun Game";
 export type Team = "red" | "green" | "none";
 export type WeaponId = "revolver" | "sniper" | "grenade" | "shottie" | "watergun";
 

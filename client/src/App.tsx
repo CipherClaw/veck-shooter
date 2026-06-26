@@ -14,7 +14,7 @@ export default function App() {
 }
 
 function Lobby() {
-  const { name, setName, stats, games, lobbyChat, weapon, setWeapon, muted, setMuted, error } = useGame();
+  const { name, stats, games, lobbyChat, weapon, muted, setMuted, error } = useGame();
   const [map, setMap] = useState<MapName>("Pyramid");
   const [mode, setMode] = useState<GameMode>("Free Play");
   const [durationMinutes, setDuration] = useState(5);
@@ -60,10 +60,9 @@ function Lobby() {
             <label>Map</label>
             <Segmented options={MAPS} value={map} onChange={(v) => setMap(v as MapName)} />
             <label>Mode</label>
-            <Segmented options={["Free Play", "Team Mode"]} value={mode} onChange={(v) => setMode(v as GameMode)} />
+            <Segmented options={["Free Play", "Team Mode", "Gun Game"]} value={mode} onChange={(v) => setMode(v as GameMode)} />
             <label>Duration</label>
             <Segmented options={DURATIONS.map(String)} value={String(durationMinutes)} onChange={(v) => setDuration(Number(v))} />
-            <WeaponSelect weapon={weapon} setWeapon={setWeapon} />
             <button className="primary" onClick={create}>Create Game</button>
           </Panel>
           <Panel title="Active Games" className="wide">
@@ -93,6 +92,7 @@ function Match() {
   const [chatOpen, setChatOpen] = useState(false);
   const [returnSeconds, setReturnSeconds] = useState(13);
   const me = snapshot?.players.find((p) => p.id === playerId);
+  const mode = snapshot?.game.mode;
   const scores = useMemo(() => snapshot?.players.slice().sort((a, b) => b.kills - a.kills) ?? [], [snapshot]);
   const ended = snapshot?.game.status === "ended";
 
@@ -158,6 +158,10 @@ function Match() {
   }, [ended, snapshot?.game.returnToLobbyAt]);
 
   useEffect(() => {
+    if (mode === "Gun Game" && me?.weapon && me.weapon !== weapon) setWeapon(me.weapon);
+  }, [me?.weapon, mode, setWeapon, weapon]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const typing = isTypingTarget(e.target);
       if (typing) {
@@ -180,11 +184,11 @@ function Match() {
         beep("reload", muted);
       }
       const idx = Number(e.key) - 1;
-      if (idx >= 0 && idx < weaponIds.length) setWeapon(weaponIds[idx]);
+      if (mode !== "Gun Game" && idx >= 0 && idx < weaponIds.length) setWeapon(weaponIds[idx]);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [chatOpen, ended, muted, setWeapon, weapon]);
+  }, [chatOpen, ended, mode, muted, setWeapon, weapon]);
 
   if (!snapshot) return <div className="loading">Loading match...</div>;
   return (
@@ -205,7 +209,7 @@ function Match() {
       <div className="hud killfeed">{snapshot.killFeed.map((k) => <div key={k}>{k}</div>)}</div>
       {!ended && me?.alive && <HealthBar health={me.health} />}
       {!ended && <div className="hud weapon-hud">
-        <WeaponSelect weapon={weapon} setWeapon={setWeapon} compact />
+        {mode === "Gun Game" ? <div className="weapon-hud-locked">Gun Game · {WEAPONS[weapon].name}</div> : <WeaponSelect weapon={weapon} setWeapon={setWeapon} compact />}
         <div className="ammo-card">
           <span>{WEAPONS[weapon].name}</span>
           <strong>{ammoText(me, weapon)}</strong>
@@ -215,7 +219,7 @@ function Match() {
       {!ended && !me?.alive && (
         <div className="modal">
           <h2>Respawning</h2>
-          <WeaponSelect weapon={weapon} setWeapon={setWeapon} />
+          {mode !== "Gun Game" && <WeaponSelect weapon={weapon} setWeapon={setWeapon} />}
           <button className="primary" onClick={() => {
             socket.emit("respawn", weapon);
             const lock = document.querySelector<HTMLCanvasElement>("main.match canvas")?.requestPointerLock?.();

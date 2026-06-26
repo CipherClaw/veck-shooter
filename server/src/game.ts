@@ -22,7 +22,7 @@ import {
   type WeaponId,
   resolvePlayerPosition
 } from "@veck/shared";
-import { canDamage, distance, nextTeam, rayPointDistance, validateJoin, weaponDamage, winner } from "./rules.js";
+import { canDamage, distance, gunGameWeapon, nextTeam, rayPointDistance, validateJoin, weaponDamage, winner } from "./rules.js";
 import { cleanText } from "./filter.js";
 import type { StatsStore } from "./store.js";
 import type { ProfileHub } from "./profile.js";
@@ -164,7 +164,7 @@ export class GameHub {
       rotationY: 0,
       health: 100,
       alive: true,
-      weapon,
+      weapon: game.mode === "Gun Game" ? gunGameWeapon(0) : weapon,
       kills: 0,
       deaths: 0,
       score: 0,
@@ -192,7 +192,7 @@ export class GameHub {
     if (game.status !== "active") return;
     player.position = resolvePlayerPosition(game.map, input.position, player.position);
     player.rotationY = input.rotationY;
-    player.weapon = input.weapon;
+    player.weapon = game.mode === "Gun Game" ? gunGameWeapon(player.kills) : input.weapon;
   }
 
   fire(playerId: string, payload: FirePayload) {
@@ -200,22 +200,24 @@ export class GameHub {
     if (!found) return null;
     const { game, player } = found;
     if (game.status !== "active") return null;
-    if (!player.alive || payload.weapon !== player.weapon) return null;
-    const spec = WEAPONS[payload.weapon];
+    const weapon = game.mode === "Gun Game" ? gunGameWeapon(player.kills) : payload.weapon;
+    if (!player.alive || (game.mode !== "Gun Game" && weapon !== player.weapon)) return null;
+    player.weapon = weapon;
+    const spec = WEAPONS[weapon];
     const now = Date.now();
-    if (player.reloadingWeapon === payload.weapon && player.reloadingUntil && now < player.reloadingUntil) return null;
-    if (player.reloadingWeapon === payload.weapon && player.reloadingUntil && now >= player.reloadingUntil) {
+    if (player.reloadingWeapon === weapon && player.reloadingUntil && now < player.reloadingUntil) return null;
+    if (player.reloadingWeapon === weapon && player.reloadingUntil && now >= player.reloadingUntil) {
       player.ammo[player.reloadingWeapon] = WEAPONS[player.reloadingWeapon].ammo;
       player.reloadingWeapon = undefined;
       player.reloadingUntil = undefined;
     }
-    if (now - player.lastFire[payload.weapon] < spec.fireMs) return null;
-    const ammoCost = payload.weapon === "watergun" ? 2 : 1;
-    if (player.ammo[payload.weapon] < ammoCost) return null;
-    player.lastFire[payload.weapon] = now;
-    player.ammo[payload.weapon] = Math.max(0, player.ammo[payload.weapon] - ammoCost);
-    if (player.ammo[payload.weapon] < ammoCost && player.reloadingWeapon !== payload.weapon) {
-      player.reloadingWeapon = payload.weapon;
+    if (now - player.lastFire[weapon] < spec.fireMs) return null;
+    const ammoCost = weapon === "watergun" ? 2 : 1;
+    if (player.ammo[weapon] < ammoCost) return null;
+    player.lastFire[weapon] = now;
+    player.ammo[weapon] = Math.max(0, player.ammo[weapon] - ammoCost);
+    if (player.ammo[weapon] < ammoCost && player.reloadingWeapon !== weapon) {
+      player.reloadingWeapon = weapon;
       player.reloadingUntil = now + spec.reloadMs;
     }
 
@@ -223,7 +225,7 @@ export class GameHub {
     let fxTo = add(payload.origin, scale(dir, spec.range));
     let hitPoint: Vec3 | undefined;
 
-    if (payload.weapon === "grenade") {
+    if (weapon === "grenade") {
       game.grenades.push({
         id: uuid().slice(0, 8),
         ownerId: player.id,
@@ -238,16 +240,16 @@ export class GameHub {
     const candidates = [...game.players.values()]
       .filter((victim) => canDamage(player, victim, game.mode))
       .map((victim) => ({ victim, ray: rayPointDistance(payload.origin, dir, victim.position) }))
-      .filter(({ ray }) => ray.along > 0 && ray.along < spec.range && ray.distance < PLAYER_RADIUS + (payload.weapon === "shottie" ? 1.0 : 0.35))
+      .filter(({ ray }) => ray.along > 0 && ray.along < spec.range && ray.distance < PLAYER_RADIUS + (weapon === "shottie" ? 1.0 : 0.35))
       .sort((a, b) => a.ray.along - b.ray.along);
     const hit = candidates[0];
     if (hit) {
       fxTo = add(payload.origin, scale(dir, hit.ray.along));
       hitPoint = fxTo;
-      const total = payload.weapon === "shottie" ? weaponDamage(payload.weapon, hit.ray.along) * Math.ceil(spec.pellets * 0.5) : weaponDamage(payload.weapon, hit.ray.along);
+      const total = weapon === "shottie" ? weaponDamage(weapon, hit.ray.along) * Math.ceil(spec.pellets * 0.5) : weaponDamage(weapon, hit.ray.along);
       this.damage(game, player, hit.victim, total);
     }
-    return { shooterId: player.id, from: payload.origin, to: fxTo, weapon: payload.weapon, hit: hitPoint };
+    return { shooterId: player.id, from: payload.origin, to: fxTo, weapon, hit: hitPoint };
   }
 
   reload(playerId: string, weapon: WeaponId) {
@@ -268,7 +270,7 @@ export class GameHub {
     const spawn = ARENAS[game.map].spawns[Math.floor(Math.random() * ARENAS[game.map].spawns.length)];
     player.position = { ...spawn };
     player.health = 100;
-    player.weapon = weapon;
+    player.weapon = game.mode === "Gun Game" ? gunGameWeapon(player.kills) : weapon;
     player.alive = true;
     player.respawnAt = undefined;
     player.ammo = fullAmmo();
@@ -347,6 +349,15 @@ export class GameHub {
     victim.respawnAt = Date.now() + 1800;
     attacker.kills += 1;
     attacker.score = attacker.kills;
+    if (game.mode === "Gun Game") {
+      const newWeapon = gunGameWeapon(attacker.kills);
+      attacker.weapon = newWeapon;
+      attacker.ammo[newWeapon] = WEAPONS[newWeapon].ammo;
+      if (attacker.reloadingWeapon !== newWeapon) {
+        attacker.reloadingWeapon = undefined;
+        attacker.reloadingUntil = undefined;
+      }
+    }
     game.killFeed = [`${attacker.name} eliminated ${victim.name}`, ...game.killFeed].slice(0, 6);
     this.stats.add(attacker.id, { kills: 1 });
     this.stats.add(victim.id, { deaths: 1 });

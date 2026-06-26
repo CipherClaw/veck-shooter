@@ -1,4 +1,10 @@
-import { MAX_PLAYERS, type GameMode, type PlayerSnapshot, type Team, type Vec3, WEAPONS } from "@veck/shared";
+import { MAX_PLAYERS, type GameMode, type PlayerSnapshot, type Team, type Vec3, type WeaponId, WEAPONS } from "@veck/shared";
+
+export const GUN_GAME_ROTATION: WeaponId[] = ["revolver", "sniper", "grenade", "shottie", "watergun"];
+
+export function gunGameWeapon(kills: number): WeaponId {
+  return GUN_GAME_ROTATION[kills % GUN_GAME_ROTATION.length];
+}
 
 export function nextTeam(players: PlayerSnapshot[], mode: GameMode): Team {
   if (mode !== "Team Mode") return "none";

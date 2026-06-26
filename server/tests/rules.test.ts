@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GameHub } from "../src/game";
-import { canDamage, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
+import { canDamage, gunGameWeapon, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import { StatsStore } from "../src/store";
 import { BOUNCE_PAD_LAUNCH_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
 
@@ -54,6 +54,15 @@ describe("game rules", () => {
     expect(WEAPONS.sniper.range).toBeGreaterThan(WEAPONS.revolver.range * 3);
   });
 
+  it("rotates gun game weapons by kill count", () => {
+    expect(gunGameWeapon(0)).toBe("revolver");
+    expect(gunGameWeapon(1)).toBe("sniper");
+    expect(gunGameWeapon(2)).toBe("grenade");
+    expect(gunGameWeapon(3)).toBe("shottie");
+    expect(gunGameWeapon(4)).toBe("watergun");
+    expect(gunGameWeapon(5)).toBe("revolver");
+  });
+
   it("does not fire the watergun unless a full stream tick is available", () => {
     const hub = new GameHub(new StatsStore(":memory:"));
     hub.hello("p1", "Tester");
@@ -68,6 +77,26 @@ describe("game rules", () => {
     playerState.ammo.watergun = 2;
     expect(hub.fire("p1", { origin: { x: 0, y: 2, z: 0 }, direction: { x: 0, y: 0, z: -1 }, weapon: "watergun", seq: 2 })).toMatchObject({ shooterId: "p1", weapon: "watergun" });
     expect(playerState.ammo.watergun).toBe(0);
+  });
+
+  it("forces gun game starting weapons and advances on kill", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Shooter");
+    hub.hello("p2", "Target");
+    const gameId = hub.create("p1", "socket1", { map: "Pyramid", mode: "Gun Game", durationMinutes: 3, weapon: "watergun" });
+    hub.join("p2", "socket2", gameId, "sniper");
+    const game = (hub as any).games.get(gameId);
+    const attacker = game.players.get("p1");
+    const victim = game.players.get("p2");
+
+    expect(attacker.weapon).toBe("revolver");
+    expect(victim.weapon).toBe("revolver");
+
+    (hub as any).damage(game, attacker, victim, 100);
+
+    expect(attacker.kills).toBe(1);
+    expect(attacker.weapon).toBe("sniper");
+    expect(attacker.ammo.sniper).toBe(WEAPONS.sniper.ammo);
   });
 
   it("keeps practice range ladders reachable from the outside without snapping players to the roof", () => {

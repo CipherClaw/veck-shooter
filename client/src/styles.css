@@ -73,6 +73,7 @@ h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff;
 .health-hud.low .health-track div { background:#ef4444; }
 .health-hud.low strong { color:#fecaca; }
 .weapon-hud { right: 12px; bottom: 12px; pointer-events:auto; }
+.weapon-hud-locked { padding:10px 12px; border:3px solid #111827; border-radius:8px; background:#334155; color:#e0f2fe; font-size:13px; font-weight:900; }
 .ammo-card { margin-top: 9px; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 12px; border:3px solid #111827; border-radius:8px; background:#0f172a; color:#e0f2fe; font-weight:900; }
 .ammo-card span { color:#bfdbfe; font-size:12px; text-transform:uppercase; }
 .ammo-card strong { color:#fef08a; font-size:22px; text-shadow:0 3px 0 #000; white-space:nowrap; }
