@@ -64,22 +64,24 @@ function Lobby() {
             <Segmented options={DURATIONS.map(String)} value={String(durationMinutes)} onChange={(v) => setDuration(Number(v))} />
             <button className="primary" onClick={create}>Create Game</button>
           </Panel>
-          <Panel title="Active Games" className="wide">
-            <div className="games">
-              {games.length === 0 && <div className="empty">No active games. Create one.</div>}
-              {games.map((game) => (
-                <div className="game-row" key={game.id}>
-                  <div>
-                    <strong>{game.map}</strong>
-                    <span>{game.mode} · {game.durationMinutes} min · {formatTime(game.timeRemainingMs)}</span>
+          <div className="lobby-side">
+            <Panel title="Active Games" className="wide">
+              <div className="games">
+                {games.length === 0 && <div className="empty">No active games. Create one.</div>}
+                {games.map((game) => (
+                  <div className="game-row" key={game.id}>
+                    <div>
+                      <strong>{game.map}</strong>
+                      <span>{game.mode} · {game.durationMinutes} min · {formatTime(game.timeRemainingMs)}</span>
+                    </div>
+                    <span>{game.playerCount}/{game.maxPlayers}</span>
+                    <button disabled={game.playerCount >= game.maxPlayers || game.status === "ended"} onClick={() => socket.emit("joinGame", { gameId: game.id, weapon })}>Join</button>
                   </div>
-                  <span>{game.playerCount}/{game.maxPlayers}</span>
-                  <button disabled={game.playerCount >= game.maxPlayers || game.status === "ended"} onClick={() => socket.emit("joinGame", { gameId: game.id, weapon })}>Join</button>
-                </div>
-              ))}
-            </div>
-          </Panel>
-          <ChatPanel messages={lobbyChat} scope="lobby" />
+                ))}
+              </div>
+            </Panel>
+            <ChatPanel messages={lobbyChat} scope="lobby" />
+          </div>
         </div>
       </section>
     </main>
@@ -288,7 +290,7 @@ function ChatPanel({ messages, scope, gameId, compact = false, open, setOpen }: 
     document.exitPointerLock?.();
     window.setTimeout(() => inputRef.current?.focus(), 0);
   }, [open]);
-  return (
+  const panel = (
     <section className={`chat ${compact ? "compact" : "panel"} ${open ? "open" : ""}`}>
       {!compact && <h2><MessageSquare size={18} /> Chat</h2>}
       <div className="messages">
@@ -306,6 +308,7 @@ function ChatPanel({ messages, scope, gameId, compact = false, open, setOpen }: 
       }} autoFocus={open} placeholder={open ? "Type message..." : "Press Enter to chat"} /><button onClick={send}>Send</button></div>}
     </section>
   );
+  return compact && open ? <><div className="chat-scrim" />{panel}</> : panel;
 }
 
 function ScopeOverlay() {

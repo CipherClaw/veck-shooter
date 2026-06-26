@@ -348,6 +348,39 @@ function subwayStairUndersideFill(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] 
   });
 }
 
+function subwayEntranceRailings(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
+  const x = side * 16.5;
+  const z = zSign * 23.2;
+  const sideName = side > 0 ? "east" : "west";
+  const endName = zSign > 0 ? "north" : "south";
+  const world = (localX: number, localZ: number) => ({
+    x: zSign > 0 ? x - localX : x + localX,
+    y: 7.6,
+    z: zSign > 0 ? z - localZ : z + localZ
+  });
+
+  return [
+    {
+      id: `subway-railing-${sideName}-${endName}-left`,
+      center: world(-4.65, -8.8),
+      size: { x: 0.45, y: 1.2, z: 16.0 },
+      color: "#14532d"
+    },
+    {
+      id: `subway-railing-${sideName}-${endName}-right`,
+      center: world(4.65, -8.8),
+      size: { x: 0.45, y: 1.2, z: 16.0 },
+      color: "#14532d"
+    },
+    {
+      id: `subway-railing-${sideName}-${endName}-back`,
+      center: world(0, -0.8),
+      size: { x: 9.45, y: 1.2, z: 0.45 },
+      color: "#14532d"
+    }
+  ];
+}
+
 const subwayColumnZs = [-48, -36, -24, -12, 0, 12, 24, 36, 48];
 const subwayColliders: ArenaCollider[] = [
   { id: "subway-platform-west", center: { x: -16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
@@ -394,6 +427,10 @@ const subwayColliders: ArenaCollider[] = [
   ...subwayStairUndersideFill(-1, -1),
   ...subwayStairUndersideFill(1, 1),
   ...subwayStairUndersideFill(1, -1),
+  ...subwayEntranceRailings(-1, 1),
+  ...subwayEntranceRailings(-1, -1),
+  ...subwayEntranceRailings(1, 1),
+  ...subwayEntranceRailings(1, -1),
   ...[
     [-38, -34], [38, 34], [-46, 12], [45, -16]
   ].map(([x, z], i) => ({ id: `subway-taxi-cover-${i}`, center: { x, y: 7.6, z }, size: { x: 5.2, y: 1.2, z: 2.7 }, color: "#f2c230" }))

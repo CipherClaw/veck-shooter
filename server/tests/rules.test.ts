@@ -194,6 +194,14 @@ describe("game rules", () => {
     expect(down.z).toBeLessThan(24);
   });
 
+  it("blocks players from walking through subway entrance railings on the street deck", () => {
+    let pos = { x: -22.4, y: 8.2, z: -32 };
+    for (let i = 0; i < 20; i++) pos = resolvePlayerPosition("Subway", { x: pos.x + 0.2, y: pos.y, z: pos.z }, pos);
+
+    expect(pos.x).toBeLessThan(-22);
+    expect(pos.y).toBeCloseTo(8.2);
+  });
+
   it("does not award solo round wins or coins", () => {
     const store = new StatsStore(":memory:");
     const hub = new GameHub(store);
