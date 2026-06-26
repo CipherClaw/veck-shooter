@@ -430,6 +430,9 @@ function SubwaySigns() {
             <meshStandardMaterial color="#050505" roughness={0.42} />
           </mesh>
           {sign.routes.map((route, i) => <RouteBullet key={route} route={route} x={-1.8 + i * 1.8} y={0} z={0.12} />)}
+          <group rotation={[0, Math.PI, 0]}>
+            {sign.routes.map((route, i) => <RouteBullet key={`${route}-back`} route={route} x={-1.8 + i * 1.8} y={0} z={0.12} />)}
+          </group>
         </group>
       ))}
     </group>

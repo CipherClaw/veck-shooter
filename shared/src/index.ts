@@ -384,8 +384,8 @@ function subwayEntranceRailings(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
 
 const subwayColumnZs = [-48, -36, -24, -12, 0, 12, 24, 36, 48];
 const subwayColliders: ArenaCollider[] = [
-  { id: "subway-platform-west", center: { x: -16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
-  { id: "subway-platform-east", center: { x: 16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81", climbable: true },
+  { id: "subway-platform-west", center: { x: -16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81" },
+  { id: "subway-platform-east", center: { x: 16.5, y: subwayWalkwayTop - 0.6, z: 0 }, size: { x: 11, y: 1.2, z: 110 }, color: "#8f8a81" },
   { id: "subway-deck-center", center: { x: 0, y: subwayDeckTop - 0.4, z: 0 }, size: { x: 48, y: 0.8, z: 48 }, color: "#2f3236" },
   { id: "subway-deck-north-back", center: { x: 0, y: subwayDeckTop - 0.4, z: 49 }, size: { x: 48, y: 0.8, z: 18 }, color: "#2f3236" },
   { id: "subway-deck-north-front-left", center: { x: -22.5, y: subwayDeckTop - 0.4, z: 32 }, size: { x: 3, y: 0.8, z: 16 }, color: "#2f3236" },
