@@ -70,6 +70,7 @@ export const DURATIONS = [3, 5, 10, 15] as const;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;
+export const GRENADE_RADIUS = 0.2;
 export const LADDER_CLIMB_SPEED = 4.2;
 export const BOUNCE_PAD_LAUNCH_SPEED = 13.8;
 export const HEALTH_PACK_HEAL = 35;
@@ -532,6 +533,81 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     resolved.y = Math.max(resolved.y, finalGround);
   }
   return resolved;
+}
+
+export function resolveGrenade(map: MapName, position: Vec3, velocity: Vec3): { position: Vec3; velocity: Vec3; collided: boolean } {
+  const arena = ARENAS[map];
+  const resolved = { ...position };
+  const nextVelocity = { ...velocity };
+  let collided = false;
+
+  for (const collider of arena.colliders) {
+    if (collider.ladder) continue;
+    const minX = collider.center.x - collider.size.x / 2 - GRENADE_RADIUS;
+    const maxX = collider.center.x + collider.size.x / 2 + GRENADE_RADIUS;
+    const minY = collider.center.y - collider.size.y / 2 - GRENADE_RADIUS;
+    const maxY = collider.center.y + collider.size.y / 2 + GRENADE_RADIUS;
+    const minZ = collider.center.z - collider.size.z / 2 - GRENADE_RADIUS;
+    const maxZ = collider.center.z + collider.size.z / 2 + GRENADE_RADIUS;
+    if (resolved.x < minX || resolved.x > maxX || resolved.y < minY || resolved.y > maxY || resolved.z < minZ || resolved.z > maxZ) continue;
+
+    const pushMinX = resolved.x - minX;
+    const pushMaxX = maxX - resolved.x;
+    const pushMinY = resolved.y - minY;
+    const pushMaxY = maxY - resolved.y;
+    const pushMinZ = resolved.z - minZ;
+    const pushMaxZ = maxZ - resolved.z;
+    const axis = [
+      { key: "x", amount: pushMinX, direction: -1 },
+      { key: "x", amount: pushMaxX, direction: 1 },
+      { key: "y", amount: pushMinY, direction: -1 },
+      { key: "y", amount: pushMaxY, direction: 1 },
+      { key: "z", amount: pushMinZ, direction: -1 },
+      { key: "z", amount: pushMaxZ, direction: 1 }
+    ].sort((a, b) => a.amount - b.amount)[0];
+
+    if (axis.key === "x") {
+      resolved.x += axis.direction * axis.amount;
+      nextVelocity.x = -nextVelocity.x * 0.6;
+      nextVelocity.y *= 0.92;
+      nextVelocity.z *= 0.92;
+    } else if (axis.key === "y") {
+      resolved.y += axis.direction * axis.amount;
+      nextVelocity.y = (axis.direction > 0 ? Math.abs(nextVelocity.y) : -Math.abs(nextVelocity.y)) * 0.42;
+      nextVelocity.x *= 0.72;
+      nextVelocity.z *= 0.72;
+    } else {
+      resolved.z += axis.direction * axis.amount;
+      nextVelocity.z = -nextVelocity.z * 0.6;
+      nextVelocity.x *= 0.92;
+      nextVelocity.y *= 0.92;
+    }
+    collided = true;
+  }
+
+  if (resolved.y < 1.2) {
+    resolved.y = 1.2;
+    if (nextVelocity.y < 0) nextVelocity.y = Math.abs(nextVelocity.y) * 0.42;
+    nextVelocity.x *= 0.72;
+    nextVelocity.z *= 0.72;
+    collided = true;
+  }
+  if (resolved.x < -arena.bounds + GRENADE_RADIUS || resolved.x > arena.bounds - GRENADE_RADIUS) {
+    resolved.x = clamp(resolved.x, -arena.bounds + GRENADE_RADIUS, arena.bounds - GRENADE_RADIUS);
+    nextVelocity.x = -nextVelocity.x * 0.6;
+    nextVelocity.y *= 0.92;
+    nextVelocity.z *= 0.92;
+    collided = true;
+  }
+  if (resolved.z < -arena.bounds + GRENADE_RADIUS || resolved.z > arena.bounds - GRENADE_RADIUS) {
+    resolved.z = clamp(resolved.z, -arena.bounds + GRENADE_RADIUS, arena.bounds - GRENADE_RADIUS);
+    nextVelocity.z = -nextVelocity.z * 0.6;
+    nextVelocity.x *= 0.92;
+    nextVelocity.y *= 0.92;
+    collided = true;
+  }
+
+  return { position: resolved, velocity: nextVelocity, collided };
 }
 
 function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2) {

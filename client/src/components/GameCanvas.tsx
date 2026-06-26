@@ -69,6 +69,7 @@ function PlayerController() {
   const localPosition = useRef(new THREE.Vector3());
   const localReady = useRef(false);
   const verticalVelocity = useRef(0);
+  const grounded = useRef(true);
   const yaw = useRef(0);
   const pitch = useRef(0);
   const shotSeq = useRef(0);
@@ -272,12 +273,13 @@ function PlayerController() {
       if (bouncePad && previous.y <= 1.35 && pos.y <= 1.35 && verticalVelocity.current <= 0) {
         verticalVelocity.current = bouncePad.launchVelocity;
       }
-      if (!controlsBlocked() && keys.has("Space") && pos.y <= 1.22) verticalVelocity.current = Math.max(verticalVelocity.current, 7.8);
+      if (!controlsBlocked() && keys.has("Space") && grounded.current) verticalVelocity.current = Math.max(verticalVelocity.current, 7.8);
       verticalVelocity.current -= 19 * step;
       pos.y = Math.max(1.2, Math.min(12, pos.y + verticalVelocity.current * step));
     }
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
-    if (climbing || resolved.y > pos.y || resolved.y <= 1.21) verticalVelocity.current = 0;
+    grounded.current = !climbing && (resolved.y > pos.y || resolved.y <= 1.21);
+    if (climbing || grounded.current) verticalVelocity.current = 0;
     pos.set(resolved.x, resolved.y, resolved.z);
     const arena = ARENAS[map];
     pos.y = Math.min(pos.y, 12);

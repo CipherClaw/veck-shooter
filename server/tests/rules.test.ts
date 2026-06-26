@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GameHub } from "../src/game";
 import { canDamage, gunGameWeapon, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import { StatsStore } from "../src/store";
-import { BOUNCE_PAD_LAUNCH_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
+import { BOUNCE_PAD_LAUNCH_SPEED, WEAPONS, bouncePadAt, ladderAt, resolveGrenade, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
   id,
@@ -200,6 +200,22 @@ describe("game rules", () => {
 
     expect(pos.x).toBeLessThan(-22);
     expect(pos.y).toBeCloseTo(8.2);
+  });
+
+  it("reflects grenades off the upper half of downstairs subway walls", () => {
+    const hit = resolveGrenade("Subway", { x: -23.9, y: 3.6, z: 0 }, { x: 18, y: 0, z: 0 });
+
+    expect(hit.collided).toBe(true);
+    expect(hit.velocity.x).toBeLessThan(0);
+    expect(hit.position.x).toBeLessThanOrEqual(-24);
+  });
+
+  it("keeps grenades resting on flat floors at or above world floor height", () => {
+    const resting = resolveGrenade("Pyramid", { x: 0, y: 1.05, z: 0 }, { x: 0, y: -1, z: 0 });
+
+    expect(resting.collided).toBe(true);
+    expect(resting.position.y).toBeGreaterThanOrEqual(1.2);
+    expect(resting.velocity.y).toBeGreaterThanOrEqual(0);
   });
 
   it("does not award solo round wins or coins", () => {

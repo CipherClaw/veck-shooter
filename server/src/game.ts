@@ -20,6 +20,7 @@ import {
   type PlayerStats,
   type Vec3,
   type WeaponId,
+  resolveGrenade,
   resolvePlayerPosition
 } from "@veck/shared";
 import { canDamage, distance, gunGameWeapon, nextTeam, rayPointDistance, validateJoin, weaponDamage, winner } from "./rules.js";
@@ -417,24 +418,10 @@ export class GameHub {
     for (const grenade of game.grenades) {
       grenade.velocity.y -= 18 * dt;
       grenade.position = add(grenade.position, scale(grenade.velocity, dt));
-      const resolved = resolvePlayerPosition(game.map, grenade.position, grenade.position);
-      const hitGround = resolved.y > grenade.position.y;
-      const hitWallX = Math.abs(resolved.x - grenade.position.x) > 1e-3;
-      const hitWallZ = Math.abs(resolved.z - grenade.position.z) > 1e-3;
-      if (hitGround) {
-        grenade.position = { ...resolved };
-        grenade.velocity.y = Math.abs(grenade.velocity.y) * 0.42;
-        grenade.velocity.x *= 0.72;
-        grenade.velocity.z *= 0.72;
-        grenade.bounces += 1;
-      }
-      if (hitWallX || hitWallZ) {
-        grenade.position = { ...resolved };
-        if (hitWallX) grenade.velocity.x = -grenade.velocity.x * 0.6;
-        else grenade.velocity.x *= 0.92;
-        if (hitWallZ) grenade.velocity.z = -grenade.velocity.z * 0.6;
-        else grenade.velocity.z *= 0.92;
-        grenade.velocity.y *= 0.92;
+      const resolved = resolveGrenade(game.map, grenade.position, grenade.velocity);
+      grenade.position = resolved.position;
+      grenade.velocity = resolved.velocity;
+      if (resolved.collided) {
         grenade.bounces += 1;
       }
       const out = Math.abs(grenade.position.x) > ARENAS[game.map].bounds || Math.abs(grenade.position.z) > ARENAS[game.map].bounds;

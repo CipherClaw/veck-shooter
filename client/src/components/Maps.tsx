@@ -49,6 +49,7 @@ function hiddenCollider(id: string) {
   return id.startsWith("forest-tree")
     || id.startsWith("forest-rock")
     || id.startsWith("subway-train")
+    || id.startsWith("subway-railing")
     || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
 }
 
