@@ -211,71 +211,145 @@ const pyramidColliders: ArenaCollider[] = [
   ...[[-34, -22], [-20, 34], [22, -34], [36, 18], [0, -35], [-36, 9]].map(([x, z], i) => ({ id: `pyramid-crate-${i}`, center: { x, y: 0.8, z }, size: { x: 2.8, y: 1.6, z: 2.8 }, color: "#8b5e34" }))
 ];
 
-const practiceColliders: ArenaCollider[] = [
-  { id: "practice-mid", center: { x: 0, y: 0.5, z: 0 }, size: { x: 12, y: 1, z: 12 }, color: "#d9e1e8", climbable: true },
-  { id: "practice-left-platform", center: { x: -26, y: 3.0, z: 22 }, size: { x: 16, y: 1.1, z: 12 }, color: "#cbd5df", climbable: true },
-  { id: "practice-right-platform", center: { x: 28, y: 4.8, z: -23 }, size: { x: 18, y: 1.1, z: 12 }, color: "#f1f5f9" },
-  { id: "practice-back-platform", center: { x: 0, y: 6.4, z: 43 }, size: { x: 26, y: 1, z: 7 }, color: "#cbd5df", climbable: true },
-  ...[-44, 44].flatMap((x) => [-44, 44].flatMap((z) => cornerPlatformColliders(x, z))),
-  ...[-44, 44].flatMap((x) => [-51.95, 51.95].map((z) => ({
-    id: `practice-corner-ladder-${x}-${z}`,
-    center: { x, y: 4.3, z },
-    size: { x: 2.2, y: 8.4, z: 2.2 },
-    color: "#7b8794",
+const practiceDeckHeight = 0.9;
+const practiceTowerStandY = 22;
+const practiceHouseRoofStandY = 28;
+const practiceWallColor = "#e2e8f0";
+const practiceDeckColor = "#f8fafc";
+const practiceTrimColor = "#cbd5df";
+
+function practiceDeck(id: string, x: number, z: number, width: number, depth: number, standY: number, color = practiceDeckColor): ArenaCollider {
+  return {
+    id,
+    center: { x, y: standY - 1.2 - practiceDeckHeight / 2, z },
+    size: { x: width, y: practiceDeckHeight, z: depth },
+    color
+  };
+}
+
+function practiceBlock(id: string, x: number, z: number, width: number, depth: number, height: number, color = practiceWallColor, climbable = false): ArenaCollider {
+  return {
+    id,
+    center: { x, y: height / 2, z },
+    size: { x: width, y: height, z: depth },
+    color,
+    climbable
+  };
+}
+
+function practiceLadder(id: string, x: number, z: number, bottomY: number, topY: number, ladderNormal: { x: number; z: number }): ArenaCollider {
+  return {
+    id,
+    center: { x, y: (bottomY + topY) / 2 - 1.2, z },
+    size: { x: 1.9, y: topY - bottomY, z: 1.9 },
+    color: "#9aa5af",
     ladder: true,
-    ladderNormal: { x: 0, z: Math.sign(z) || 1 }
-  }))),
-  ...[-44, 44].flatMap((x) => [-51.95, 51.95].map((z) => ({
-    id: `practice-corner-ladder-strip-${x}-${z}`,
-    center: { x, y: 4.3, z: z - Math.sign(z) * 0.58 },
+    ladderNormal
+  };
+}
+
+function practiceCornerTower(sx: -1 | 1, sz: -1 | 1): ArenaCollider[] {
+  const x = sx * 50;
+  const z = sz * 50;
+  const roofSize = 15;
+  const pillarOffset = roofSize / 2 - 1.1;
+  const pillarHeight = practiceTowerStandY - 1.2;
+  const ladderX = x - sx * (roofSize / 2 + 1.0);
+  const ladderZ = z;
+
+  return [
+    practiceDeck(`practice-corner-tower-roof-${sx}-${sz}`, x, z, roofSize, roofSize, practiceTowerStandY, "#f1f5f9"),
+    practiceDeck(`practice-corner-tower-mid-${sx}-${sz}`, x, z, 11.5, 11.5, 12, "#ffffff"),
+    ...[-1, 1].flatMap((px) => [-1, 1].map((pz) => ({
+      id: `practice-corner-tower-pillar-${sx}-${sz}-${px}-${pz}`,
+      center: { x: x + px * pillarOffset, y: pillarHeight / 2, z: z + pz * pillarOffset },
+      size: { x: 1.9, y: pillarHeight, z: 1.9 },
+      color: px === pz ? "#cbd5df" : "#d6dee7"
+    }))),
+    practiceBlock(`practice-corner-tower-back-wall-${sx}-${sz}`, x + sx * 7.15, z, 1.4, 12, 12.4, practiceTrimColor),
+    practiceBlock(`practice-corner-tower-side-wall-${sx}-${sz}`, x, z + sz * 7.15, 12, 1.4, 12.4, practiceTrimColor),
+    practiceLadder(`practice-ladder-corner-${sx}-${sz}`, ladderX, ladderZ, 1.2, practiceTowerStandY, { x: -sx, z: 0 })
+  ];
+}
+
+function practiceHouseColliders(): ArenaCollider[] {
+  const roofBottom = practiceHouseRoofStandY - 1.2 - practiceDeckHeight;
+  const wallHeight = roofBottom;
+  return [
+    practiceDeck("practice-house-roof", 0, 0, 30, 30, practiceHouseRoofStandY, "#ffffff"),
+    practiceDeck("practice-house-floor-low", 0, 0, 25, 25, 10, "#f8fafc"),
+    practiceDeck("practice-house-floor-mid", 0, 0, 21, 21, 19, "#f1f5f9"),
+    practiceBlock("practice-house-north-wall-west", -8.2, -15, 13.6, 1.6, wallHeight, practiceWallColor),
+    practiceBlock("practice-house-north-wall-east", 8.2, -15, 13.6, 1.6, wallHeight, practiceWallColor),
+    practiceBlock("practice-house-south-wall-west", -8.2, 15, 13.6, 1.6, wallHeight, "#f1f5f9"),
+    practiceBlock("practice-house-south-wall-east", 8.2, 15, 13.6, 1.6, wallHeight, "#f1f5f9"),
+    practiceBlock("practice-house-west-wall-north", -15, -8.2, 1.6, 13.6, wallHeight, "#e2e8f0"),
+    practiceBlock("practice-house-west-wall-south", -15, 8.2, 1.6, 13.6, wallHeight, "#e2e8f0"),
+    practiceBlock("practice-house-east-wall-north", 15, -8.2, 1.6, 13.6, wallHeight, "#d6dee7"),
+    practiceBlock("practice-house-east-wall-south", 15, 8.2, 1.6, 13.6, wallHeight, "#d6dee7"),
+    practiceBlock("practice-house-core-column", 0, 0, 3.2, 3.2, roofBottom, "#cbd5df"),
+    practiceBlock("practice-house-entry-left", -5.2, -18.4, 4.4, 4.6, 3.2, "#ffffff", true),
+    practiceBlock("practice-house-entry-right", 5.2, -18.4, 4.4, 4.6, 3.2, "#ffffff", true)
+  ];
+}
+
+const practiceColliders: ArenaCollider[] = [
+  ...[
+    [0, -62, 124, 4.2, 1.8, "practice-perimeter-north"],
+    [0, 62, 124, 4.2, 1.8, "practice-perimeter-south"],
+    [-62, 0, 1.8, 4.2, 124, "practice-perimeter-west"],
+    [62, 0, 1.8, 4.2, 124, "practice-perimeter-east"]
+  ].map(([x, z, sx, sy, sz, id]) => ({
+    id: id as string,
+    center: { x: x as number, y: (sy as number) / 2, z: z as number },
+    size: { x: sx as number, y: sy as number, z: sz as number },
+    color: "#d6dee7"
+  })),
+  ...practiceCornerTower(-1, -1),
+  ...practiceCornerTower(1, -1),
+  ...practiceCornerTower(-1, 1),
+  ...practiceCornerTower(1, 1),
+  ...practiceHouseColliders(),
+  practiceDeck("practice-overlook-west", -31, 0, 11, 30, 8, "#ffffff"),
+  practiceDeck("practice-overlook-east", 31, 0, 11, 30, 8, "#f8fafc"),
+  practiceDeck("practice-right-platform", 28, -23, 18, 12, 6.55, "#f1f5f9"),
+  practiceDeck("practice-corner-ladder-ledge-southeast", 44, 49.3, 13, 5, 9.7, "#ffffff"),
+  practiceBlock("practice-overlook-west-support-a", -31, -12, 2.4, 2.4, 6.8, "#9aa5af"),
+  practiceBlock("practice-overlook-west-support-b", -31, 12, 2.4, 2.4, 6.8, "#9aa5af"),
+  practiceBlock("practice-overlook-east-support-a", 31, -12, 2.4, 2.4, 6.8, "#8f9aa5"),
+  practiceBlock("practice-overlook-east-support-b", 31, 12, 2.4, 2.4, 6.8, "#8f9aa5"),
+  practiceLadder("practice-ladder-legacy-southeast", 44, 51.95, 1.3, 9.7, { x: 0, z: 1 }),
+  {
+    id: "practice-corner-ladder-strip-legacy-southeast",
+    center: { x: 44, y: 4.3, z: 51.37 },
     size: { x: 2.7, y: 8.4, z: 0.34 },
     color: "#9aa5af"
-  }))),
-  ...[-39, 39].flatMap((x) => [-39, 39].map((z) => ({
-    id: `practice-corner-support-${x}-${z}`,
-    center: { x, y: 4.05, z },
-    size: { x: 2.3, y: 8.1, z: 2.3 },
-    color: "#8994a0"
-  }))),
+  },
   ...[
-    { id: "practice-left-support-a", center: { x: -32, y: 1.25, z: 17.5 }, size: { x: 2.4, y: 2.5, z: 2.4 }, color: "#8f9aa5" },
-    { id: "practice-left-support-b", center: { x: -20, y: 1.25, z: 26.5 }, size: { x: 2.4, y: 2.5, z: 2.4 }, color: "#8f9aa5" },
-    { id: "practice-right-support-a", center: { x: 21, y: 2.15, z: -27.5 }, size: { x: 2.5, y: 4.3, z: 2.5 }, color: "#9aa5af" },
-    { id: "practice-right-support-b", center: { x: 35, y: 2.15, z: -18.5 }, size: { x: 2.5, y: 4.3, z: 2.5 }, color: "#9aa5af" },
-    { id: "practice-back-support-a", center: { x: -10, y: 2.95, z: 43 }, size: { x: 2.6, y: 5.9, z: 2.2 }, color: "#8f9aa5" },
-    { id: "practice-back-support-b", center: { x: 10, y: 2.95, z: 43 }, size: { x: 2.6, y: 5.9, z: 2.2 }, color: "#8f9aa5" }
-  ],
-  { id: "practice-left-wall", center: { x: -55, y: 3.2, z: 0 }, size: { x: 1.6, y: 6.4, z: 104 }, color: "#d6dee7" },
-  { id: "practice-right-wall", center: { x: 55, y: 3.2, z: 0 }, size: { x: 1.6, y: 6.4, z: 104 }, color: "#d6dee7" },
-  { id: "practice-ramp-a", center: { x: -13, y: 1.5, z: 14 }, size: { x: 5, y: 0.55, z: 16 }, color: "#b7c2ce", climbable: true },
-  { id: "practice-ramp-b", center: { x: 14, y: 2.6, z: -13 }, size: { x: 5, y: 0.55, z: 16 }, color: "#b7c2ce" },
-  { id: "practice-ramp-c", center: { x: 0, y: 4.1, z: 31 }, size: { x: 7, y: 0.55, z: 18 }, color: "#b7c2ce", climbable: true },
-  ...[-38, -28, -18, -8, 8, 18, 28, 38].map((x, i) => ({ id: `practice-barrier-${i}`, center: { x, y: 1, z: -40 + (i % 2) * 14 }, size: { x: 2.6, y: 2, z: 8 }, color: "#ffffff" }))
+    [-43, -8, 5, 2.2, 12],
+    [43, 9, 5, 2.2, 12],
+    [-12, 42, 15, 2.2, 4],
+    [16, -42, 14, 2.2, 4],
+    [-34, 34, 8, 2.8, 5],
+    [34, -34, 8, 2.8, 5],
+    [0, 39, 6, 4.6, 6],
+    [0, -39, 6, 4.6, 6]
+  ].map(([x, z, sx, sy, sz], i) => ({
+    id: `practice-ground-cover-${i}`,
+    center: { x, y: sy / 2, z },
+    size: { x: sx, y: sy, z: sz },
+    color: i % 2 === 0 ? "#ffffff" : "#e2e8f0",
+    climbable: sy <= 2.2
+  }))
 ];
 
 const practiceBouncePads: ArenaBouncePad[] = [
-  {
-    id: "practice-right-platform-bounce",
-    center: { x: 18.4, y: 0.08, z: -15.6 },
-    radius: 2.15,
-    height: 0.16,
-    color: "#55d66b",
-    launchVelocity: BOUNCE_PAD_LAUNCH_SPEED
-  }
+  { id: "practice-right-platform-bounce", center: { x: 18.4, y: 0.08, z: -15.6 }, radius: 2.15, height: 0.16, color: "#55d66b", launchVelocity: BOUNCE_PAD_LAUNCH_SPEED },
+  { id: "practice-house-bounce-north", center: { x: 0, y: 0.1, z: -26 }, radius: 2.8, height: 0.2, color: "#55d66b", launchVelocity: 33 },
+  { id: "practice-house-bounce-south", center: { x: 0, y: 0.1, z: 26 }, radius: 2.8, height: 0.2, color: "#55d66b", launchVelocity: 33 },
+  { id: "practice-house-bounce-west", center: { x: -26, y: 0.1, z: 0 }, radius: 2.6, height: 0.2, color: "#63e6be", launchVelocity: 33 },
+  { id: "practice-house-bounce-east", center: { x: 26, y: 0.1, z: 0 }, radius: 2.6, height: 0.2, color: "#63e6be", launchVelocity: 33 }
 ];
-
-function cornerPlatformColliders(x: number, z: number): ArenaCollider[] {
-  const platformSize = 15;
-  const y = 8.05;
-  const height = 0.9;
-  const color = "#d7dde3";
-  return [{
-    id: `practice-corner-platform-${x}-${z}`,
-    center: { x, y, z },
-    size: { x: platformSize, y: height, z: platformSize },
-    color
-  }];
-}
 
 const forestTrees = [
   [-38, -30], [-28, 16], [-16, -38], [8, 29], [29, -22], [40, 34], [0, -8], [-44, 32], [34, 7], [-8, 40], [18, -2], [-34, -2]
@@ -648,13 +722,14 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     colliders: pyramidColliders
   },
   "Practice Range": {
-    floorSize: 126,
-    bounds: 60,
+    floorSize: 140,
+    bounds: 64,
+    ceiling: 38,
     floorColor: "#d9e1e8",
     gridColor: "#a8b4c1",
     spawns: [
-      { x: -48, y: 1.2, z: -34 }, { x: 48, y: 1.2, z: 34 }, { x: -24, y: 4.75, z: 22 }, { x: 28, y: 6.55, z: -23 },
-      { x: -48, y: 1.2, z: 44 }, { x: 48, y: 1.2, z: -44 }, { x: 0, y: 7.9, z: 43 }, { x: 0, y: 1.2, z: -52 }
+      { x: -42, y: 1.2, z: -18 }, { x: 42, y: 1.2, z: 18 }, { x: -18, y: 1.2, z: 42 }, { x: 18, y: 1.2, z: -42 },
+      { x: -50, y: 22, z: -50 }, { x: 50, y: 22, z: 50 }, { x: 0, y: 28, z: 0 }, { x: 31, y: 8, z: 0 }
     ],
     colliders: practiceColliders,
     bouncePads: practiceBouncePads

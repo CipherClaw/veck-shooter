@@ -52,7 +52,7 @@ function hiddenCollider(id: string) {
     || id.startsWith("subway-train")
     || id.startsWith("subway-railing")
     || id.startsWith("blueprint-ladder")
-    || (id.startsWith("practice-corner-ladder") && !id.startsWith("practice-corner-ladder-strip"));
+    || id.startsWith("practice-ladder");
 }
 
 function PyramidDetails() {
@@ -74,42 +74,101 @@ function PyramidDetails() {
 }
 
 function PracticeDetails() {
+  const colliders = ARENAS["Practice Range"].colliders;
+  const visibleColliders = colliders.filter((collider) => !hiddenCollider(collider.id));
+  const ladders = colliders.filter((collider) => collider.ladder && collider.id.startsWith("practice-ladder"));
   return (
     <group>
-      {[-40, -20, 0, 20, 40].map((x, i) => (
-        <group key={x} position={[x, 0.05, 52 - i * 6]}>
-          <mesh position={[0, 1.8, 0]} castShadow>
-            <boxGeometry args={[2.4, 3.6, 0.35]} />
-            <meshStandardMaterial color="#ef4444" roughness={0.6} />
-          </mesh>
-          <mesh position={[0, 1.8, -0.22]} castShadow>
-            <circleGeometry args={[0.55, 24]} />
-            <meshStandardMaterial color="#f8fafc" roughness={0.5} />
-          </mesh>
-        </group>
+      {visibleColliders.map((collider) => <PracticeGridBox key={`grid-${collider.id}`} collider={collider} />)}
+      {ladders.map((collider) => <CornerLadder key={collider.id} collider={collider} />)}
+      {practiceTargets.map((target) => <PracticeTarget key={target.id} {...target} />)}
+      {ARENAS["Practice Range"].bouncePads?.map((pad) => (
+        <pointLight key={`light-${pad.id}`} color={pad.color} intensity={0.45} distance={15} position={[pad.center.x, 1.4, pad.center.z]} />
       ))}
-      {[-44, 44].flatMap((x) => [-51.95, 51.95].map((z) => <CornerLadder key={`${x}-${z}`} x={x} z={z} />))}
     </group>
   );
 }
 
-function CornerLadder({ x, z }: { x: number; z: number }) {
-  const outsideZ = Math.sign(z) || 1;
+type PracticeTargetSpec = {
+  id: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale?: number;
+};
+
+const practiceTargets: PracticeTargetSpec[] = [
+  { id: "north-house-high", position: [-7.5, 16.2, -15.86], rotation: [0, 0, 0], scale: 1.1 },
+  { id: "north-house-low", position: [7.5, 5.7, -15.86], rotation: [0, 0, 0], scale: 0.95 },
+  { id: "south-house-mid", position: [0, 12.9, 15.86], rotation: [0, Math.PI, 0], scale: 1 },
+  { id: "west-house-mid", position: [-15.86, 10.4, 0], rotation: [0, -Math.PI / 2, 0], scale: 0.9 },
+  { id: "east-house-high", position: [15.86, 20.5, 0], rotation: [0, Math.PI / 2, 0], scale: 1.05 },
+  { id: "nw-tower-face", position: [-50, 23.5, -42.2], rotation: [0, 0, 0], scale: 1 },
+  { id: "se-tower-face", position: [50, 23.5, 42.2], rotation: [0, Math.PI, 0], scale: 1 },
+  { id: "west-overlook", position: [-31, 9.7, -15.25], rotation: [0, 0, 0], scale: 0.85 },
+  { id: "east-overlook", position: [31, 9.7, 15.25], rotation: [0, Math.PI, 0], scale: 0.85 },
+  { id: "float-northwest", position: [-28, 14.5, -32], rotation: [0, Math.PI / 4, 0], scale: 0.95 },
+  { id: "float-southeast", position: [27, 17.2, 33], rotation: [0, -Math.PI * 0.7, 0], scale: 1 },
+  { id: "float-center", position: [0, 31.5, -10], rotation: [0, 0, 0], scale: 1.15 }
+];
+
+function PracticeTarget({ position, rotation, scale = 1 }: PracticeTargetSpec) {
   return (
-    <group position={[x, 0, z]}>
-      <mesh position={[0, 4.15, -outsideZ * 0.18]} castShadow receiveShadow>
-        <boxGeometry args={[2.25, 8.3, 0.16]} />
-        <meshStandardMaterial color="#30404d" roughness={0.72} metalness={0.04} />
+    <group position={position} rotation={rotation} scale={[scale, scale, scale]}>
+      <mesh castShadow>
+        <torusGeometry args={[0.82, 0.09, 12, 42]} />
+        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.12} roughness={0.44} />
       </mesh>
-      {[-0.8, 0.8].map((railX) => (
-        <mesh key={railX} position={[railX, 4.15, outsideZ * 0.08]} castShadow>
-          <boxGeometry args={[0.22, 8.3, 0.22]} />
-          <meshStandardMaterial color="#64717f" roughness={0.68} metalness={0.12} />
+      <mesh position={[0, 0, -0.015]}>
+        <circleGeometry args={[0.64, 36]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 0, -0.03]}>
+        <torusGeometry args={[0.34, 0.055, 10, 32]} />
+        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.1} roughness={0.42} />
+      </mesh>
+      <mesh position={[0, 0, -0.045]}>
+        <circleGeometry args={[0.12, 24]} />
+        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.12} roughness={0.4} />
+      </mesh>
+    </group>
+  );
+}
+
+function PracticeGridBox({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  const isLargeSurface = size.x > 8 || size.y > 8 || size.z > 8;
+  return (
+    <group position={[center.x, center.y, center.z]}>
+      <mesh scale={[size.x * 1.004, size.y * 1.004, size.z * 1.004]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial color="#94a3b8" wireframe transparent opacity={isLargeSurface ? 0.34 : 0.24} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function CornerLadder({ collider }: { collider: ArenaCollider }) {
+  const normal = collider.ladderNormal ?? { x: 0, z: 1 };
+  const height = collider.size.y;
+  const centerY = collider.center.y + 1.2;
+  const rungCount = Math.max(8, Math.floor(height / 0.72));
+  const rungStart = -height / 2 + 0.48;
+  const zFacing = Math.abs(normal.z) >= Math.abs(normal.x);
+  return (
+    <group position={[collider.center.x, centerY, collider.center.z]}>
+      <mesh position={zFacing ? [0, 0, -normal.z * 0.13] : [-normal.x * 0.13, 0, 0]} castShadow receiveShadow>
+        <boxGeometry args={zFacing ? [2.3, height, 0.14] : [0.14, height, 2.3]} />
+        <meshStandardMaterial color="#64717f" roughness={0.72} metalness={0.06} />
+      </mesh>
+      {[-0.78, 0.78].map((offset) => (
+        <mesh key={offset} position={zFacing ? [offset, 0, normal.z * 0.1] : [normal.x * 0.1, 0, offset]} castShadow>
+          <boxGeometry args={[0.22, height, 0.22]} />
+          <meshStandardMaterial color="#9aa5af" roughness={0.58} metalness={0.12} />
         </mesh>
       ))}
-      {Array.from({ length: 11 }, (_, i) => (
-        <mesh key={i} position={[0, 0.55 + i * 0.68, outsideZ * 0.16]} castShadow>
-          <boxGeometry args={[1.9, 0.16, 0.2]} />
+      {Array.from({ length: rungCount }, (_, i) => (
+        <mesh key={i} position={zFacing ? [0, rungStart + i * 0.72, normal.z * 0.2] : [normal.x * 0.2, rungStart + i * 0.72, 0]} castShadow>
+          <boxGeometry args={zFacing ? [1.95, 0.14, 0.2] : [0.2, 0.14, 1.95]} />
           <meshStandardMaterial color="#e2e8f0" roughness={0.5} metalness={0.08} />
         </mesh>
       ))}
