@@ -12,6 +12,9 @@ import { WeaponModel } from "./WeaponModels";
 import type { PlayerSnapshot, WeaponId } from "@veck/shared";
 
 const keys = new Set<string>();
+const SPRINT_DRAIN_PER_SECOND = 0.34;
+const SPRINT_RECHARGE_PER_SECOND = 0.24;
+const SPRINT_MIN_CHARGE_TO_START = 0.18;
 
 export function GameCanvas() {
   const snapshot = useGame((s) => s.snapshot);
@@ -58,6 +61,7 @@ function PlayerController() {
   const weapon = useGame((s) => s.weapon);
   const muted = useGame((s) => s.muted);
   const setScoped = useGame((s) => s.setScoped);
+  const setStamina = useGame((s) => s.setStamina);
   const paused = useGame((s) => s.paused);
   const [zoom, setZoom] = useState(false);
   const [spraying, setSpraying] = useState(false);
@@ -75,6 +79,9 @@ function PlayerController() {
   const recoil = useRef(0);
   const bob = useRef(0);
   const scopedRef = useRef(false);
+  const stamina = useRef(1);
+  const sprintLocked = useRef(false);
+  const lastStaminaEmit = useRef(1);
   const [locked, setLocked] = useState(false);
   const [lockCooldown, setLockCooldown] = useState(0);
 
@@ -97,6 +104,14 @@ function PlayerController() {
   useEffect(() => {
     scopedRef.current = scoped;
   }, [scoped]);
+
+  useEffect(() => {
+    if (me?.alive && matchActive) return;
+    stamina.current = 1;
+    sprintLocked.current = false;
+    lastStaminaEmit.current = 1;
+    setStamina(1);
+  }, [matchActive, me?.alive, setStamina]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -217,7 +232,23 @@ function PlayerController() {
     if (!controlsBlocked() && keys.has("KeyS")) dir.sub(forward);
     if (!controlsBlocked() && keys.has("KeyA")) dir.sub(right);
     if (!controlsBlocked() && keys.has("KeyD")) dir.add(right);
-    const sprint = !controlsBlocked() && (keys.has("ShiftLeft") || keys.has("ShiftRight")) ? 1.7 : 1;
+    const movingInput = dir.lengthSq() > 0;
+    const wantsSprint = !controlsBlocked() && movingInput && (keys.has("ShiftLeft") || keys.has("ShiftRight"));
+    if (sprintLocked.current && stamina.current >= SPRINT_MIN_CHARGE_TO_START) sprintLocked.current = false;
+    const sprinting = wantsSprint && !sprintLocked.current && stamina.current > 0;
+    if (sprinting) {
+      stamina.current = Math.max(0, stamina.current - SPRINT_DRAIN_PER_SECOND * step);
+      if (stamina.current <= 0) sprintLocked.current = true;
+    } else {
+      stamina.current = Math.min(1, stamina.current + SPRINT_RECHARGE_PER_SECOND * step);
+      if (sprintLocked.current && stamina.current >= SPRINT_MIN_CHARGE_TO_START) sprintLocked.current = false;
+    }
+    const roundedStamina = Math.round(stamina.current * 100) / 100;
+    if (roundedStamina !== lastStaminaEmit.current) {
+      lastStaminaEmit.current = roundedStamina;
+      setStamina(roundedStamina);
+    }
+    const sprint = sprinting ? 1.7 : 1;
     if (dir.lengthSq()) dir.normalize().multiplyScalar(15 * sprint * (scoped ? 0.55 : 1));
     const accel = 1 - Math.exp(-18 * step);
     velocity.current.lerp(dir, accel);

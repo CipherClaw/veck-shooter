@@ -268,9 +268,12 @@ function StationName({ x, z, rotationY }: { x: number; z: number; rotationY: num
 
 function SubwayLighting() {
   const lightRows = [-24, -6, 12, 30];
+  const fixtures = [-16, 0, 16].flatMap((x) => lightRows
+    .filter((z) => !(Math.abs(x) >= 16 && Math.abs(z) >= 23))
+    .map((z) => ({ x, z })));
   return (
     <group>
-      {[-16, 0, 16].map((x) => lightRows.map((z) => (
+      {fixtures.map(({ x, z }) => (
         <group key={`${x}-${z}`} position={[x, 6.55, z]}>
           <mesh receiveShadow>
             <boxGeometry args={[6.15, 0.12, 1.02]} />
@@ -282,7 +285,7 @@ function SubwayLighting() {
           </mesh>
           <pointLight color="#f6f7e9" intensity={0.18} distance={15} position={[0, -0.18, 0]} />
         </group>
-      )))}
+      ))}
       {[-6, 6].map((x) => [-36, -12, 12, 36].map((z) => (
         <pointLight key={`track-${x}-${z}`} color="#dfe7dd" intensity={0.08} distance={12} position={[x, 3.15, z]} />
       )))}

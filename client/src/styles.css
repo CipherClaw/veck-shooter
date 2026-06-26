@@ -72,6 +72,13 @@ h1 { font-size: clamp(42px, 7vw, 86px); line-height: .9; margin: 0; color: #fff;
 .health-track div { height:100%; border-radius:5px; background:#22c55e; transition:width 140ms ease, background-color 140ms ease; }
 .health-hud.low .health-track div { background:#ef4444; }
 .health-hud.low strong { color:#fecaca; }
+.sprint-hud { left:50%; bottom:70px; transform:translateX(-50%); display:grid; grid-template-columns:auto minmax(150px, 220px) 34px; align-items:center; gap:10px; color:#e0f2fe; font-weight:900; }
+.sprint-hud span { color:#bae6fd; font-size:12px; text-transform:uppercase; }
+.sprint-hud strong { color:#fff; text-align:right; text-shadow:0 2px 0 #000; }
+.sprint-track { height:12px; border:3px solid #111827; border-radius:8px; background:#0f172a; overflow:hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,.28); }
+.sprint-track div { height:100%; border-radius:5px; background:#38bdf8; transition:width 120ms ease, opacity 120ms ease; }
+.sprint-hud.empty .sprint-track div { opacity:.45; }
+.sprint-hud.empty strong { color:#bae6fd; }
 .weapon-hud { right: 12px; bottom: 12px; pointer-events:auto; }
 .weapon-hud-locked { padding:10px 12px; border:3px solid #111827; border-radius:8px; background:#334155; color:#e0f2fe; font-size:13px; font-weight:900; }
 .ammo-card { margin-top: 9px; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 12px; border:3px solid #111827; border-radius:8px; background:#0f172a; color:#e0f2fe; font-weight:900; }

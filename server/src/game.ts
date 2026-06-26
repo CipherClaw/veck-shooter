@@ -419,6 +419,8 @@ export class GameHub {
       grenade.position = add(grenade.position, scale(grenade.velocity, dt));
       const resolved = resolvePlayerPosition(game.map, grenade.position, grenade.position);
       const hitGround = resolved.y > grenade.position.y;
+      const hitWallX = Math.abs(resolved.x - grenade.position.x) > 1e-3;
+      const hitWallZ = Math.abs(resolved.z - grenade.position.z) > 1e-3;
       if (hitGround) {
         grenade.position = { ...resolved };
         grenade.velocity.y = Math.abs(grenade.velocity.y) * 0.42;
@@ -426,8 +428,17 @@ export class GameHub {
         grenade.velocity.z *= 0.72;
         grenade.bounces += 1;
       }
+      if (hitWallX || hitWallZ) {
+        grenade.position = { ...resolved };
+        if (hitWallX) grenade.velocity.x = -grenade.velocity.x * 0.6;
+        else grenade.velocity.x *= 0.92;
+        if (hitWallZ) grenade.velocity.z = -grenade.velocity.z * 0.6;
+        else grenade.velocity.z *= 0.92;
+        grenade.velocity.y *= 0.92;
+        grenade.bounces += 1;
+      }
       const out = Math.abs(grenade.position.x) > ARENAS[game.map].bounds || Math.abs(grenade.position.z) > ARENAS[game.map].bounds;
-      if (now >= grenade.explodeAt || grenade.bounces > 2 || out) {
+      if (now >= grenade.explodeAt || grenade.bounces > 5 || out) {
         this.explodeGrenade(game, grenade);
       } else {
         active.push(grenade);

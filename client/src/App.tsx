@@ -46,7 +46,6 @@ function Lobby() {
             <div className="row">
               <strong style={{ fontSize: 18 }}>{name}</strong>
             </div>
-            <a className="gl-btn gl-btn--ghost gl-btn--sm" href="https://games.greglab.net" style={{ marginTop: 8 }}>Manage profile at Hub →</a>
             <div className="stats">
               <Stat label="Kills" value={stats.kills} />
               <Stat label="Deaths" value={stats.deaths} />
@@ -88,7 +87,7 @@ function Lobby() {
 }
 
 function Match() {
-  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped, scopeShotAt, paused, setPaused } = useGame();
+  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped, scopeShotAt, stamina, paused, setPaused } = useGame();
   const [chatOpen, setChatOpen] = useState(false);
   const [returnSeconds, setReturnSeconds] = useState(13);
   const me = snapshot?.players.find((p) => p.id === playerId);
@@ -213,7 +212,10 @@ function Match() {
         {scores.map((p) => <div key={p.id} className={p.id === playerId ? "mine" : ""}><span>{p.name}</span><b>{p.kills}/{p.deaths}</b></div>)}
       </div>
       <div className="hud killfeed">{snapshot.killFeed.map((k) => <div key={k}>{k}</div>)}</div>
-      {!ended && me?.alive && <HealthBar health={me.health} />}
+      {!ended && me?.alive && <>
+        <HealthBar health={me.health} />
+        <SprintBar stamina={stamina} />
+      </>}
       {!ended && <div className="hud weapon-hud">
         {mode === "Gun Game" ? <div className="weapon-hud-locked">Gun Game · {WEAPONS[weapon].name}</div> : <WeaponSelect weapon={weapon} setWeapon={setWeapon} compact />}
         <div className="ammo-card">
@@ -311,6 +313,17 @@ function HealthBar({ health }: { health: number }) {
     <div className={`hud health-hud ${value <= 30 ? "low" : ""}`}>
       <span>Health</span>
       <div className="health-track"><div style={{ width: `${value}%` }} /></div>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function SprintBar({ stamina }: { stamina: number }) {
+  const value = Math.max(0, Math.min(100, Math.round(stamina * 100)));
+  return (
+    <div className={`hud sprint-hud ${value <= 5 ? "empty" : ""}`}>
+      <span>Sprint</span>
+      <div className="sprint-track"><div style={{ width: `${value}%` }} /></div>
       <strong>{value}</strong>
     </div>
   );
