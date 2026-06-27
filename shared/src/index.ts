@@ -29,6 +29,7 @@ export type ArenaDefinition = {
   bounds: number;
   playBounds?: number;
   ceiling?: number;
+  occludeShots?: boolean;
   floorColor: string;
   gridColor: string;
   spawns: Vec3[];
@@ -968,6 +969,7 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     floorSize: 88,
     bounds: 43,
     playBounds: 42,
+    occludeShots: true,
     floorColor: bankColors.carpet,
     gridColor: "#6f7d86",
     spawns: [
@@ -979,6 +981,30 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     colliders: bankColliders
   }
 };
+
+export function firstShotBlock(map: MapName, origin: Vec3, dir: Vec3, maxDist: number): number | null {
+  let nearest: number | null = null;
+  for (const collider of ARENAS[map].colliders) {
+    if (collider.ladder) continue;
+
+    const halfX = collider.size.x / 2;
+    const halfY = collider.size.y / 2;
+    const halfZ = collider.size.z / 2;
+    const hit = rayAabbDistance(
+      origin,
+      dir,
+      collider.center.x - halfX,
+      collider.center.x + halfX,
+      collider.center.y - halfY,
+      collider.center.y + halfY,
+      collider.center.z - halfZ,
+      collider.center.z + halfZ
+    );
+    if (hit == null || hit < 1e-3 || hit > maxDist) continue;
+    if (nearest == null || hit < nearest) nearest = hit;
+  }
+  return nearest;
+}
 
 export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3): Vec3 {
   const arena = ARENAS[map];
@@ -1150,6 +1176,44 @@ function ladderMount(collider: ArenaCollider, normal = ladderNormal(collider)): 
 
 function intersectsXZ(pos: Vec3, collider: ArenaCollider) {
   return Math.abs(pos.x - collider.center.x) < collider.size.x / 2 + PLAYER_RADIUS && Math.abs(pos.z - collider.center.z) < collider.size.z / 2 + PLAYER_RADIUS;
+}
+
+function rayAabbDistance(origin: Vec3, dir: Vec3, minX: number, maxX: number, minY: number, maxY: number, minZ: number, maxZ: number): number | null {
+  let tMin = -Infinity;
+  let tMax = Infinity;
+
+  const x = slab(origin.x, dir.x, minX, maxX, tMin, tMax);
+  if (!x) return null;
+  tMin = x.tMin;
+  tMax = x.tMax;
+
+  const y = slab(origin.y, dir.y, minY, maxY, tMin, tMax);
+  if (!y) return null;
+  tMin = y.tMin;
+  tMax = y.tMax;
+
+  const z = slab(origin.z, dir.z, minZ, maxZ, tMin, tMax);
+  if (!z) return null;
+  tMin = z.tMin;
+  tMax = z.tMax;
+
+  if (tMax < 0) return null;
+  return tMin >= 0 ? tMin : tMax;
+}
+
+function slab(origin: number, dir: number, min: number, max: number, tMin: number, tMax: number): { tMin: number; tMax: number } | null {
+  if (Math.abs(dir) < 1e-8) return origin >= min && origin <= max ? { tMin, tMax } : null;
+  const inv = 1 / dir;
+  let near = (min - origin) * inv;
+  let far = (max - origin) * inv;
+  if (near > far) {
+    const temp = near;
+    near = far;
+    far = temp;
+  }
+  const nextMin = Math.max(tMin, near);
+  const nextMax = Math.min(tMax, far);
+  return nextMin <= nextMax ? { tMin: nextMin, tMax: nextMax } : null;
 }
 
 function clamp(value: number, min: number, max: number) {

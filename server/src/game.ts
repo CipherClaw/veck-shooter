@@ -20,6 +20,7 @@ import {
   type PlayerStats,
   type Vec3,
   type WeaponId,
+  firstShotBlock,
   resolveGrenade,
   resolvePlayerPosition
 } from "@veck/shared";
@@ -253,6 +254,7 @@ export class GameHub {
       return null;
     }
 
+    const wallDist = ARENAS[game.map].occludeShots ? firstShotBlock(game.map, payload.origin, dir, spec.range) : null;
     const candidates = [...game.players.values()]
       .filter((victim) => canDamage(player, victim, game.mode))
       .map((victim) => ({ victim, ray: rayPointDistance(payload.origin, dir, victim.position) }))
@@ -260,10 +262,16 @@ export class GameHub {
       .sort((a, b) => a.ray.along - b.ray.along);
     const hit = candidates[0];
     if (hit) {
+      if (wallDist != null && wallDist < hit.ray.along) {
+        fxTo = add(payload.origin, scale(dir, wallDist));
+        return { shooterId: player.id, from: payload.origin, to: fxTo, weapon };
+      }
       fxTo = add(payload.origin, scale(dir, hit.ray.along));
       hitPoint = fxTo;
       const total = weapon === "shottie" ? weaponDamage(weapon, hit.ray.along) * Math.ceil(spec.pellets * 0.5) : weaponDamage(weapon, hit.ray.along);
       this.damage(game, player, hit.victim, total);
+    } else if (wallDist != null) {
+      fxTo = add(payload.origin, scale(dir, wallDist));
     }
     return { shooterId: player.id, from: payload.origin, to: fxTo, weapon, hit: hitPoint };
   }
