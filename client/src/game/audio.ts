@@ -57,44 +57,65 @@ function playGunshot(ac: AudioContext, weapon: "revolver" | "sniper" | "shottie"
 }
 
 function playRevolverShot(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.026, attack: 0.001, gain: 0.14, filter: "highpass", frequency: 2400, q: 0.9 }, volume);
-  playNoise(ac, { duration: 0.052, attack: 0.001, gain: 0.075, filter: "bandpass", frequency: 3900, endFrequency: 2600, q: 1.4 }, volume);
-  playNoise(ac, { duration: 0.16, attack: 0.004, gain: 0.048, filter: "lowpass", frequency: 1100, endFrequency: 420, q: 0.8, delay: 0.006 }, volume);
-  playTone(ac, { frequency: 190, endFrequency: 48, duration: 0.11, gain: 0.095, type: "triangle", attack: 0.001 }, volume);
-  playTone(ac, { frequency: 78, endFrequency: 36, duration: 0.14, gain: 0.035, type: "sine", attack: 0.003, delay: 0.008 }, volume);
+  playGunSnap(ac, volume, 0.18, 3400, 0);
+  playNoise(ac, { duration: 0.042, attack: 0.001, gain: 0.092, filter: "bandpass", frequency: 4300, endFrequency: 2400, q: 1.15, delay: 0.001 }, volume);
+  playLowThump(ac, volume, 128, 42, 0.13, 0.105, "triangle", 0);
+  playNoise(ac, { duration: 0.08, attack: 0.002, gain: 0.045, filter: "lowpass", frequency: 980, endFrequency: 380, q: 0.72, delay: 0.005 }, volume);
+  playShotTail(ac, volume, 0.055, 0.035, 1100, 0.024);
+  playShotTail(ac, volume, 0.038, 0.05, 680, 0.058);
 }
 
 function playSniperShot(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.018, attack: 0.001, gain: 0.19, filter: "highpass", frequency: 4200, q: 0.75 }, volume);
-  playNoise(ac, { duration: 0.08, attack: 0.001, gain: 0.105, filter: "bandpass", frequency: 2100, endFrequency: 1200, q: 0.95, delay: 0.002 }, volume);
-  playNoise(ac, { duration: 0.46, attack: 0.006, gain: 0.115, filter: "lowpass", frequency: 720, endFrequency: 190, q: 0.72, delay: 0.012 }, volume);
-  playTone(ac, { frequency: 104, endFrequency: 30, duration: 0.32, gain: 0.15, type: "sawtooth", attack: 0.001 }, volume);
-  playTone(ac, { frequency: 50, endFrequency: 24, duration: 0.34, gain: 0.065, type: "triangle", attack: 0.006, delay: 0.035 }, volume);
-  playNoise(ac, { duration: 0.24, attack: 0.004, gain: 0.038, filter: "bandpass", frequency: 310, endFrequency: 130, q: 1.2, delay: 0.09 }, volume);
+  playGunSnap(ac, volume, 0.25, 4600, 0);
+  playNoise(ac, { duration: 0.075, attack: 0.001, gain: 0.13, filter: "bandpass", frequency: 2500, endFrequency: 1050, q: 0.9, delay: 0.002 }, volume);
+  playLowThump(ac, volume, 118, 30, 0.36, 0.17, "sawtooth", 0);
+  playTone(ac, { frequency: 56, endFrequency: 24, duration: 0.34, gain: 0.06, type: "triangle", attack: 0.004, delay: 0.03 }, volume);
+  playNoise(ac, { duration: 0.28, attack: 0.004, gain: 0.082, filter: "lowpass", frequency: 760, endFrequency: 150, q: 0.68, delay: 0.012 }, volume);
+  playShotTail(ac, volume, 0.09, 0.072, 920, 0.045);
+  playShotTail(ac, volume, 0.06, 0.11, 520, 0.105);
+  playShotTail(ac, volume, 0.034, 0.16, 340, 0.18);
 }
 
 function playShotgunBlast(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.035, attack: 0.001, gain: 0.12, filter: "highpass", frequency: 1750, q: 0.8 }, volume);
-  playNoise(ac, { duration: 0.22, attack: 0.002, gain: 0.155, filter: "lowpass", frequency: 960, endFrequency: 230, q: 0.72 }, volume);
-  playNoise(ac, { duration: 0.17, attack: 0.002, gain: 0.075, filter: "bandpass", frequency: 520, endFrequency: 310, q: 1.15, delay: 0.01 }, volume);
-  playNoise(ac, { duration: 0.12, attack: 0.001, gain: 0.042, filter: "bandpass", frequency: 2800, q: 1.4, delay: 0.018 }, volume);
-  playTone(ac, { frequency: 125, endFrequency: 34, duration: 0.24, gain: 0.12, type: "triangle", attack: 0.001 }, volume);
-  playTone(ac, { frequency: 72, endFrequency: 28, duration: 0.22, gain: 0.052, type: "sawtooth", attack: 0.006, delay: 0.02 }, volume);
+  playGunSnap(ac, volume, 0.14, 1900, 0);
+  playGunSnap(ac, volume, 0.075, 2600, 0.012);
+  playNoise(ac, { duration: 0.21, attack: 0.002, gain: 0.14, filter: "lowpass", frequency: 900, endFrequency: 210, q: 0.7 }, volume);
+  playNoise(ac, { duration: 0.18, attack: 0.002, gain: 0.085, filter: "bandpass", frequency: 520, endFrequency: 290, q: 1.1, delay: 0.008 }, volume);
+  playNoise(ac, { duration: 0.115, attack: 0.001, gain: 0.055, filter: "bandpass", frequency: 2600, endFrequency: 1200, q: 1.25, delay: 0.016 }, volume);
+  playLowThump(ac, volume, 132, 34, 0.25, 0.13, "triangle", 0);
+  playTone(ac, { frequency: 74, endFrequency: 27, duration: 0.23, gain: 0.052, type: "sawtooth", attack: 0.005, delay: 0.018 }, volume);
+  playShotTail(ac, volume, 0.07, 0.075, 620, 0.035);
+  playShotTail(ac, volume, 0.043, 0.095, 360, 0.09);
 }
 
 function playGrenadeLaunch(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.09, attack: 0.002, gain: 0.07, filter: "bandpass", frequency: 560, endFrequency: 320, q: 1.0 }, volume);
-  playNoise(ac, { duration: 0.22, attack: 0.006, gain: 0.085, filter: "lowpass", frequency: 380, endFrequency: 150, q: 0.75 }, volume);
-  playNoise(ac, { duration: 0.055, attack: 0.001, gain: 0.032, filter: "highpass", frequency: 1300, q: 0.7 }, volume);
-  playTone(ac, { frequency: 138, endFrequency: 48, duration: 0.2, gain: 0.085, type: "triangle", attack: 0.002 }, volume);
+  playNoise(ac, { duration: 0.12, attack: 0.003, gain: 0.08, filter: "bandpass", frequency: 470, endFrequency: 240, q: 0.9 }, volume);
+  playNoise(ac, { duration: 0.25, attack: 0.006, gain: 0.092, filter: "lowpass", frequency: 330, endFrequency: 130, q: 0.72 }, volume);
+  playNoise(ac, { duration: 0.045, attack: 0.001, gain: 0.024, filter: "highpass", frequency: 1200, q: 0.62 }, volume);
+  playLowThump(ac, volume, 116, 44, 0.22, 0.092, "triangle", 0);
+  playShotTail(ac, volume, 0.032, 0.07, 420, 0.045);
 }
 
 function playExplosion(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.028, attack: 0.001, gain: 0.17, filter: "highpass", frequency: 900, q: 0.65 }, volume);
-  playTone(ac, { frequency: 82, endFrequency: 24, duration: 0.72, gain: 0.24, type: "sawtooth", attack: 0.003 }, volume);
-  playTone(ac, { frequency: 39, endFrequency: 21, duration: 0.58, gain: 0.12, type: "triangle", attack: 0.008, delay: 0.035 }, volume);
-  playNoise(ac, { duration: 0.66, attack: 0.006, gain: 0.21, filter: "lowpass", frequency: 620, endFrequency: 110, q: 0.7 }, volume);
-  window.setTimeout(() => playNoise(ac, { duration: 0.34, attack: 0.004, gain: 0.08, filter: "bandpass", frequency: 180, endFrequency: 90, q: 1.1 }, volume), 55);
+  playNoise(ac, { duration: 0.018, attack: 0.001, gain: 0.12, filter: "highpass", frequency: 980, q: 0.62 }, volume);
+  playLowThump(ac, volume, 88, 24, 0.58, 0.22, "sawtooth", 0);
+  playTone(ac, { frequency: 42, endFrequency: 21, duration: 0.52, gain: 0.11, type: "triangle", attack: 0.008, delay: 0.03 }, volume);
+  playNoise(ac, { duration: 0.46, attack: 0.005, gain: 0.18, filter: "lowpass", frequency: 560, endFrequency: 100, q: 0.68 }, volume);
+  playShotTail(ac, volume, 0.078, 0.18, 280, 0.07);
+  playShotTail(ac, volume, 0.046, 0.24, 180, 0.16);
+}
+
+function playGunSnap(ac: AudioContext, volume: number, gain: number, frequency: number, delay: number) {
+  playNoise(ac, { duration: 0.012, attack: 0.001, gain, filter: "highpass", frequency, q: 0.7, delay }, volume);
+  playNoise(ac, { duration: 0.018, attack: 0.001, gain: gain * 0.45, filter: "bandpass", frequency: Math.max(900, frequency * 0.55), q: 1.1, delay: delay + 0.001 }, volume);
+}
+
+function playLowThump(ac: AudioContext, volume: number, frequency: number, endFrequency: number, duration: number, gain: number, type: OscillatorType, delay: number) {
+  playTone(ac, { frequency, endFrequency, duration, gain, type, attack: 0.001, delay }, volume);
+}
+
+function playShotTail(ac: AudioContext, volume: number, gain: number, duration: number, frequency: number, delay: number) {
+  playNoise(ac, { duration, attack: 0.003, gain, filter: "lowpass", frequency, endFrequency: Math.max(80, frequency * 0.42), q: 0.62, delay }, volume);
 }
 
 function playTone(ac: AudioContext, options: { frequency: number; endFrequency?: number; duration: number; gain: number; type: OscillatorType; attack?: number; delay?: number }, volume: number) {
