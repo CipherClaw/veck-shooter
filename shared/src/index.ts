@@ -707,6 +707,12 @@ const bankWallColor = "#e7dfcf";
 const bankHeavyWallColor = "#5f6770";
 const bankCounterColor = "#5b3522";
 const bankDeskColor = "#4a2d1f";
+const bankMezzanineColor = "#d8cfbd";
+const bankMezzanineStandY = 5.6;
+const bankMezzanineThickness = 0.5;
+const bankRailingHeight = 1.15;
+const bankStairHeight = 0.45;
+const bankStairStandYs = [2.0, 2.8, 3.6, 4.4, 5.2, bankMezzanineStandY];
 
 function bankBlock(id: string, x: number, z: number, width: number, depth: number, height: number, color: string, climbable = false): ArenaCollider {
   return {
@@ -728,6 +734,38 @@ function bankDesk(id: string, x: number, z: number): ArenaCollider {
 
 function bankCounterSegment(id: string, x: number): ArenaCollider {
   return bankBlock(id, x, 22, 4.8, 1.4, 1.1, bankCounterColor, true);
+}
+
+function bankMezzanine(id: string, x: number, z: number, width: number, depth: number): ArenaCollider {
+  const top = bankMezzanineStandY - 1.2;
+  return {
+    id,
+    center: { x, y: top - bankMezzanineThickness / 2, z },
+    size: { x: width, y: bankMezzanineThickness, z: depth },
+    color: bankMezzanineColor,
+    climbable: true
+  };
+}
+
+function bankRailing(id: string, x: number, z: number, width: number, depth: number, color = "#b9ad98"): ArenaCollider {
+  const deckTop = bankMezzanineStandY - 1.2;
+  return {
+    id,
+    center: { x, y: deckTop + bankRailingHeight / 2, z },
+    size: { x: width, y: bankRailingHeight, z: depth },
+    color
+  };
+}
+
+function bankStairStep(id: string, x: number, z: number, width: number, depth: number, standY: number): ArenaCollider {
+  const top = standY - 1.2;
+  return {
+    id,
+    center: { x, y: top - bankStairHeight / 2, z },
+    size: { x: width, y: bankStairHeight, z: depth },
+    color: standY === bankMezzanineStandY ? "#d8cfbd" : "#c2b7a4",
+    climbable: true
+  };
 }
 
 const bankPerimeterColliders: ArenaCollider[] = [
@@ -766,12 +804,38 @@ const bankPillarColliders: ArenaCollider[] = [
   ...[-35, 35].flatMap((x) => [-8, 8].map((z) => bankBlock(`bank-pillar-outer-${x}-${z}`, x, z, 1.2, 1.2, 3.5, "#d8cfbd")))
 ];
 
+const bankMezzanineColliders: ArenaCollider[] = [
+  bankMezzanine("bank-mezzanine-north", 0, -38, 96, 28),
+  bankMezzanine("bank-mezzanine-west-gallery", -42, 13, 12, 74),
+  bankMezzanine("bank-mezzanine-east-gallery", 43, 13, 14, 74)
+];
+
+const bankRailingColliders: ArenaCollider[] = [
+  bankRailing("bank-railing-north-back", 0, -51.65, 96, 0.7),
+  bankRailing("bank-railing-north-atrium", 0, -23.65, 72, 0.7),
+  bankRailing("bank-railing-west-outer", -48.35, 13, 0.7, 74),
+  bankRailing("bank-railing-west-inner", -35.65, 13, 0.7, 74),
+  bankRailing("bank-railing-west-south", -42, 50.35, 12, 0.7),
+  bankRailing("bank-railing-east-outer", 50.35, 13, 0.7, 74),
+  bankRailing("bank-railing-east-inner-north", 35.65, 0.5, 0.7, 49),
+  bankRailing("bank-railing-east-south-lip", 46.5, 50.35, 7, 0.7)
+];
+
+const bankStairColliders: ArenaCollider[] = [
+  ...bankStairStandYs.slice(0, 3).map((standY, i) => bankStairStep(`bank-stair-east-flight-a-${i}`, 48, 46 - i * 4, 4.6, 3.2, standY)),
+  bankStairStep("bank-stair-east-half-landing", 43, 34, 14, 4.2, bankStairStandYs[2]),
+  ...bankStairStandYs.slice(3).map((standY, i) => bankStairStep(`bank-stair-east-flight-b-${i}`, 38, 38 + i * 4, 4.6, 3.2, standY))
+];
+
 const bankColliders: ArenaCollider[] = [
   ...bankPerimeterColliders,
   ...bankVaultColliders,
   ...bankCounterColliders,
   ...bankDeskColliders,
-  ...bankPillarColliders
+  ...bankPillarColliders,
+  ...bankMezzanineColliders,
+  ...bankRailingColliders,
+  ...bankStairColliders
 ];
 
 export const ARENAS: Record<MapName, ArenaDefinition> = {
@@ -848,7 +912,8 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     gridColor: "#b3a98f",
     spawns: [
       { x: -46, y: 1.2, z: -46 }, { x: 46, y: 1.2, z: 46 }, { x: 46, y: 1.2, z: -46 }, { x: -46, y: 1.2, z: 46 },
-      { x: 0, y: 1.2, z: -50 }, { x: 0, y: 1.2, z: 50 }, { x: -50, y: 1.2, z: 0 }, { x: 50, y: 1.2, z: 0 }
+      { x: 0, y: 1.2, z: -50 }, { x: 0, y: 1.2, z: 50 }, { x: -50, y: 1.2, z: 0 }, { x: 50, y: 1.2, z: 0 },
+      { x: -42, y: bankMezzanineStandY, z: 18 }, { x: 0, y: bankMezzanineStandY, z: -42 }, { x: 43, y: bankMezzanineStandY, z: -10 }
     ],
     colliders: bankColliders
   }
