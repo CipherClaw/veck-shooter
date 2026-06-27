@@ -1,6 +1,6 @@
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { ARENAS, type ArenaBouncePad, type ArenaCollider, type MapName } from "@veck/shared";
 import { useGame, type PracticeTargetFx } from "../state/store";
@@ -53,15 +53,16 @@ function BouncePad({ pad }: { pad: ArenaBouncePad }) {
 export function ArenaMap({ map }: { map: MapName }) {
   const arena = ARENAS[map];
   const isBank = map === "Bank Heist";
+  const isForest = map === "Forest";
   const floorY = isBank ? -0.04 : 0;
   const gridY = 0.025;
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floorY, 0]} receiveShadow>
         <planeGeometry args={[arena.floorSize, arena.floorSize, 48, 48]} />
-        <meshStandardMaterial color={isBank ? bankTileColor : arena.floorColor} roughness={0.88} />
+        <meshStandardMaterial color={isBank ? bankTileColor : arena.floorColor} roughness={isForest ? 0.96 : 0.88} />
       </mesh>
-      {!isBank && <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />}
+      {!isBank && !isForest && <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />}
       {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} map={map} />)}
       {arena.bouncePads?.map((pad) => <BouncePad key={pad.id} pad={pad} />)}
       {map === "Pyramid" && <PyramidDetails />}
@@ -76,7 +77,9 @@ export function ArenaMap({ map }: { map: MapName }) {
 
 function hiddenCollider(id: string) {
   return id.startsWith("forest-tree")
+    || id.startsWith("forest-climb")
     || id.startsWith("forest-rock")
+    || id.startsWith("forest-log")
     || id.startsWith("subway-train")
     || id.startsWith("subway-railing")
     || id.startsWith("blueprint-ladder")
@@ -493,36 +496,255 @@ function BankHallLights() {
 
 function ForestDetails() {
   const { trees = [], rocks = [] } = ARENAS.Forest;
+  const colliders = ARENAS.Forest.colliders;
+  const climberTrunks = colliders.filter((collider) => collider.id.startsWith("forest-climb-trunk"));
+  const climberBranches = colliders.filter((collider) => collider.id.startsWith("forest-climb-branch"));
+  const logs = colliders.filter((collider) => collider.id.startsWith("forest-log"));
   return (
     <group>
-      {trees.map((p, i) => <Tree key={`tree-${i}`} x={p.x} z={p.z} />)}
+      <ForestGroundPatches />
+      <ForestGrass />
+      <ForestUnderstory />
+      {trees.map((p, i) => <Tree key={`tree-${i}`} x={p.x} z={p.z} index={i} />)}
+      {climberTrunks.map((trunk) => (
+        <ClimberTree
+          key={trunk.id}
+          trunk={trunk}
+          branches={climberBranches.filter((branch) => branch.id.startsWith(trunk.id.replace("trunk", "branch")))}
+        />
+      ))}
       {rocks.map((p, i) => (
-        <mesh key={`rock-${i}`} position={[p.x, p.y, p.z]} castShadow receiveShadow>
-          <dodecahedronGeometry args={[1.8, 0]} />
-          <meshStandardMaterial color="#899098" roughness={0.85} />
+        <group key={`rock-${i}`} position={[p.x, p.y, p.z]}>
+          <mesh castShadow receiveShadow rotation={[0.18, i * 0.7, -0.1]}>
+            <dodecahedronGeometry args={[1.8, 1]} />
+            <meshStandardMaterial color={i % 2 === 0 ? "#858f86" : "#747f7a"} roughness={0.92} />
+          </mesh>
+          <mesh position={[0.65, -0.1, -0.35]} castShadow receiveShadow rotation={[0.25, i, 0.2]}>
+            <dodecahedronGeometry args={[0.9, 0]} />
+            <meshStandardMaterial color="#9aa197" roughness={0.9} />
+          </mesh>
+        </group>
+      ))}
+      {logs.map((log, i) => <ForestLog key={log.id} collider={log} index={i} />)}
+    </group>
+  );
+}
+
+function Tree({ x, z, index }: { x: number; z: number; index: number }) {
+  const scale = 0.92 + (index % 4) * 0.06;
+  const crownA = ["#1f7138", "#267f3d", "#2c8a48", "#1d6840"][index % 4];
+  const crownB = ["#2f9a4c", "#3b9f48", "#2d8f55", "#4a9a3f"][index % 4];
+  return (
+    <group position={[x, 0, z]} rotation={[0, index * 0.37, 0]} scale={[scale, scale, scale]}>
+      <mesh position={[0, 1.25, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.52, 0.68, 2.5, 7]} />
+        <meshStandardMaterial color={index % 2 === 0 ? "#684026" : "#5a371f"} roughness={0.88} />
+      </mesh>
+      <mesh position={[0, 3.25, 0]} castShadow>
+        <coneGeometry args={[2.65, 3.45, 8]} />
+        <meshStandardMaterial color={crownA} roughness={0.88} />
+      </mesh>
+      <mesh position={[0, 4.75, 0]} castShadow>
+        <coneGeometry args={[1.9, 2.65, 8]} />
+        <meshStandardMaterial color={crownB} roughness={0.86} />
+      </mesh>
+      <mesh position={[0.3, 4.05, -0.2]} castShadow>
+        <sphereGeometry args={[1.35, 8, 6]} />
+        <meshStandardMaterial color={crownA} roughness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
+function ClimberTree({ trunk, branches }: { trunk: ArenaCollider; branches: ArenaCollider[] }) {
+  const trunkParts = trunk.id.split("-");
+  const treeIndex = Number(trunkParts[trunkParts.length - 1] ?? 0);
+  return (
+    <group>
+      <mesh position={[trunk.center.x, trunk.center.y, trunk.center.z]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.48, 0.72, trunk.size.y, 10]} />
+        <meshStandardMaterial color="#58331d" roughness={0.9} />
+      </mesh>
+      <mesh position={[trunk.center.x, 15.8, trunk.center.z]} castShadow>
+        <sphereGeometry args={[3.4, 12, 8]} />
+        <meshStandardMaterial color={treeIndex % 2 === 0 ? "#1f6f3c" : "#285f35"} roughness={0.92} />
+      </mesh>
+      <mesh position={[trunk.center.x + 0.6, 13.8, trunk.center.z - 0.4]} castShadow>
+        <coneGeometry args={[3.1, 5.2, 9]} />
+        <meshStandardMaterial color={treeIndex % 2 === 0 ? "#2f8845" : "#347b40"} roughness={0.9} />
+      </mesh>
+      {branches.sort((a, b) => a.center.y - b.center.y).map((branch, branchIndex) => (
+        <ClimberBranch key={branch.id} branch={branch} trunk={trunk} branchIndex={branchIndex} />
+      ))}
+    </group>
+  );
+}
+
+function ClimberBranch({ branch, trunk, branchIndex }: { branch: ArenaCollider; trunk: ArenaCollider; branchIndex: number }) {
+  const dx = branch.center.x - trunk.center.x;
+  const dz = branch.center.z - trunk.center.z;
+  const angle = Math.atan2(dz, dx);
+  const length = Math.max(branch.size.x, branch.size.z) + 1.05;
+  const midX = trunk.center.x + dx * 0.55;
+  const midZ = trunk.center.z + dz * 0.55;
+  const y = branch.center.y + branch.size.y * 0.45;
+  return (
+    <group>
+      <mesh position={[midX, y, midZ]} rotation={[0.16, -angle, Math.PI / 2]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.22, 0.34, length, 8]} />
+        <meshStandardMaterial color={branchIndex % 2 === 0 ? "#654026" : "#754a2d"} roughness={0.9} />
+      </mesh>
+      <mesh position={[branch.center.x, y + 0.1, branch.center.z]} rotation={[0, -angle, 0]} castShadow receiveShadow>
+        <boxGeometry args={[branch.size.x, 0.24, branch.size.z]} />
+        <meshStandardMaterial color={branch.color} roughness={0.86} />
+      </mesh>
+      <mesh position={[branch.center.x + Math.cos(angle) * 0.8, y + 0.45, branch.center.z + Math.sin(angle) * 0.8]} castShadow>
+        <sphereGeometry args={[0.72, 8, 6]} />
+        <meshStandardMaterial color={branchIndex % 2 === 0 ? "#2e8b45" : "#3f934a"} roughness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
+function ForestLog({ collider, index }: { collider: ArenaCollider; index: number }) {
+  return (
+    <group position={[collider.center.x, collider.center.y, collider.center.z]} rotation={[0, index % 2 === 0 ? 0.08 : -0.16, Math.PI / 2]}>
+      <mesh castShadow receiveShadow>
+        <cylinderGeometry args={[collider.size.z * 0.42, collider.size.z * 0.48, collider.size.x, 12]} />
+        <meshStandardMaterial color="#765239" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, collider.size.x * 0.5 + 0.02, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[collider.size.z * 0.43, collider.size.z * 0.43, 0.08, 12]} />
+        <meshStandardMaterial color="#b2875d" roughness={0.82} />
+      </mesh>
+      <mesh position={[0, -collider.size.x * 0.5 - 0.02, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[collider.size.z * 0.43, collider.size.z * 0.43, 0.08, 12]} />
+        <meshStandardMaterial color="#b2875d" roughness={0.82} />
+      </mesh>
+    </group>
+  );
+}
+
+type GrassBlade = {
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+  scale: THREE.Vector3;
+  color: THREE.Color;
+};
+
+function ForestGrass() {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const blades = useMemo(() => makeGrassBlades(1900), []);
+  useEffect(() => {
+    const instanced = mesh.current;
+    if (!instanced) return;
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    blades.forEach((blade, i) => {
+      quaternion.setFromEuler(blade.rotation);
+      matrix.compose(blade.position, quaternion, blade.scale);
+      instanced.setMatrixAt(i, matrix);
+      instanced.setColorAt(i, blade.color);
+    });
+    instanced.instanceMatrix.needsUpdate = true;
+    if (instanced.instanceColor) instanced.instanceColor.needsUpdate = true;
+  }, [blades]);
+  return (
+    <instancedMesh ref={mesh} args={[undefined, undefined, blades.length]} castShadow receiveShadow>
+      <coneGeometry args={[0.055, 1, 3]} />
+      <meshStandardMaterial roughness={0.96} vertexColors />
+    </instancedMesh>
+  );
+}
+
+function ForestGroundPatches() {
+  const patches = useMemo(() => makeGrassPatches(), []);
+  return (
+    <group>
+      {patches.map((patch, i) => (
+        <mesh
+          key={i}
+          position={[patch.x, 0.018 + i * 0.0002, patch.z]}
+          rotation={[-Math.PI / 2, 0, patch.rotation]}
+          scale={[patch.scaleX, patch.scaleZ, 1]}
+          receiveShadow
+        >
+          <circleGeometry args={[1, 28]} />
+          <meshStandardMaterial color={patch.color} roughness={1} transparent opacity={0.3} depthWrite={false} />
         </mesh>
       ))}
     </group>
   );
 }
 
-function Tree({ x, z }: { x: number; z: number }) {
+function ForestUnderstory() {
+  const clusters = useMemo(() => [
+    { x: -31, z: 6, s: 1.1 }, { x: -24, z: -28, s: 0.9 }, { x: 16, z: 24, s: 1.2 }, { x: 32, z: -6, s: 0.85 },
+    { x: -6, z: -30, s: 1 }, { x: 38, z: 32, s: 0.95 }, { x: -42, z: 22, s: 0.8 }, { x: 6, z: 39, s: 1.05 }
+  ], []);
   return (
-    <group position={[x, 0, z]}>
-      <mesh position={[0, 1.25, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.9, 2.5, 0.9]} />
-        <meshStandardMaterial color="#6b4226" roughness={0.78} />
-      </mesh>
-      <mesh position={[0, 3.25, 0]} castShadow>
-        <coneGeometry args={[2.45, 3.3, 6]} />
-        <meshStandardMaterial color="#238241" roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 4.75, 0]} castShadow>
-        <coneGeometry args={[1.8, 2.55, 6]} />
-        <meshStandardMaterial color="#2ea44f" roughness={0.8} />
-      </mesh>
+    <group>
+      {clusters.map((cluster, i) => (
+        <group key={i} position={[cluster.x, 0, cluster.z]} scale={[cluster.s, cluster.s, cluster.s]} rotation={[0, i * 0.63, 0]}>
+          {[0, 1, 2].map((leaf) => (
+            <mesh key={leaf} position={[Math.cos(leaf * 2.1) * 0.45, 0.55, Math.sin(leaf * 2.1) * 0.45]} rotation={[0.4, leaf * 2.1, -0.25]} castShadow>
+              <coneGeometry args={[0.38, 1.2, 5]} />
+              <meshStandardMaterial color={leaf % 2 === 0 ? "#3f8b35" : "#5c9638"} roughness={0.95} />
+            </mesh>
+          ))}
+        </group>
+      ))}
     </group>
   );
+}
+
+function makeSeededRandom(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function makeGrassBlades(count: number): GrassBlade[] {
+  const random = makeSeededRandom(0x5eed3);
+  const palette = ["#4f9a34", "#6aaa36", "#317a35", "#86a94a", "#9ca65a", "#255f31", "#74b84a"];
+  const blocked = ARENAS.Forest.colliders.filter((collider) =>
+    collider.id.startsWith("forest-tree")
+    || collider.id.startsWith("forest-climb-trunk")
+    || collider.id.startsWith("forest-rock")
+    || collider.id.startsWith("forest-log")
+    || collider.id.startsWith("forest-hill")
+  );
+  const blades: GrassBlade[] = [];
+  let attempts = 0;
+  while (blades.length < count && attempts < count * 8) {
+    attempts += 1;
+    const x = (random() - 0.5) * 102;
+    const z = (random() - 0.5) * 102;
+    if (blocked.some((collider) => Math.abs(x - collider.center.x) < collider.size.x * 0.5 + 1.2 && Math.abs(z - collider.center.z) < collider.size.z * 0.5 + 1.2)) continue;
+    const height = 0.28 + random() * 0.55;
+    blades.push({
+      position: new THREE.Vector3(x, height * 0.5, z),
+      rotation: new THREE.Euler((random() - 0.5) * 0.32, random() * Math.PI * 2, (random() - 0.5) * 0.32),
+      scale: new THREE.Vector3(0.75 + random() * 0.8, height, 0.75 + random() * 0.8),
+      color: new THREE.Color(palette[Math.floor(random() * palette.length)])
+    });
+  }
+  return blades;
+}
+
+function makeGrassPatches() {
+  const random = makeSeededRandom(0xf0e57);
+  const colors = ["#5aa23a", "#7cab3e", "#3d8137", "#8f9d48", "#60933f", "#a4a45f"];
+  return Array.from({ length: 42 }, () => ({
+    x: (random() - 0.5) * 98,
+    z: (random() - 0.5) * 98,
+    scaleX: 3.6 + random() * 8.5,
+    scaleZ: 2.2 + random() * 6.5,
+    rotation: random() * Math.PI,
+    color: colors[Math.floor(random() * colors.length)]
+  }));
 }
 
 function SubwayDetails() {

@@ -352,10 +352,54 @@ const forestTrees = [
 
 const forestRocks = [[-20, -20], [24, 25], [42, -38], [-42, 8], [10, 42]].map(([x, z]) => ({ x, y: 0.8, z }));
 
+const forestClimberTrees = [
+  { x: -46, z: -14 },
+  { x: 14, z: -36 },
+  { x: -18, z: 30 },
+  { x: 46, z: 12 }
+];
+
+const forestBranchStandYs = Array.from({ length: 11 }, (_, i) => 2.45 + i * 1.3);
+const forestBranchHeight = 0.4;
+
+function forestClimberColliders(): ArenaCollider[] {
+  const directions = [
+    { x: 1, z: 0 },
+    { x: 0, z: 1 },
+    { x: -1, z: 0 },
+    { x: 0, z: -1 }
+  ];
+  return forestClimberTrees.flatMap((tree, treeIndex) => [
+    {
+      id: `forest-climb-trunk-${treeIndex}`,
+      center: { x: tree.x, y: 7.9, z: tree.z },
+      size: { x: 1.3, y: 15.8, z: 1.3 },
+      color: "#5a351f"
+    },
+    ...forestBranchStandYs.map((standY, branchIndex) => {
+      const direction = directions[branchIndex % directions.length];
+      const center = {
+        x: tree.x + direction.x * 1.55,
+        y: standY - 1.2 - forestBranchHeight / 2,
+        z: tree.z + direction.z * 1.55
+      };
+      const alongX = direction.x !== 0;
+      return {
+        id: `forest-climb-branch-${treeIndex}-${branchIndex}`,
+        center,
+        size: { x: alongX ? 2.8 : 2.15, y: forestBranchHeight, z: alongX ? 2.15 : 2.8 },
+        color: branchIndex % 2 === 0 ? "#6a4128" : "#70492f",
+        climbable: true
+      };
+    })
+  ]);
+}
+
 const forestColliders: ArenaCollider[] = [
   { id: "forest-hill-base", center: { x: 0, y: 1.1, z: 0 }, size: { x: 14, y: 2.2, z: 14 }, color: "#6aa84f", climbable: true },
   { id: "forest-hill-top", center: { x: 0, y: 2.55, z: 0 }, size: { x: 9, y: 0.7, z: 9 }, color: "#9ccc65", climbable: true },
   ...forestTrees.map((p, i) => ({ id: `forest-tree-${i}`, center: { x: p.x, y: 1.25, z: p.z }, size: { x: 1.8, y: 2.5, z: 1.8 }, color: "#6b4226" })),
+  ...forestClimberColliders(),
   ...forestRocks.map((p, i) => ({ id: `forest-rock-${i}`, center: p, size: { x: 3.2, y: 1.6, z: 3.2 }, color: "#899098" })),
   ...[[-18, 5], [18, -10], [9, 34], [-36, -12], [34, 18]].map(([x, z], i) => ({ id: `forest-log-${i}`, center: { x, y: 0.55, z }, size: { x: 8, y: 1.1, z: 2.1 }, color: "#8a8176" }))
 ];
@@ -929,6 +973,7 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
   Forest: {
     floorSize: 116,
     bounds: 54,
+    ceiling: 20,
     floorColor: "#6fb44b",
     gridColor: "#4f8935",
     spawns: [

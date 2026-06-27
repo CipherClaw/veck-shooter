@@ -21,8 +21,9 @@ export function beep(type: "ui" | "hit" | "kill" | "reload" | "heal" | "explosio
     return;
   }
   if (type === "watergun") {
-    playNoise(ac, { duration: 0.11, attack: 0.004, gain: 0.028, filter: "bandpass", frequency: 1350, q: 1.4 }, volume);
-    playTone(ac, { frequency: 520, endFrequency: 390, duration: 0.1, gain: 0.018, type: "sine" }, volume);
+    playNoise(ac, { duration: 0.075, attack: 0.002, gain: 0.025, filter: "bandpass", frequency: 1650, endFrequency: 760, q: 1.7 }, volume);
+    playNoise(ac, { duration: 0.11, attack: 0.006, gain: 0.013, filter: "lowpass", frequency: 620, q: 0.8 }, volume);
+    playTone(ac, { frequency: 620, endFrequency: 360, duration: 0.09, gain: 0.014, type: "sine", attack: 0.002 }, volume);
     return;
   }
   if (type === "heal") {
@@ -56,41 +57,49 @@ function playGunshot(ac: AudioContext, weapon: "revolver" | "sniper" | "shottie"
 }
 
 function playRevolverShot(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.075, attack: 0.001, gain: 0.15, filter: "highpass", frequency: 1250, q: 0.7 }, volume);
-  playNoise(ac, { duration: 0.055, attack: 0.001, gain: 0.075, filter: "bandpass", frequency: 3100, q: 0.9 }, volume);
-  playNoise(ac, { duration: 0.13, attack: 0.003, gain: 0.055, filter: "lowpass", frequency: 950, q: 0.65 }, volume);
-  playTone(ac, { frequency: 135, endFrequency: 48, duration: 0.12, gain: 0.09, type: "triangle" }, volume);
+  playNoise(ac, { duration: 0.026, attack: 0.001, gain: 0.14, filter: "highpass", frequency: 2400, q: 0.9 }, volume);
+  playNoise(ac, { duration: 0.052, attack: 0.001, gain: 0.075, filter: "bandpass", frequency: 3900, endFrequency: 2600, q: 1.4 }, volume);
+  playNoise(ac, { duration: 0.16, attack: 0.004, gain: 0.048, filter: "lowpass", frequency: 1100, endFrequency: 420, q: 0.8, delay: 0.006 }, volume);
+  playTone(ac, { frequency: 190, endFrequency: 48, duration: 0.11, gain: 0.095, type: "triangle", attack: 0.001 }, volume);
+  playTone(ac, { frequency: 78, endFrequency: 36, duration: 0.14, gain: 0.035, type: "sine", attack: 0.003, delay: 0.008 }, volume);
 }
 
 function playSniperShot(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.12, attack: 0.001, gain: 0.18, filter: "highpass", frequency: 850, q: 0.65 }, volume);
-  playNoise(ac, { duration: 0.07, attack: 0.001, gain: 0.11, filter: "bandpass", frequency: 2600, q: 0.85 }, volume);
-  playNoise(ac, { duration: 0.3, attack: 0.004, gain: 0.12, filter: "lowpass", frequency: 520, q: 0.7 }, volume);
-  playTone(ac, { frequency: 82, endFrequency: 30, duration: 0.34, gain: 0.14, type: "sawtooth" }, volume);
-  playTone(ac, { frequency: 48, endFrequency: 28, duration: 0.24, gain: 0.065, type: "triangle", delay: 0.035 }, volume);
+  playNoise(ac, { duration: 0.018, attack: 0.001, gain: 0.19, filter: "highpass", frequency: 4200, q: 0.75 }, volume);
+  playNoise(ac, { duration: 0.08, attack: 0.001, gain: 0.105, filter: "bandpass", frequency: 2100, endFrequency: 1200, q: 0.95, delay: 0.002 }, volume);
+  playNoise(ac, { duration: 0.46, attack: 0.006, gain: 0.115, filter: "lowpass", frequency: 720, endFrequency: 190, q: 0.72, delay: 0.012 }, volume);
+  playTone(ac, { frequency: 104, endFrequency: 30, duration: 0.32, gain: 0.15, type: "sawtooth", attack: 0.001 }, volume);
+  playTone(ac, { frequency: 50, endFrequency: 24, duration: 0.34, gain: 0.065, type: "triangle", attack: 0.006, delay: 0.035 }, volume);
+  playNoise(ac, { duration: 0.24, attack: 0.004, gain: 0.038, filter: "bandpass", frequency: 310, endFrequency: 130, q: 1.2, delay: 0.09 }, volume);
 }
 
 function playShotgunBlast(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.2, attack: 0.002, gain: 0.18, filter: "lowpass", frequency: 760, q: 0.65 }, volume);
-  playNoise(ac, { duration: 0.16, attack: 0.002, gain: 0.13, filter: "bandpass", frequency: 520, q: 0.9 }, volume);
-  playNoise(ac, { duration: 0.06, attack: 0.001, gain: 0.08, filter: "highpass", frequency: 1600, q: 0.7 }, volume);
-  playTone(ac, { frequency: 96, endFrequency: 36, duration: 0.24, gain: 0.12, type: "triangle" }, volume);
+  playNoise(ac, { duration: 0.035, attack: 0.001, gain: 0.12, filter: "highpass", frequency: 1750, q: 0.8 }, volume);
+  playNoise(ac, { duration: 0.22, attack: 0.002, gain: 0.155, filter: "lowpass", frequency: 960, endFrequency: 230, q: 0.72 }, volume);
+  playNoise(ac, { duration: 0.17, attack: 0.002, gain: 0.075, filter: "bandpass", frequency: 520, endFrequency: 310, q: 1.15, delay: 0.01 }, volume);
+  playNoise(ac, { duration: 0.12, attack: 0.001, gain: 0.042, filter: "bandpass", frequency: 2800, q: 1.4, delay: 0.018 }, volume);
+  playTone(ac, { frequency: 125, endFrequency: 34, duration: 0.24, gain: 0.12, type: "triangle", attack: 0.001 }, volume);
+  playTone(ac, { frequency: 72, endFrequency: 28, duration: 0.22, gain: 0.052, type: "sawtooth", attack: 0.006, delay: 0.02 }, volume);
 }
 
 function playGrenadeLaunch(ac: AudioContext, volume: number) {
-  playNoise(ac, { duration: 0.16, attack: 0.004, gain: 0.1, filter: "lowpass", frequency: 340, q: 0.8 }, volume);
-  playNoise(ac, { duration: 0.055, attack: 0.002, gain: 0.035, filter: "bandpass", frequency: 700, q: 0.85 }, volume);
-  playTone(ac, { frequency: 118, endFrequency: 58, duration: 0.18, gain: 0.075, type: "triangle" }, volume);
+  playNoise(ac, { duration: 0.09, attack: 0.002, gain: 0.07, filter: "bandpass", frequency: 560, endFrequency: 320, q: 1.0 }, volume);
+  playNoise(ac, { duration: 0.22, attack: 0.006, gain: 0.085, filter: "lowpass", frequency: 380, endFrequency: 150, q: 0.75 }, volume);
+  playNoise(ac, { duration: 0.055, attack: 0.001, gain: 0.032, filter: "highpass", frequency: 1300, q: 0.7 }, volume);
+  playTone(ac, { frequency: 138, endFrequency: 48, duration: 0.2, gain: 0.085, type: "triangle", attack: 0.002 }, volume);
 }
 
 function playExplosion(ac: AudioContext, volume: number) {
-  playTone(ac, { frequency: 68, endFrequency: 28, duration: 0.7, gain: 0.28, type: "sawtooth" }, volume);
-  playNoise(ac, { duration: 0.62, attack: 0.006, gain: 0.23, filter: "lowpass", frequency: 520, q: 0.7 }, volume);
-  window.setTimeout(() => playNoise(ac, { duration: 0.28, attack: 0.004, gain: 0.09, filter: "bandpass", frequency: 180, q: 1.1 }, volume), 55);
+  playNoise(ac, { duration: 0.028, attack: 0.001, gain: 0.17, filter: "highpass", frequency: 900, q: 0.65 }, volume);
+  playTone(ac, { frequency: 82, endFrequency: 24, duration: 0.72, gain: 0.24, type: "sawtooth", attack: 0.003 }, volume);
+  playTone(ac, { frequency: 39, endFrequency: 21, duration: 0.58, gain: 0.12, type: "triangle", attack: 0.008, delay: 0.035 }, volume);
+  playNoise(ac, { duration: 0.66, attack: 0.006, gain: 0.21, filter: "lowpass", frequency: 620, endFrequency: 110, q: 0.7 }, volume);
+  window.setTimeout(() => playNoise(ac, { duration: 0.34, attack: 0.004, gain: 0.08, filter: "bandpass", frequency: 180, endFrequency: 90, q: 1.1 }, volume), 55);
 }
 
-function playTone(ac: AudioContext, options: { frequency: number; endFrequency?: number; duration: number; gain: number; type: OscillatorType; delay?: number }, volume: number) {
+function playTone(ac: AudioContext, options: { frequency: number; endFrequency?: number; duration: number; gain: number; type: OscillatorType; attack?: number; delay?: number }, volume: number) {
   const now = ac.currentTime + (options.delay ?? 0);
+  const attack = options.attack ?? 0.002;
   const osc = ac.createOscillator();
   const gain = ac.createGain();
   osc.connect(gain);
@@ -98,13 +107,14 @@ function playTone(ac: AudioContext, options: { frequency: number; endFrequency?:
   osc.type = options.type;
   osc.frequency.setValueAtTime(options.frequency, now);
   if (options.endFrequency) osc.frequency.exponentialRampToValueAtTime(Math.max(20, options.endFrequency), now + options.duration);
-  gain.gain.setValueAtTime(options.gain * volume, now);
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(options.gain * volume, now + attack);
   gain.gain.exponentialRampToValueAtTime(0.001, now + options.duration);
   osc.start(now);
   osc.stop(now + options.duration + 0.02);
 }
 
-function playNoise(ac: AudioContext, options: { duration: number; attack: number; gain: number; filter: BiquadFilterType; frequency: number; q: number; delay?: number }, volume: number) {
+function playNoise(ac: AudioContext, options: { duration: number; attack: number; gain: number; filter: BiquadFilterType; frequency: number; endFrequency?: number; q: number; delay?: number }, volume: number) {
   const now = ac.currentTime + (options.delay ?? 0);
   const source = ac.createBufferSource();
   const filter = ac.createBiquadFilter();
@@ -112,6 +122,7 @@ function playNoise(ac: AudioContext, options: { duration: number; attack: number
   source.buffer = getNoiseBuffer(ac);
   filter.type = options.filter;
   filter.frequency.setValueAtTime(options.frequency, now);
+  if (options.endFrequency) filter.frequency.exponentialRampToValueAtTime(Math.max(20, options.endFrequency), now + options.duration);
   filter.Q.setValueAtTime(options.q, now);
   gain.gain.setValueAtTime(0.001, now);
   gain.gain.exponentialRampToValueAtTime(options.gain * volume, now + options.attack);
