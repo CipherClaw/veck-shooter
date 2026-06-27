@@ -703,138 +703,198 @@ const blueprintBouncePads: ArenaBouncePad[] = [
   { id: "blueprint-bounce-south", center: { x: 30, y: 0.1, z: -48 }, radius: 2.7, height: 0.2, color: "#22d3ee", launchVelocity: 33 }
 ];
 
-const bankWallColor = "#e7dfcf";
-const bankHeavyWallColor = "#5f6770";
-const bankCounterColor = "#5b3522";
-const bankDeskColor = "#4a2d1f";
-const bankMezzanineColor = "#d8cfbd";
-const bankMezzanineStandY = 5.6;
-const bankMezzanineThickness = 0.5;
-const bankRailingHeight = 1.15;
-const bankStairHeight = 0.45;
-const bankStairStandYs = [2.0, 2.8, 3.6, 4.4, 5.2, bankMezzanineStandY];
+const bankColors = {
+  carpet: "#52616b",
+  tile: "#d7d2c8",
+  stairStone: "#c9c5bc",
+  wallWood: "#a77248",
+  wallStone: "#d0cdc6",
+  glass: "#9bc1cf",
+  deskWhite: "#e2ded4",
+  cubicleFabric: "#9a9b99",
+  counterWood: "#8c603f",
+  brass: "#b08a48",
+  garden: "#315533"
+} as const;
+const bankGroundStandY = 1.2;
+const bankMezzanineStandY = 6.0;
+const bankFloorThickness = 0.45;
+const bankStairHeight = 0.5;
 
-function bankBlock(id: string, x: number, z: number, width: number, depth: number, height: number, color: string, climbable = false): ArenaCollider {
+function bankLevelCenter(floorY: number, height: number) {
+  return floorY + 1.2 + height / 2;
+}
+
+function bankBlock(id: string, x: number, z: number, width: number, depth: number, height: number, color: string, floorY = 0, climbable = false): ArenaCollider {
   return {
     id,
-    center: { x, y: height / 2, z },
+    center: { x, y: bankLevelCenter(floorY, height), z },
     size: { x: width, y: height, z: depth },
     color,
     climbable
   };
 }
 
-function bankWall(id: string, x: number, z: number, width: number, depth: number, color = bankWallColor): ArenaCollider {
-  return bankBlock(id, x, z, width, depth, 3.5, color);
+function bankWall(id: string, x: number, z: number, width: number, depth: number, floorY: number, color: string): ArenaCollider {
+  return bankBlock(id, x, z, width, depth, 4.8, color, floorY);
 }
 
-function bankDesk(id: string, x: number, z: number): ArenaCollider {
-  return bankBlock(id, x, z, 2.6, 1.3, 0.95, bankDeskColor, true);
-}
-
-function bankCounterSegment(id: string, x: number): ArenaCollider {
-  return bankBlock(id, x, 22, 4.8, 1.4, 1.1, bankCounterColor, true);
-}
-
-function bankMezzanine(id: string, x: number, z: number, width: number, depth: number): ArenaCollider {
-  const top = bankMezzanineStandY - 1.2;
+function bankLintel(id: string, x: number, z: number, width: number, depth: number, floorY: number): ArenaCollider {
   return {
     id,
-    center: { x, y: top - bankMezzanineThickness / 2, z },
-    size: { x: width, y: bankMezzanineThickness, z: depth },
-    color: bankMezzanineColor,
+    center: { x, y: floorY + 4.775, z },
+    size: { x: width, y: 2.45, z: depth },
+    color: bankColors.wallStone
+  };
+}
+
+function bankSurface(id: string, minX: number, maxX: number, minZ: number, maxZ: number, standY: number, color: string): ArenaCollider {
+  return {
+    id,
+    center: { x: (minX + maxX) / 2, y: standY - 1.2 - bankFloorThickness / 2, z: (minZ + maxZ) / 2 },
+    size: { x: maxX - minX, y: bankFloorThickness, z: maxZ - minZ },
+    color,
     climbable: true
   };
 }
 
-function bankRailing(id: string, x: number, z: number, width: number, depth: number, color = "#b9ad98"): ArenaCollider {
-  const deckTop = bankMezzanineStandY - 1.2;
-  return {
-    id,
-    center: { x, y: deckTop + bankRailingHeight / 2, z },
-    size: { x: width, y: bankRailingHeight, z: depth },
-    color
-  };
-}
-
-function bankStairStep(id: string, x: number, z: number, width: number, depth: number, standY: number): ArenaCollider {
+function bankStairStep(id: string, x: number, z: number, width: number, depth: number, standY: number, color: string): ArenaCollider {
   const top = standY - 1.2;
   return {
     id,
     center: { x, y: top - bankStairHeight / 2, z },
     size: { x: width, y: bankStairHeight, z: depth },
-    color: standY === bankMezzanineStandY ? "#d8cfbd" : "#c2b7a4",
+    color,
     climbable: true
   };
 }
 
-const bankPerimeterColliders: ArenaCollider[] = [
-  bankWall("bank-wall-north-west", -31.3, -56, 46.6, 1.4),
-  bankWall("bank-wall-north-east", 31.3, -56, 46.6, 1.4),
-  bankWall("bank-wall-south-west", -31.3, 56, 46.6, 1.4),
-  bankWall("bank-wall-south-east", 31.3, 56, 46.6, 1.4),
-  bankWall("bank-wall-west", -56, 0, 1.4, 112),
-  bankWall("bank-wall-east", 56, 0, 1.4, 112)
-];
+function bankSurfaceColliders(floorName: string, standY: number, upper: boolean): ArenaCollider[] {
+  const floorColor = (id: string, minX: number, maxX: number, minZ: number, maxZ: number, color: string) =>
+    bankSurface(`bank-${floorName}-surface-${id}`, minX, maxX, minZ, maxZ, standY, color);
+  return [
+    floorColor("north-carpet", -41.3, 41.3, -41.3, -22.45, bankColors.carpet),
+    floorColor("south-carpet", -41.3, 41.3, 22.45, 41.3, bankColors.carpet),
+    floorColor("north-west-tile", -41.3, -22.1, -21.55, -16.53, bankColors.tile),
+    floorColor("north-main-tile", -21.2, 41.3, -21.55, -16.53, bankColors.tile),
+    floorColor("south-west-tile", -41.3, -22.1, 16.53, 21.55, bankColors.tile),
+    floorColor("south-main-tile", -21.2, 41.3, 16.53, 21.55, bankColors.tile),
+    floorColor("west-hall", -21.2, -8.35, -16, 16, bankColors.tile),
+    floorColor("east-hall", 8.35, 21.55, -16, 16, bankColors.tile),
+    floorColor("east-office", 22.45, 41.3, -16, 16, bankColors.carpet),
+    floorColor("north-stair-pocket", -41.3, -22.1, -16, -9.2, upper ? bankColors.tile : bankColors.carpet),
+    floorColor("south-stair-pocket", -41.3, -22.1, 7.2, 16, upper ? bankColors.tile : bankColors.carpet),
+    ...(upper ? [] : [floorColor("lower-stair-opening", -39.5, -22.1, -8.3, 6.3, bankColors.tile)]),
+    floorColor("north-threshold", -22.1, -21.2, -18.45, -15.05, bankColors.tile),
+    floorColor("south-threshold", -22.1, -21.2, 15.05, 18.45, bankColors.tile),
+    floorColor("stair-threshold-strip", -22.1, -21.2, -8.3, 6.3, bankColors.tile)
+  ];
+}
 
-const bankVaultColliders: ArenaCollider[] = [
-  bankWall("bank-vault-wall-n", 0, -8, 16, 1.6, bankHeavyWallColor),
-  bankWall("bank-vault-wall-w", -8, 0, 1.6, 12.8, bankHeavyWallColor),
-  bankWall("bank-vault-wall-e", 8, 0, 1.6, 12.8, bankHeavyWallColor),
-  bankWall("bank-vault-wall-s-west", -5.2, 8, 5.6, 1.6, bankHeavyWallColor),
-  bankWall("bank-vault-wall-s-east", 5.2, 8, 5.6, 1.6, bankHeavyWallColor),
-  ...[
-    [0, -2, 2.8, 1.8, "#d6a62a", "gold-center"],
-    [-4, 2.2, 2.6, 1.6, "#2f7c62", "cash-west"],
-    [4, 2.2, 2.6, 1.6, "#d6a62a", "gold-east"]
-  ].map(([x, z, width, depth, color, id]) => bankBlock(`bank-vault-cover-${id}`, x as number, z as number, width as number, depth as number, 1.0, color as string, true))
-];
-
-const bankCounterColliders: ArenaCollider[] = [
-  ...[-32, -26, -20, -14, -8, 8, 14, 20, 26, 32].map((x) => bankCounterSegment(`bank-counter-${x}`, x))
-];
-
-const bankDeskColliders: ArenaCollider[] = [
-  ...[-38, -26, 26, 38].flatMap((x, col) => [-38, -30, 34, 42].map((z, row) => bankDesk(`bank-desk-center-${row}-${col}`, x, z))),
-  ...[-42, 42].flatMap((x) => [-32, -20, 20, 32].map((z) => bankDesk(`bank-desk-side-${x > 0 ? "east" : "west"}-${z}`, x, z)))
-];
-
-const bankPillarColliders: ArenaCollider[] = [
-  ...[-18, 18].flatMap((x) => [-30, 30].map((z) => bankBlock(`bank-pillar-inner-${x}-${z}`, x, z, 1.2, 1.2, 3.5, "#d8cfbd"))),
-  ...[-35, 35].flatMap((x) => [-8, 8].map((z) => bankBlock(`bank-pillar-outer-${x}-${z}`, x, z, 1.2, 1.2, 3.5, "#d8cfbd")))
-];
-
-const bankMezzanineColliders: ArenaCollider[] = [
-  bankMezzanine("bank-mezzanine-north", 0, -38, 96, 28),
-  bankMezzanine("bank-mezzanine-west-gallery", -42, 13, 12, 74),
-  bankMezzanine("bank-mezzanine-east-gallery", 43, 13, 14, 74)
-];
-
-const bankRailingColliders: ArenaCollider[] = [
-  bankRailing("bank-railing-north-back", 0, -51.65, 96, 0.7),
-  bankRailing("bank-railing-north-atrium", 0, -23.65, 72, 0.7),
-  bankRailing("bank-railing-west-outer", -48.35, 13, 0.7, 74),
-  bankRailing("bank-railing-west-inner", -35.65, 13, 0.7, 74),
-  bankRailing("bank-railing-west-south", -42, 50.35, 12, 0.7),
-  bankRailing("bank-railing-east-outer", 50.35, 13, 0.7, 74),
-  bankRailing("bank-railing-east-inner-north", 35.65, 0.5, 0.7, 49),
-  bankRailing("bank-railing-east-south-lip", 46.5, 50.35, 7, 0.7)
-];
+function bankWallColliders(floorName: string, floorY: number): ArenaCollider[] {
+  const wall = (id: string, x: number, z: number, width: number, depth: number, color: string) =>
+    bankWall(`bank-${floorName}-${id}`, x, z, width, depth, floorY, color);
+  return [
+    wall("exterior-north", 0, -42, 84, 1.4, bankColors.wallWood),
+    wall("exterior-south", 0, 42, 84, 1.4, bankColors.wallWood),
+    wall("exterior-west", -42, 0, 1.4, 84, bankColors.wallWood),
+    wall("exterior-east", 42, 0, 1.4, 84, bankColors.wallWood),
+    ...[
+      ["ring-north-west-1", -33, -22, 10, 0.9],
+      ["ring-north-west-2", -22.75, -22, 10.5, 0.9],
+      ["ring-north-center", 0, -22, 25, 0.9],
+      ["ring-north-east-1", 22.75, -22, 10.5, 0.9],
+      ["ring-north-east-2", 33, -22, 10, 0.9],
+      ["ring-south-west-1", -33, 22, 10, 0.9],
+      ["ring-south-west-2", -22.75, 22, 10.5, 0.9],
+      ["ring-south-center", 0, 22, 25, 0.9],
+      ["ring-south-east-1", 22.75, 22, 10.5, 0.9],
+      ["ring-south-east-2", 33, 22, 10, 0.9],
+      ["ring-east-north", 22, -11.25, 0.9, 10.5],
+      ["ring-east-center", 22, 0, 0.9, 12],
+      ["ring-east-south", 22, 11.25, 0.9, 10.5]
+    ].map(([id, x, z, width, depth]) => wall(id as string, x as number, z as number, width as number, depth as number, bankColors.wallWood)),
+    wall("stair-north-wrap", -30.8, -8.75, 18.3, 0.9, bankColors.wallStone),
+    wall("stair-south-wrap", -30.8, 6.75, 18.3, 0.9, bankColors.wallStone),
+    wall("stair-back", -40.625, -1, 2.25, 14.6, bankColors.wallStone),
+    ...[
+      ["north-door-north-side", -20.225, 3.55],
+      ["north-door-south-side", -11.675, 6.75],
+      ["south-door-north-side", 10.675, 8.75],
+      ["south-door-south-side", 20.225, 3.55]
+    ].map(([id, z, depth]) => wall(id as string, -21.65, z as number, 0.9, depth as number, bankColors.wallStone)),
+    bankLintel(`bank-${floorName}-north-door-lintel`, -21.65, -16.75, 0.9, 3.4, floorY),
+    bankLintel(`bank-${floorName}-south-door-lintel`, -21.65, 16.75, 0.9, 3.4, floorY)
+  ];
+}
 
 const bankStairColliders: ArenaCollider[] = [
-  ...bankStairStandYs.slice(0, 3).map((standY, i) => bankStairStep(`bank-stair-east-flight-a-${i}`, 48, 46 - i * 4, 4.6, 3.2, standY)),
-  bankStairStep("bank-stair-east-half-landing", 43, 34, 14, 4.2, bankStairStandYs[2]),
-  ...bankStairStandYs.slice(3).map((standY, i) => bankStairStep(`bank-stair-east-flight-b-${i}`, 38, 38 + i * 4, 4.6, 3.2, standY))
+  bankStairStep("bank-stair-upper-landing", -24.55, -6.5, 4.9, 3.54, 6.0, bankColors.tile),
+  ...[
+    [-27.95, -6.5, 2.78, 3.54, 5.6],
+    [-30.5, -6.5, 2.48, 3.54, 5.2],
+    [-32.9, -6.5, 2.48, 3.54, 4.8],
+    [-35.3, -6.5, 2.48, 3.54, 4.4],
+    [-37.7, -4.1, 3.54, 2.48, 4.0],
+    [-37.7, -1.7, 3.54, 2.48, 3.6],
+    [-37.7, 0.7, 3.54, 2.48, 3.2],
+    [-37.7, 3.1, 3.54, 2.48, 2.8],
+    [-35.3, 4.5, 2.48, 3.54, 2.4],
+    [-32.9, 4.5, 2.48, 3.54, 2.0],
+    [-30.5, 4.5, 2.48, 3.54, 1.6],
+    [-28.1, 4.5, 2.48, 3.54, 1.28]
+  ].map(([x, z, width, depth, standY], i) => bankStairStep(`bank-stair-tread-${i + 1}`, x, z, width, depth, standY, bankColors.stairStone)),
+  bankStairStep("bank-stair-mid-landing-1", -37.7, -6.5, 3.54, 3.54, 4.4, bankColors.tile),
+  bankStairStep("bank-stair-mid-landing-2", -37.7, 4.5, 3.54, 3.54, 2.8, bankColors.tile)
+];
+
+const bankAtriumColliders: ArenaCollider[] = [
+  {
+    id: "bank-atrium-garden-blocker",
+    center: { x: 0, y: 2.8, z: 0 },
+    size: { x: 11.2, y: 3.2, z: 11.2 },
+    color: bankColors.garden
+  },
+  ...[0, 4.8].flatMap((floorY) => {
+    const floorName = floorY === 0 ? "ground" : "upper";
+    return [
+      bankWall(`bank-${floorName}-atrium-glass-north`, 0, -16, 15.5, 0.7, floorY, bankColors.glass),
+      bankWall(`bank-${floorName}-atrium-glass-south`, 0, 16, 15.5, 0.7, floorY, bankColors.glass),
+      bankWall(`bank-${floorName}-atrium-glass-west`, -8, 0, 0.7, 31.5, floorY, bankColors.glass),
+      bankWall(`bank-${floorName}-atrium-glass-east`, 8, 0, 0.7, 31.5, floorY, bankColors.glass)
+    ];
+  })
+];
+
+const bankFurnitureColliders: ArenaCollider[] = [
+  ...[
+    [0, [-36, -32, -28, 28, 32, 36]],
+    [4.8, [-18, -14, -10, 28, 32, 36]]
+  ].flatMap(([floorY, xs]) => (xs as number[]).map((x) => bankBlock(`bank-${floorY === 0 ? "ground" : "upper"}-cubicle-${x}`, x, -30, 1, 6, 1.6, bankColors.cubicleFabric, floorY as number))),
+  ...[0, 4.8].flatMap((floorY) => {
+    const floorName = floorY === 0 ? "ground" : "upper";
+    return [
+      bankBlock(`bank-${floorName}-teller-west`, -20, 26, 12, 1.1, 1.35, bankColors.counterWood, floorY),
+      bankBlock(`bank-${floorName}-teller-center`, 0, 28, 14, 1.1, 1.35, bankColors.counterWood, floorY),
+      bankBlock(`bank-${floorName}-teller-east`, 21, 24, 1.1, 12, 1.35, bankColors.counterWood, floorY),
+      bankWall(`bank-${floorName}-vault-wall-south`, 33, 29, 10, 1.1, floorY, bankColors.brass),
+      bankWall(`bank-${floorName}-vault-wall-west`, 27, 34, 1.1, 10, floorY, bankColors.brass),
+      ...[-35, 35].flatMap((z) => [-36, -28, -20, -12, 12, 20, 28, 36].map((x) => bankBlock(`bank-${floorName}-desk-row-${x}-${z}`, x, z, 1, 1.8, 1.2, bankColors.deskWhite, floorY))),
+      ...(floorY === 0 ? [
+        ...[-14, 11, 14].map((z) => bankBlock(`bank-ground-west-side-desk-${z}`, -32, z, 4.8, 1, 1.2, bankColors.deskWhite, floorY))
+      ] : []),
+      ...[-8, 0, 8, 14].map((z) => bankBlock(`bank-${floorName}-east-side-desk-${z}`, 32, z, 4.8, 1, 1.2, bankColors.deskWhite, floorY))
+    ];
+  })
 ];
 
 const bankColliders: ArenaCollider[] = [
-  ...bankPerimeterColliders,
-  ...bankVaultColliders,
-  ...bankCounterColliders,
-  ...bankDeskColliders,
-  ...bankPillarColliders,
-  ...bankMezzanineColliders,
-  ...bankRailingColliders,
+  ...bankSurfaceColliders("ground", bankGroundStandY, false),
+  ...bankSurfaceColliders("upper", bankMezzanineStandY, true),
+  ...bankWallColliders("ground", 0),
+  ...bankWallColliders("upper", 4.8),
+  ...bankAtriumColliders,
+  ...bankFurnitureColliders,
   ...bankStairColliders
 ];
 
@@ -905,15 +965,16 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     bouncePads: blueprintBouncePads
   },
   "Bank Heist": {
-    floorSize: 120,
-    bounds: 56,
-    playBounds: 52,
-    floorColor: "#d9d2c4",
-    gridColor: "#b3a98f",
+    floorSize: 88,
+    bounds: 43,
+    playBounds: 42,
+    floorColor: bankColors.carpet,
+    gridColor: "#6f7d86",
     spawns: [
-      { x: -46, y: 1.2, z: -46 }, { x: 46, y: 1.2, z: 46 }, { x: 46, y: 1.2, z: -46 }, { x: -46, y: 1.2, z: 46 },
-      { x: 0, y: 1.2, z: -50 }, { x: 0, y: 1.2, z: 50 }, { x: -50, y: 1.2, z: 0 }, { x: 50, y: 1.2, z: 0 },
-      { x: -42, y: bankMezzanineStandY, z: 18 }, { x: 0, y: bankMezzanineStandY, z: -42 }, { x: 43, y: bankMezzanineStandY, z: -10 }
+      { x: -31, y: 1.2, z: -34 }, { x: 31, y: 1.2, z: -34 }, { x: -31, y: 1.2, z: 34 }, { x: 31, y: 1.2, z: 34 },
+      { x: -18, y: 1.2, z: 0 }, { x: 18, y: 1.2, z: 0 }, { x: 0, y: 1.2, z: -24 }, { x: 0, y: 1.2, z: 24 },
+      { x: -18, y: bankMezzanineStandY, z: -34 }, { x: 31, y: bankMezzanineStandY, z: -34 }, { x: -31, y: bankMezzanineStandY, z: 34 }, { x: 31, y: bankMezzanineStandY, z: 34 },
+      { x: -18, y: bankMezzanineStandY, z: 0 }, { x: 18, y: bankMezzanineStandY, z: 0 }, { x: 0, y: bankMezzanineStandY, z: -24 }, { x: 0, y: bankMezzanineStandY, z: 24 }
     ],
     colliders: bankColliders
   }
