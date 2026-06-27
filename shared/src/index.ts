@@ -1,4 +1,4 @@
-export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway" | "Blueprint";
+export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway" | "Blueprint" | "Bank Heist";
 export type GameMode = "Free Play" | "Team Mode" | "Gun Game";
 export type Team = "red" | "green" | "none";
 export type WeaponId = "revolver" | "sniper" | "grenade" | "shottie" | "watergun";
@@ -67,7 +67,7 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
   watergun: { id: "watergun", name: "Water Gun", ammo: 100, reloadMs: 1800, fireMs: 80, damage: 5, range: 30, spread: 0.04, pellets: 1, projectile: "stream" }
 };
 
-export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway", "Blueprint"];
+export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway", "Blueprint", "Bank Heist"];
 export const DURATIONS = [3, 5, 10, 15] as const;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
@@ -703,6 +703,77 @@ const blueprintBouncePads: ArenaBouncePad[] = [
   { id: "blueprint-bounce-south", center: { x: 30, y: 0.1, z: -48 }, radius: 2.7, height: 0.2, color: "#22d3ee", launchVelocity: 33 }
 ];
 
+const bankWallColor = "#e7dfcf";
+const bankHeavyWallColor = "#5f6770";
+const bankCounterColor = "#5b3522";
+const bankDeskColor = "#4a2d1f";
+
+function bankBlock(id: string, x: number, z: number, width: number, depth: number, height: number, color: string, climbable = false): ArenaCollider {
+  return {
+    id,
+    center: { x, y: height / 2, z },
+    size: { x: width, y: height, z: depth },
+    color,
+    climbable
+  };
+}
+
+function bankWall(id: string, x: number, z: number, width: number, depth: number, color = bankWallColor): ArenaCollider {
+  return bankBlock(id, x, z, width, depth, 3.5, color);
+}
+
+function bankDesk(id: string, x: number, z: number): ArenaCollider {
+  return bankBlock(id, x, z, 2.6, 1.3, 0.95, bankDeskColor, true);
+}
+
+function bankCounterSegment(id: string, x: number): ArenaCollider {
+  return bankBlock(id, x, 22, 4.8, 1.4, 1.1, bankCounterColor, true);
+}
+
+const bankPerimeterColliders: ArenaCollider[] = [
+  bankWall("bank-wall-north-west", -31.3, -56, 46.6, 1.4),
+  bankWall("bank-wall-north-east", 31.3, -56, 46.6, 1.4),
+  bankWall("bank-wall-south-west", -31.3, 56, 46.6, 1.4),
+  bankWall("bank-wall-south-east", 31.3, 56, 46.6, 1.4),
+  bankWall("bank-wall-west", -56, 0, 1.4, 112),
+  bankWall("bank-wall-east", 56, 0, 1.4, 112)
+];
+
+const bankVaultColliders: ArenaCollider[] = [
+  bankWall("bank-vault-wall-n", 0, -8, 16, 1.6, bankHeavyWallColor),
+  bankWall("bank-vault-wall-w", -8, 0, 1.6, 12.8, bankHeavyWallColor),
+  bankWall("bank-vault-wall-e", 8, 0, 1.6, 12.8, bankHeavyWallColor),
+  bankWall("bank-vault-wall-s-west", -5.2, 8, 5.6, 1.6, bankHeavyWallColor),
+  bankWall("bank-vault-wall-s-east", 5.2, 8, 5.6, 1.6, bankHeavyWallColor),
+  ...[
+    [0, -2, 2.8, 1.8, "#d6a62a", "gold-center"],
+    [-4, 2.2, 2.6, 1.6, "#2f7c62", "cash-west"],
+    [4, 2.2, 2.6, 1.6, "#d6a62a", "gold-east"]
+  ].map(([x, z, width, depth, color, id]) => bankBlock(`bank-vault-cover-${id}`, x as number, z as number, width as number, depth as number, 1.0, color as string, true))
+];
+
+const bankCounterColliders: ArenaCollider[] = [
+  ...[-32, -26, -20, -14, -8, 8, 14, 20, 26, 32].map((x) => bankCounterSegment(`bank-counter-${x}`, x))
+];
+
+const bankDeskColliders: ArenaCollider[] = [
+  ...[-38, -26, 26, 38].flatMap((x, col) => [-38, -30, 34, 42].map((z, row) => bankDesk(`bank-desk-center-${row}-${col}`, x, z))),
+  ...[-42, 42].flatMap((x) => [-32, -20, 20, 32].map((z) => bankDesk(`bank-desk-side-${x > 0 ? "east" : "west"}-${z}`, x, z)))
+];
+
+const bankPillarColliders: ArenaCollider[] = [
+  ...[-18, 18].flatMap((x) => [-30, 30].map((z) => bankBlock(`bank-pillar-inner-${x}-${z}`, x, z, 1.2, 1.2, 3.5, "#d8cfbd"))),
+  ...[-35, 35].flatMap((x) => [-8, 8].map((z) => bankBlock(`bank-pillar-outer-${x}-${z}`, x, z, 1.2, 1.2, 3.5, "#d8cfbd")))
+];
+
+const bankColliders: ArenaCollider[] = [
+  ...bankPerimeterColliders,
+  ...bankVaultColliders,
+  ...bankCounterColliders,
+  ...bankDeskColliders,
+  ...bankPillarColliders
+];
+
 export const ARENAS: Record<MapName, ArenaDefinition> = {
   Pyramid: {
     floorSize: 104,
@@ -768,6 +839,18 @@ export const ARENAS: Record<MapName, ArenaDefinition> = {
     ],
     colliders: blueprintColliders,
     bouncePads: blueprintBouncePads
+  },
+  "Bank Heist": {
+    floorSize: 120,
+    bounds: 56,
+    playBounds: 52,
+    floorColor: "#d9d2c4",
+    gridColor: "#b3a98f",
+    spawns: [
+      { x: -46, y: 1.2, z: -46 }, { x: 46, y: 1.2, z: 46 }, { x: 46, y: 1.2, z: -46 }, { x: -46, y: 1.2, z: 46 },
+      { x: 0, y: 1.2, z: -50 }, { x: 0, y: 1.2, z: 50 }, { x: -50, y: 1.2, z: 0 }, { x: 50, y: 1.2, z: 0 }
+    ],
+    colliders: bankColliders
   }
 };
 

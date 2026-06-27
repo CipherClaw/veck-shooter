@@ -46,6 +46,7 @@ export function ArenaMap({ map }: { map: MapName }) {
       {map === "Forest" && <ForestDetails />}
       {map === "Subway" && <SubwayDetails />}
       {map === "Blueprint" && <BlueprintDetails />}
+      {map === "Bank Heist" && <BankHeistDetails />}
     </group>
   );
 }
@@ -290,6 +291,190 @@ function BlueprintLadder({ collider }: { collider: ArenaCollider }) {
           <meshStandardMaterial color="#ffffff" emissive="#bae6fd" emissiveIntensity={0.14} roughness={0.36} metalness={0.08} />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+function BankHeistDetails() {
+  const colliders = ARENAS["Bank Heist"].colliders;
+  const counters = colliders.filter((collider) => collider.id.startsWith("bank-counter-"));
+  const desks = colliders.filter((collider) => collider.id.startsWith("bank-desk-"));
+  const pillars = colliders.filter((collider) => collider.id.startsWith("bank-pillar-"));
+  const vaultCover = colliders.filter((collider) => collider.id.startsWith("bank-vault-cover-"));
+  return (
+    <group>
+      <BankFloorAccents />
+      <BankVaultDoor />
+      {counters.map((counter) => <BankCounterDetail key={counter.id} collider={counter} />)}
+      {desks.map((desk) => <BankDeskDetail key={desk.id} collider={desk} />)}
+      {pillars.map((pillar) => <BankPillarDetail key={pillar.id} collider={pillar} />)}
+      {vaultCover.map((cover) => <BankTreasureDetail key={cover.id} collider={cover} />)}
+      <BankEntranceSign z={-56.74} rotationY={0} />
+      <BankEntranceSign z={56.74} rotationY={Math.PI} />
+      {[
+        [-26, 18], [26, 18], [-18, -18], [18, -18], [0, 0]
+      ].map(([x, z]) => (
+        <pointLight key={`${x}-${z}`} color="#f7dfb0" intensity={0.16} distance={18} position={[x, 5.2, z]} />
+      ))}
+    </group>
+  );
+}
+
+function BankFloorAccents() {
+  return (
+    <group>
+      <mesh position={[0, 0.035, 38.8]} receiveShadow>
+        <boxGeometry args={[30, 0.05, 9]} />
+        <meshStandardMaterial color="#183d4a" roughness={0.72} metalness={0.02} />
+      </mesh>
+      <mesh position={[0, 0.048, -50.9]} receiveShadow>
+        <boxGeometry args={[12, 0.045, 5.8]} />
+        <meshStandardMaterial color="#1b4d57" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.061, 50.9]} receiveShadow>
+        <boxGeometry args={[12, 0.045, 5.8]} />
+        <meshStandardMaterial color="#1b4d57" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.074, 0]} receiveShadow>
+        <boxGeometry args={[13.1, 0.04, 13.1]} />
+        <meshStandardMaterial color="#c8c1b4" roughness={0.52} metalness={0.03} />
+      </mesh>
+      <mesh position={[0, 0.125, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[4.2, 4.45, 48]} />
+        <meshStandardMaterial color="#b99a52" roughness={0.46} metalness={0.22} />
+      </mesh>
+    </group>
+  );
+}
+
+function BankVaultDoor() {
+  return (
+    <group position={[-3.25, 2.1, 9.12]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh castShadow receiveShadow>
+        <cylinderGeometry args={[2.35, 2.35, 0.34, 56]} />
+        <meshStandardMaterial color="#b49343" emissive="#7c5a1e" emissiveIntensity={0.08} roughness={0.34} metalness={0.58} />
+      </mesh>
+      <mesh position={[0, 0.22, 0]}>
+        <torusGeometry args={[1.75, 0.075, 12, 56]} />
+        <meshStandardMaterial color="#f1c96b" emissive="#c59632" emissiveIntensity={0.1} roughness={0.28} metalness={0.72} />
+      </mesh>
+      <mesh position={[0, 0.25, 0]}>
+        <cylinderGeometry args={[0.38, 0.38, 0.08, 32]} />
+        <meshStandardMaterial color="#2d3540" roughness={0.3} metalness={0.7} />
+      </mesh>
+      {Array.from({ length: 6 }, (_, i) => {
+        const angle = i * Math.PI / 3;
+        return (
+          <mesh key={i} position={[Math.cos(angle) * 0.82, 0.3, Math.sin(angle) * 0.82]} rotation={[0, 0, angle]}>
+            <boxGeometry args={[0.85, 0.08, 0.08]} />
+            <meshStandardMaterial color="#2d3540" roughness={0.28} metalness={0.68} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function BankCounterDetail({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  return (
+    <group position={[center.x, 0, center.z]}>
+      <mesh position={[0, 1.17, 0]} castShadow receiveShadow>
+        <boxGeometry args={[size.x + 0.12, 0.08, size.z + 0.16]} />
+        <meshStandardMaterial color="#c39a44" emissive="#8a641e" emissiveIntensity={0.04} roughness={0.34} metalness={0.42} />
+      </mesh>
+      <mesh position={[0, 1.86, -0.18]} castShadow>
+        <boxGeometry args={[size.x - 0.42, 1.26, 0.08]} />
+        <meshStandardMaterial color="#bde1e8" transparent opacity={0.38} roughness={0.12} metalness={0.02} />
+      </mesh>
+      <mesh position={[0, 2.56, -0.18]} castShadow>
+        <boxGeometry args={[size.x - 0.28, 0.08, 0.12]} />
+        <meshStandardMaterial color="#b78b36" roughness={0.36} metalness={0.48} />
+      </mesh>
+    </group>
+  );
+}
+
+function BankDeskDetail({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  const chairZ = center.z < 0 ? 1.45 : -1.45;
+  return (
+    <group position={[center.x, 0, center.z]}>
+      <mesh position={[0, size.y + 0.055, 0]} castShadow receiveShadow>
+        <boxGeometry args={[size.x + 0.12, 0.08, size.z + 0.12]} />
+        <meshStandardMaterial color="#6a432d" roughness={0.5} metalness={0.04} />
+      </mesh>
+      <mesh position={[0.52, 1.24, -chairZ * 0.18]} rotation={[0, chairZ > 0 ? 0 : Math.PI, 0]} castShadow>
+        <boxGeometry args={[0.72, 0.48, 0.08]} />
+        <meshStandardMaterial color="#111827" emissive="#0f172a" emissiveIntensity={0.08} roughness={0.26} />
+      </mesh>
+      <mesh position={[0.52, 1.0, -chairZ * 0.18]} castShadow>
+        <boxGeometry args={[0.14, 0.22, 0.14]} />
+        <meshStandardMaterial color="#202633" roughness={0.38} metalness={0.28} />
+      </mesh>
+      <mesh position={[-0.66, 1.04, 0.14]} castShadow>
+        <boxGeometry args={[0.55, 0.08, 0.42]} />
+        <meshStandardMaterial color="#f7f1df" roughness={0.62} />
+      </mesh>
+      <mesh position={[0, 0.33, chairZ]} castShadow>
+        <cylinderGeometry args={[0.46, 0.5, 0.56, 18]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.56} metalness={0.08} />
+      </mesh>
+      <mesh position={[0, 0.89, chairZ + Math.sign(chairZ) * 0.24]} castShadow>
+        <boxGeometry args={[0.88, 0.82, 0.16]} />
+        <meshStandardMaterial color="#263244" roughness={0.56} metalness={0.05} />
+      </mesh>
+    </group>
+  );
+}
+
+function BankPillarDetail({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  return (
+    <group position={[center.x, 0, center.z]}>
+      <mesh position={[0, 0.14, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.86, 0.86, 0.24, 28]} />
+        <meshStandardMaterial color="#eee6d7" roughness={0.44} metalness={0.03} />
+      </mesh>
+      <mesh position={[0, size.y + 0.17, 0]} castShadow>
+        <cylinderGeometry args={[0.9, 0.9, 0.28, 28]} />
+        <meshStandardMaterial color="#f3eadb" roughness={0.42} metalness={0.03} />
+      </mesh>
+    </group>
+  );
+}
+
+function BankTreasureDetail({ collider }: { collider: ArenaCollider }) {
+  const gold = collider.id.includes("gold");
+  const bars = gold ? [-0.72, 0, 0.72] : [-0.5, 0.5];
+  return (
+    <group position={[collider.center.x, collider.center.y + collider.size.y / 2 + 0.14, collider.center.z]}>
+      {bars.map((x, i) => (
+        <mesh key={i} position={[x, i % 2 === 0 ? 0 : 0.16, 0]} castShadow>
+          <boxGeometry args={gold ? [0.6, 0.18, 0.38] : [0.72, 0.16, 0.52]} />
+          <meshStandardMaterial
+            color={gold ? "#f4c542" : "#87b38d"}
+            emissive={gold ? "#d39a18" : "#2f7c62"}
+            emissiveIntensity={gold ? 0.18 : 0.08}
+            roughness={0.3}
+            metalness={gold ? 0.5 : 0.04}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function BankEntranceSign({ z, rotationY }: { z: number; rotationY: number }) {
+  return (
+    <group position={[0, 3.25, z]} rotation={[0, rotationY, 0]}>
+      <mesh castShadow>
+        <boxGeometry args={[9.4, 1.3, 0.16]} />
+        <meshStandardMaterial color="#173f46" emissive="#102d32" emissiveIntensity={0.08} roughness={0.38} metalness={0.08} />
+      </mesh>
+      <Text position={[0, 0.02, 0.095]} fontSize={0.72} color="#f6d278" anchorX="center" anchorY="middle">
+        BANK
+      </Text>
     </group>
   );
 }
