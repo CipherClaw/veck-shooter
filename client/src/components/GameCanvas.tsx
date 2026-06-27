@@ -503,7 +503,7 @@ function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?
     });
   });
   if (fx.explosion) {
-    return <mesh position={[fx.explosion.x, fx.explosion.y, fx.explosion.z]}><sphereGeometry args={[1.65, 16, 12]} /><meshStandardMaterial color="#ff8a00" emissive="#ff3d00" emissiveIntensity={1.2} transparent opacity={0.5} /></mesh>;
+    return <mesh position={[fx.explosion.x, fx.explosion.y, fx.explosion.z]}><sphereGeometry args={[2.2, 16, 12]} /><meshStandardMaterial color="#ff8a00" emissive="#ff3d00" emissiveIntensity={1.2} transparent opacity={0.55} /></mesh>;
   }
   return (
     <group ref={group}>
@@ -569,9 +569,9 @@ function ExplosionFx({ explosion }: { explosion: { position: Vec3; createdAt: nu
     const mesh = meshRef.current;
     if (!mesh) return;
     const age = Math.min(1, (Date.now() - explosion.createdAt) / 650);
-    const visibleRadius = Math.min(explosion.radius * 0.42, 3.2);
+    const visibleRadius = Math.min(explosion.radius * 0.62, 5.0);
     mesh.scale.setScalar(0.9 + THREE.MathUtils.smoothstep(age, 0, 0.72) * visibleRadius);
-    mesh.material.opacity = Math.max(0, 0.58 - age * 0.7);
+    mesh.material.opacity = Math.max(0, 0.6 - age * 0.62);
   });
   return (
     <mesh ref={meshRef} position={[explosion.position.x, explosion.position.y, explosion.position.z]} scale={0.9}>
