@@ -5,12 +5,32 @@ import * as THREE from "three";
 import { ARENAS, type ArenaBouncePad, type ArenaCollider, type MapName } from "@veck/shared";
 import { useGame, type PracticeTargetFx } from "../state/store";
 
-function Tile({ collider }: { collider: ArenaCollider }) {
+const bankTileColor = "#d7d2c8";
+const bankSurfaceOverlap = 0.06;
+
+function Tile({ collider, map }: { collider: ArenaCollider; map: MapName }) {
   const { center, size, color } = collider;
+  const isBank = map === "Bank Heist";
+  const isBankSurface = isBank && collider.id.includes("-surface-");
+  const isBankStoneWall = isBank && (color.toLowerCase() === "#8f9699" || collider.id.includes("-lintel"));
+  const isBankWoodWall = isBank && color.toLowerCase() === "#a77248";
+  const displayColor = isBankStoneWall ? "#a8afb0" : isBankWoodWall ? "#9d6740" : color;
   return (
-    <mesh position={[center.x, center.y, center.z]} scale={[size.x, size.y, size.z]} castShadow receiveShadow>
+    <mesh
+      position={[center.x, center.y, center.z]}
+      scale={[size.x + (isBankSurface ? bankSurfaceOverlap : 0), size.y, size.z + (isBankSurface ? bankSurfaceOverlap : 0)]}
+      castShadow
+      receiveShadow
+    >
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={color} roughness={0.74} metalness={0.02} />
+      <meshStandardMaterial
+        color={displayColor}
+        roughness={isBankStoneWall ? 0.9 : 0.74}
+        metalness={0.02}
+        polygonOffset={isBankSurface}
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
+      />
     </mesh>
   );
 }
@@ -32,16 +52,17 @@ function BouncePad({ pad }: { pad: ArenaBouncePad }) {
 
 export function ArenaMap({ map }: { map: MapName }) {
   const arena = ARENAS[map];
-  const floorY = map === "Bank Heist" ? -0.3 : 0;
-  const gridY = map === "Bank Heist" ? -0.275 : 0.025;
+  const isBank = map === "Bank Heist";
+  const floorY = isBank ? -0.04 : 0;
+  const gridY = 0.025;
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floorY, 0]} receiveShadow>
         <planeGeometry args={[arena.floorSize, arena.floorSize, 48, 48]} />
-        <meshStandardMaterial color={arena.floorColor} roughness={0.88} />
+        <meshStandardMaterial color={isBank ? bankTileColor : arena.floorColor} roughness={0.88} />
       </mesh>
-      <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />
-      {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} />)}
+      {!isBank && <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />}
+      {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} map={map} />)}
       {arena.bouncePads?.map((pad) => <BouncePad key={pad.id} pad={pad} />)}
       {map === "Pyramid" && <PyramidDetails />}
       {map === "Practice Range" && <PracticeDetails />}
@@ -304,9 +325,116 @@ function BankHeistDetails() {
   const glass = colliders.filter((collider) => collider.id.includes("atrium-glass"));
   return (
     <group>
+      <BankFloorGrout colliders={colliders} />
+      <BankWallFinish colliders={colliders} />
       <BankAtriumGarden />
       {glass.map((collider) => <BankAtriumGlass key={collider.id} collider={collider} />)}
       <BankHallLights />
+    </group>
+  );
+}
+
+function BankFloorGrout({ colliders }: { colliders: ArenaCollider[] }) {
+  const tileSurfaces = colliders.filter((collider) => collider.id.includes("-surface-") && collider.color.toLowerCase() === bankTileColor);
+  return (
+    <group>
+      {tileSurfaces.map((collider) => <BankSurfaceGrout key={`grout-${collider.id}`} collider={collider} />)}
+    </group>
+  );
+}
+
+function BankSurfaceGrout({ collider }: { collider: ArenaCollider }) {
+  const spacing = 2;
+  const lineWidth = 0.035;
+  const topY = collider.center.y + collider.size.y / 2 + 0.018;
+  const minX = collider.center.x - collider.size.x / 2;
+  const maxX = collider.center.x + collider.size.x / 2;
+  const minZ = collider.center.z - collider.size.z / 2;
+  const maxZ = collider.center.z + collider.size.z / 2;
+  const xLines = positionsBetween(minX, maxX, spacing);
+  const zLines = positionsBetween(minZ, maxZ, spacing);
+  return (
+    <group>
+      {xLines.map((x) => (
+        <mesh key={`x-${x}`} position={[x, topY, collider.center.z]} receiveShadow>
+          <boxGeometry args={[lineWidth, 0.012, collider.size.z + bankSurfaceOverlap]} />
+          <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} />
+        </mesh>
+      ))}
+      {zLines.map((z) => (
+        <mesh key={`z-${z}`} position={[collider.center.x, topY, z]} receiveShadow>
+          <boxGeometry args={[collider.size.x + bankSurfaceOverlap, 0.012, lineWidth]} />
+          <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function positionsBetween(min: number, max: number, spacing: number) {
+  const start = Math.ceil(min / spacing) * spacing;
+  const positions: number[] = [];
+  for (let position = start; position <= max + 0.001; position += spacing) {
+    positions.push(Number(position.toFixed(3)));
+  }
+  return positions;
+}
+
+function BankWallFinish({ colliders }: { colliders: ArenaCollider[] }) {
+  const walls = colliders.filter((collider) => (
+    collider.id.startsWith("bank-")
+    && !collider.id.includes("atrium-glass")
+    && (
+      collider.id.includes("-exterior-")
+      || collider.id.includes("-ring-")
+      || collider.id.includes("-stair-north-wrap")
+      || collider.id.includes("-stair-south-wrap")
+      || collider.id.includes("-stair-back")
+      || collider.id.includes("-door-")
+      || collider.id.includes("-lintel")
+    )
+  ));
+  return (
+    <group>
+      {walls.map((collider) => <BankWallFace key={`finish-${collider.id}`} collider={collider} />)}
+    </group>
+  );
+}
+
+function BankWallFace({ collider }: { collider: ArenaCollider }) {
+  const { center, size } = collider;
+  const longX = size.x >= size.z;
+  const isStone = collider.color.toLowerCase() === "#8f9699" || collider.id.includes("-lintel");
+  const faceColor = isStone ? "#b1b7b7" : "#a8734b";
+  const trimColor = isStone ? "#d4d1ca" : "#c59a72";
+  const floorY = center.y - size.y / 2;
+  const panelHeight = Math.max(0.7, size.y - 0.68);
+  const panelY = floorY + 0.34 + panelHeight / 2;
+  const railYs = [floorY + 1.55, floorY + 3.05].filter((y) => y < floorY + size.y - 0.5);
+  const sides = [-1, 1];
+  return (
+    <group position={[center.x, 0, center.z]}>
+      {sides.map((side) => {
+        const facePosition: [number, number, number] = longX ? [0, panelY, side * (size.z / 2 + 0.024)] : [side * (size.x / 2 + 0.024), panelY, 0];
+        return (
+          <group key={side}>
+            <mesh position={facePosition} receiveShadow>
+              <boxGeometry args={longX ? [size.x + 0.02, panelHeight, 0.032] : [0.032, panelHeight, size.z + 0.02]} />
+              <meshStandardMaterial color={faceColor} roughness={0.92} metalness={0.01} />
+            </mesh>
+            <mesh position={longX ? [0, floorY + 0.22, side * (size.z / 2 + 0.045)] : [side * (size.x / 2 + 0.045), floorY + 0.22, 0]}>
+              <boxGeometry args={longX ? [size.x + 0.08, 0.18, 0.09] : [0.09, 0.18, size.z + 0.08]} />
+              <meshStandardMaterial color={trimColor} roughness={0.72} metalness={0.02} />
+            </mesh>
+            {railYs.map((y) => (
+              <mesh key={y} position={longX ? [0, y, side * (size.z / 2 + 0.05)] : [side * (size.x / 2 + 0.05), y, 0]}>
+                <boxGeometry args={longX ? [size.x + 0.05, 0.045, 0.055] : [0.055, 0.045, size.z + 0.05]} />
+                <meshStandardMaterial color={isStone ? "#979f9f" : "#8d5d3b"} roughness={0.86} metalness={0.01} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
     </group>
   );
 }
