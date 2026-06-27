@@ -708,7 +708,7 @@ const bankColors = {
   tile: "#d7d2c8",
   stairStone: "#c9c5bc",
   wallWood: "#a77248",
-  wallStone: "#d0cdc6",
+  wallStone: "#8f9699",
   glass: "#9bc1cf",
   deskWhite: "#e2ded4",
   cubicleFabric: "#9a9b99",
@@ -722,7 +722,7 @@ const bankFloorThickness = 0.45;
 const bankStairHeight = 0.5;
 
 function bankLevelCenter(floorY: number, height: number) {
-  return floorY + 1.2 + height / 2;
+  return floorY + height / 2;
 }
 
 function bankBlock(id: string, x: number, z: number, width: number, depth: number, height: number, color: string, floorY = 0, climbable = false): ArenaCollider {
@@ -742,8 +742,8 @@ function bankWall(id: string, x: number, z: number, width: number, depth: number
 function bankLintel(id: string, x: number, z: number, width: number, depth: number, floorY: number): ArenaCollider {
   return {
     id,
-    center: { x, y: floorY + 4.775, z },
-    size: { x: width, y: 2.45, z: depth },
+    center: { x, y: floorY + 4.175, z },
+    size: { x: width, y: 1.25, z: depth },
     color: bankColors.wallStone
   };
 }
@@ -779,11 +779,11 @@ function bankSurfaceColliders(floorName: string, standY: number, upper: boolean)
     floorColor("north-main-tile", -21.2, 41.3, -21.55, -16.53, bankColors.tile),
     floorColor("south-west-tile", -41.3, -22.1, 16.53, 21.55, bankColors.tile),
     floorColor("south-main-tile", -21.2, 41.3, 16.53, 21.55, bankColors.tile),
-    floorColor("west-hall", -21.2, -8.35, -16, 16, bankColors.tile),
-    floorColor("east-hall", 8.35, 21.55, -16, 16, bankColors.tile),
-    floorColor("east-office", 22.45, 41.3, -16, 16, bankColors.carpet),
-    floorColor("north-stair-pocket", -41.3, -22.1, -16, -9.2, upper ? bankColors.tile : bankColors.carpet),
-    floorColor("south-stair-pocket", -41.3, -22.1, 7.2, 16, upper ? bankColors.tile : bankColors.carpet),
+    floorColor("west-hall", -21.2, -8.35, -16.53, 16.53, bankColors.tile),
+    floorColor("east-hall", 8.35, 21.55, -16.53, 16.53, bankColors.tile),
+    floorColor("east-office", 22.45, 41.3, -16.53, 16.53, bankColors.carpet),
+    floorColor("north-stair-pocket", -41.3, -22.1, -16.53, -9.2, upper ? bankColors.tile : bankColors.carpet),
+    floorColor("south-stair-pocket", -41.3, -22.1, 7.2, 16.53, upper ? bankColors.tile : bankColors.carpet),
     ...(upper ? [] : [floorColor("lower-stair-opening", -39.5, -22.1, -8.3, 6.3, bankColors.tile)]),
     floorColor("north-threshold", -22.1, -21.2, -18.45, -15.05, bankColors.tile),
     floorColor("south-threshold", -22.1, -21.2, 15.05, 18.45, bankColors.tile),

@@ -32,13 +32,15 @@ function BouncePad({ pad }: { pad: ArenaBouncePad }) {
 
 export function ArenaMap({ map }: { map: MapName }) {
   const arena = ARENAS[map];
+  const floorY = map === "Bank Heist" ? -0.3 : 0;
+  const gridY = map === "Bank Heist" ? -0.275 : 0.025;
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floorY, 0]} receiveShadow>
         <planeGeometry args={[arena.floorSize, arena.floorSize, 48, 48]} />
         <meshStandardMaterial color={arena.floorColor} roughness={0.88} />
       </mesh>
-      <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, 0.025, 0]} />
+      <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />
       {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} />)}
       {arena.bouncePads?.map((pad) => <BouncePad key={pad.id} pad={pad} />)}
       {map === "Pyramid" && <PyramidDetails />}
