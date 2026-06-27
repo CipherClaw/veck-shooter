@@ -40,15 +40,47 @@ export function beep(type: "ui" | "hit" | "kill" | "reload" | "heal" | "explosio
 }
 
 function playGunshot(ac: AudioContext, weapon: "revolver" | "sniper" | "shottie" | "grenade", volume: number) {
-  const profile = {
-    revolver: { crack: 0.13, body: 105, gain: 0.16, filter: 1850 },
-    sniper: { crack: 0.2, body: 72, gain: 0.22, filter: 1350 },
-    shottie: { crack: 0.18, body: 88, gain: 0.24, filter: 980 },
-    grenade: { crack: 0.1, body: 120, gain: 0.12, filter: 1250 }
-  }[weapon];
-  playNoise(ac, { duration: profile.crack, attack: 0.002, gain: profile.gain, filter: "highpass", frequency: profile.filter, q: 0.8 }, volume);
-  playTone(ac, { frequency: profile.body, endFrequency: 45, duration: profile.crack + 0.08, gain: profile.gain * 0.6, type: "triangle" }, volume);
-  playTone(ac, { frequency: 2300, endFrequency: 1200, duration: 0.035, gain: 0.035, type: "square" }, volume);
+  if (weapon === "grenade") {
+    playGrenadeLaunch(ac, volume);
+    return;
+  }
+  if (weapon === "revolver") {
+    playRevolverShot(ac, volume);
+    return;
+  }
+  if (weapon === "sniper") {
+    playSniperShot(ac, volume);
+    return;
+  }
+  playShotgunBlast(ac, volume);
+}
+
+function playRevolverShot(ac: AudioContext, volume: number) {
+  playNoise(ac, { duration: 0.075, attack: 0.001, gain: 0.15, filter: "highpass", frequency: 1250, q: 0.7 }, volume);
+  playNoise(ac, { duration: 0.055, attack: 0.001, gain: 0.075, filter: "bandpass", frequency: 3100, q: 0.9 }, volume);
+  playNoise(ac, { duration: 0.13, attack: 0.003, gain: 0.055, filter: "lowpass", frequency: 950, q: 0.65 }, volume);
+  playTone(ac, { frequency: 135, endFrequency: 48, duration: 0.12, gain: 0.09, type: "triangle" }, volume);
+}
+
+function playSniperShot(ac: AudioContext, volume: number) {
+  playNoise(ac, { duration: 0.12, attack: 0.001, gain: 0.18, filter: "highpass", frequency: 850, q: 0.65 }, volume);
+  playNoise(ac, { duration: 0.07, attack: 0.001, gain: 0.11, filter: "bandpass", frequency: 2600, q: 0.85 }, volume);
+  playNoise(ac, { duration: 0.3, attack: 0.004, gain: 0.12, filter: "lowpass", frequency: 520, q: 0.7 }, volume);
+  playTone(ac, { frequency: 82, endFrequency: 30, duration: 0.34, gain: 0.14, type: "sawtooth" }, volume);
+  playTone(ac, { frequency: 48, endFrequency: 28, duration: 0.24, gain: 0.065, type: "triangle", delay: 0.035 }, volume);
+}
+
+function playShotgunBlast(ac: AudioContext, volume: number) {
+  playNoise(ac, { duration: 0.2, attack: 0.002, gain: 0.18, filter: "lowpass", frequency: 760, q: 0.65 }, volume);
+  playNoise(ac, { duration: 0.16, attack: 0.002, gain: 0.13, filter: "bandpass", frequency: 520, q: 0.9 }, volume);
+  playNoise(ac, { duration: 0.06, attack: 0.001, gain: 0.08, filter: "highpass", frequency: 1600, q: 0.7 }, volume);
+  playTone(ac, { frequency: 96, endFrequency: 36, duration: 0.24, gain: 0.12, type: "triangle" }, volume);
+}
+
+function playGrenadeLaunch(ac: AudioContext, volume: number) {
+  playNoise(ac, { duration: 0.16, attack: 0.004, gain: 0.1, filter: "lowpass", frequency: 340, q: 0.8 }, volume);
+  playNoise(ac, { duration: 0.055, attack: 0.002, gain: 0.035, filter: "bandpass", frequency: 700, q: 0.85 }, volume);
+  playTone(ac, { frequency: 118, endFrequency: 58, duration: 0.18, gain: 0.075, type: "triangle" }, volume);
 }
 
 function playExplosion(ac: AudioContext, volume: number) {
@@ -57,8 +89,8 @@ function playExplosion(ac: AudioContext, volume: number) {
   window.setTimeout(() => playNoise(ac, { duration: 0.28, attack: 0.004, gain: 0.09, filter: "bandpass", frequency: 180, q: 1.1 }, volume), 55);
 }
 
-function playTone(ac: AudioContext, options: { frequency: number; endFrequency?: number; duration: number; gain: number; type: OscillatorType }, volume: number) {
-  const now = ac.currentTime;
+function playTone(ac: AudioContext, options: { frequency: number; endFrequency?: number; duration: number; gain: number; type: OscillatorType; delay?: number }, volume: number) {
+  const now = ac.currentTime + (options.delay ?? 0);
   const osc = ac.createOscillator();
   const gain = ac.createGain();
   osc.connect(gain);
@@ -72,8 +104,8 @@ function playTone(ac: AudioContext, options: { frequency: number; endFrequency?:
   osc.stop(now + options.duration + 0.02);
 }
 
-function playNoise(ac: AudioContext, options: { duration: number; attack: number; gain: number; filter: BiquadFilterType; frequency: number; q: number }, volume: number) {
-  const now = ac.currentTime;
+function playNoise(ac: AudioContext, options: { duration: number; attack: number; gain: number; filter: BiquadFilterType; frequency: number; q: number; delay?: number }, volume: number) {
+  const now = ac.currentTime + (options.delay ?? 0);
   const source = ac.createBufferSource();
   const filter = ac.createBiquadFilter();
   const gain = ac.createGain();
