@@ -15,6 +15,9 @@ const keys = new Set<string>();
 const SPRINT_DRAIN_PER_SECOND = 0.34;
 const SPRINT_RECHARGE_PER_SECOND = 0.24;
 const SPRINT_MIN_CHARGE_TO_START = 0.18;
+const EXPLOSION_FX_MS = 650;
+const EXPLOSION_FX_START_SCALE = 1.2;
+const EXPLOSION_FX_PEAK_SCALE = 7.5;
 
 export function GameCanvas() {
   const snapshot = useGame((s) => s.snapshot);
@@ -47,6 +50,7 @@ export function GameCanvas() {
         {snapshot?.explosions.map((explosion) => <ExplosionFx key={explosion.id} explosion={explosion} />)}
         {snapshot?.healthPacks?.map((pack) => <HealthPack key={pack.id} position={pack.position} />)}
         {fx.map((f) => <ShotFx key={f.id} fx={f} />)}
+        <ExplosionFxWarmup />
         <RendererEvents />
         <PlayerController />
       </Suspense>
@@ -565,19 +569,39 @@ function GrenadeProjectile({ position }: { position: Vec3 }) {
 
 function ExplosionFx({ explosion }: { explosion: { position: Vec3; createdAt: number; radius: number } }) {
   const meshRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>>(null);
+  const initialAge = Math.min(1, (Date.now() - explosion.createdAt) / EXPLOSION_FX_MS);
+  const initialScale = explosionScale(initialAge);
+  const initialOpacity = explosionOpacity(initialAge);
   useFrame(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const age = Math.min(1, (Date.now() - explosion.createdAt) / 650);
-    mesh.scale.setScalar(1.2 + age * explosion.radius);
-    mesh.material.opacity = Math.max(0, 0.48 - age * 0.42);
+    const age = Math.min(1, (Date.now() - explosion.createdAt) / EXPLOSION_FX_MS);
+    mesh.scale.setScalar(explosionScale(age));
+    mesh.material.opacity = explosionOpacity(age);
   });
   return (
-    <mesh ref={meshRef} position={[explosion.position.x, explosion.position.y, explosion.position.z]} scale={1.2}>
+    <mesh ref={meshRef} position={[explosion.position.x, explosion.position.y, explosion.position.z]} scale={initialScale}>
       <sphereGeometry args={[1, 24, 16]} />
-      <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={0.48} />
+      <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={initialOpacity} />
     </mesh>
   );
+}
+
+function ExplosionFxWarmup() {
+  return (
+    <mesh position={[0, -1000, 0]} scale={0.001} frustumCulled={false}>
+      <sphereGeometry args={[1, 24, 16]} />
+      <meshStandardMaterial color="#ffb020" emissive="#ff4d00" emissiveIntensity={1.1} transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
+
+function explosionScale(age: number) {
+  return EXPLOSION_FX_START_SCALE + age * (EXPLOSION_FX_PEAK_SCALE - EXPLOSION_FX_START_SCALE);
+}
+
+function explosionOpacity(age: number) {
+  return Math.max(0, 0.48 - age * 0.42);
 }
 
 function isTextInputActive() {
