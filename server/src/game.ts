@@ -180,7 +180,7 @@ export class GameHub {
       kills: 0,
       deaths: 0,
       score: 0,
-      lastFire: { revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0 },
+      lastFire: { revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0, fist: 0 },
       ammo: fullAmmo(),
       reloadingWeapon: undefined,
       reloadingUntil: undefined,
@@ -229,7 +229,7 @@ export class GameHub {
       player.reloadingUntil = undefined;
     }
     if (now - player.lastFire[weapon] < spec.fireMs) return null;
-    const ammoCost = weapon === "watergun" ? 2 : 1;
+    const ammoCost = weapon === "watergun" ? 2 : weapon === "fist" ? 0 : 1;
     if (player.ammo[weapon] < ammoCost) return null;
     player.lastFire[weapon] = now;
     player.ammo[weapon] = Math.max(0, player.ammo[weapon] - ammoCost);

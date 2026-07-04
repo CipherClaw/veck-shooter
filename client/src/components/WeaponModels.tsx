@@ -45,6 +45,19 @@ export function WeaponModel({ weapon, firstPerson = false }: { weapon: WeaponId;
       </group>
     );
   }
+  if (weapon === "fist") {
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.18, 0.18]} rotation={[0.28, 0, 0]} castShadow><boxGeometry args={[0.2, 0.58, 0.2]} /><meshStandardMaterial color="#2563eb" roughness={0.62} /></mesh>
+        <mesh position={[0, -0.16, -0.12]} castShadow><boxGeometry args={[0.32, 0.26, 0.28]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+        <mesh position={[-0.12, -0.12, -0.31]} castShadow><boxGeometry args={[0.085, 0.14, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[-0.04, -0.15, -0.33]} castShadow><boxGeometry args={[0.085, 0.14, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.04, -0.15, -0.33]} castShadow><boxGeometry args={[0.085, 0.14, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.12, -0.12, -0.31]} castShadow><boxGeometry args={[0.085, 0.14, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.19, -0.08, -0.08]} rotation={[0, 0, -0.4]} castShadow><boxGeometry args={[0.08, 0.2, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+      </group>
+    );
+  }
   return (
     <group scale={scale}>
       <mesh position={[0, 0, 0]} castShadow><boxGeometry args={[0.3, 0.28, 0.84]} /><meshStandardMaterial color="#292d35" roughness={0.48} metalness={0.12} /></mesh>

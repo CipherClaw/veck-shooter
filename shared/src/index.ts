@@ -1,7 +1,7 @@
 export type MapName = "Pyramid" | "Practice Range" | "Forest" | "Subway" | "Blueprint" | "Bank Heist";
 export type GameMode = "Free Play" | "Team Mode" | "Gun Game";
 export type Team = "red" | "green" | "none";
-export type WeaponId = "revolver" | "sniper" | "grenade" | "shottie" | "watergun";
+export type WeaponId = "revolver" | "sniper" | "grenade" | "shottie" | "watergun" | "fist";
 
 export type Vec3 = { x: number; y: number; z: number };
 
@@ -65,7 +65,8 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
   sniper: { id: "sniper", name: "Sniper Rifle", ammo: 4, reloadMs: 1900, fireMs: 1050, damage: 88, range: 240, spread: 0.0025, pellets: 1 },
   grenade: { id: "grenade", name: "Grenade", ammo: 2, reloadMs: 2100, fireMs: 900, damage: 115, range: 8, spread: 0.01, pellets: 1, projectile: "grenade" },
   shottie: { id: "shottie", name: "Shottie", ammo: 3, reloadMs: 1500, fireMs: 760, damage: 14, range: 32, spread: 0.15, pellets: 8 },
-  watergun: { id: "watergun", name: "Water Gun", ammo: 100, reloadMs: 1800, fireMs: 80, damage: 5, range: 30, spread: 0.04, pellets: 1, projectile: "stream" }
+  watergun: { id: "watergun", name: "Water Gun", ammo: 100, reloadMs: 1800, fireMs: 80, damage: 5, range: 30, spread: 0.04, pellets: 1, projectile: "stream" },
+  fist: { id: "fist", name: "Fist", ammo: 0, reloadMs: 0, fireMs: 380, damage: 30, range: 3, spread: 0, pellets: 1 }
 };
 
 export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway", "Blueprint", "Bank Heist"];

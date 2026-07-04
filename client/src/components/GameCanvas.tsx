@@ -80,8 +80,8 @@ function PlayerController() {
   const pitch = useRef(0);
   const shotSeq = useRef(0);
   const firing = useRef(false);
-  const lastLocalFire = useRef<Record<WeaponId, number>>({ revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0 });
-  const optimisticAmmo = useRef<Record<WeaponId, number>>({ revolver: 6, sniper: 4, grenade: 2, shottie: 3, watergun: 100 });
+  const lastLocalFire = useRef<Record<WeaponId, number>>({ revolver: 0, sniper: 0, grenade: 0, shottie: 0, watergun: 0, fist: 0 });
+  const optimisticAmmo = useRef<Record<WeaponId, number>>({ revolver: 6, sniper: 4, grenade: 2, shottie: 3, watergun: 100, fist: 0 });
   const latestPlayer = useRef<PlayerSnapshot>();
   const recoil = useRef(0);
   const bob = useRef(0);
@@ -104,7 +104,7 @@ function PlayerController() {
   useEffect(() => {
     latestPlayer.current = me;
     if (me) optimisticAmmo.current = { ...me.ammo };
-  }, [me?.alive, me?.ammo.grenade, me?.ammo.revolver, me?.ammo.shottie, me?.ammo.sniper, me?.ammo.watergun, me?.reloadingUntil, me?.reloadingWeapon]);
+  }, [me?.alive, me?.ammo.fist, me?.ammo.grenade, me?.ammo.revolver, me?.ammo.shottie, me?.ammo.sniper, me?.ammo.watergun, me?.reloadingUntil, me?.reloadingWeapon]);
 
   useEffect(() => {
     setScoped(scoped);
@@ -360,9 +360,10 @@ function PlayerController() {
   );
 }
 
-function FirstPersonRig({ weapon, velocity, bob, recoil, scoped, spraying, playerColor }: { weapon: string; velocity: MutableRefObject<THREE.Vector3>; bob: MutableRefObject<number>; recoil: MutableRefObject<number>; scoped: boolean; spraying: boolean; playerColor: string }) {
+function FirstPersonRig({ weapon, velocity, bob, recoil, scoped, spraying, playerColor }: { weapon: WeaponId; velocity: MutableRefObject<THREE.Vector3>; bob: MutableRefObject<number>; recoil: MutableRefObject<number>; scoped: boolean; spraying: boolean; playerColor: string }) {
   const { camera, scene } = useThree();
   const group = useRef<THREE.Group>(null);
+  const punchArm = useRef<THREE.Group>(null);
   useEffect(() => {
     if (!group.current) return;
     const rig = group.current;
@@ -383,14 +384,36 @@ function FirstPersonRig({ weapon, velocity, bob, recoil, scoped, spraying, playe
     );
     group.current.position.lerp(target, 1 - Math.exp(-22 * dt));
     group.current.rotation.set(-0.035 - recoil.current * 0.08, 0.035, -0.015);
+    if (punchArm.current) {
+      const punch = THREE.MathUtils.smoothstep(recoil.current, 0, 1);
+      punchArm.current.position.set(0.14 - punch * 0.08, -0.2 + punch * 0.04, 0.04 - punch * 0.55);
+      punchArm.current.rotation.set(-0.55 - punch * 0.24, -0.18 + punch * 0.12, 0.14 - punch * 0.22);
+    }
   });
+  if (weapon === "fist") {
+    return (
+      <group ref={group}>
+        <mesh position={[-0.38, -0.2, 0.08]} rotation={[0.18, 0.05, -0.08]} castShadow><boxGeometry args={[0.2, 0.58, 0.2]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
+        <mesh position={[-0.36, -0.53, -0.03]} rotation={[0.14, 0.04, -0.08]} castShadow><boxGeometry args={[0.18, 0.2, 0.18]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+        <group ref={punchArm} position={[0.14, -0.2, 0.04]} rotation={[-0.55, -0.18, 0.14]}>
+          <mesh position={[0, 0.23, 0.22]} castShadow><boxGeometry args={[0.22, 0.62, 0.24]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
+          <mesh position={[0, -0.14, -0.12]} castShadow><boxGeometry args={[0.28, 0.26, 0.24]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+          <mesh position={[-0.105, -0.13, -0.28]} castShadow><boxGeometry args={[0.08, 0.13, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.035, -0.15, -0.3]} castShadow><boxGeometry args={[0.08, 0.13, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.035, -0.15, -0.3]} castShadow><boxGeometry args={[0.08, 0.13, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.105, -0.13, -0.28]} castShadow><boxGeometry args={[0.08, 0.13, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.18, -0.1, -0.06]} rotation={[0, 0, -0.42]} castShadow><boxGeometry args={[0.08, 0.2, 0.12]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        </group>
+      </group>
+    );
+  }
   return (
     <group ref={group}>
       <mesh position={[-0.38, -0.2, 0.08]} rotation={[0.18, 0.05, -0.08]} castShadow><boxGeometry args={[0.2, 0.58, 0.2]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
       <mesh position={[-0.36, -0.53, -0.03]} rotation={[0.14, 0.04, -0.08]} castShadow><boxGeometry args={[0.18, 0.2, 0.18]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
       <mesh position={[0.24, -0.18, 0.08]} rotation={[0.1, -0.04, 0.08]} castShadow><boxGeometry args={[0.2, 0.56, 0.2]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
       <mesh position={[0.24, -0.5, -0.03]} rotation={[0.1, -0.04, 0.08]} castShadow><boxGeometry args={[0.18, 0.2, 0.18]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-      <WeaponModel weapon={weapon as never} firstPerson />
+      <WeaponModel weapon={weapon} firstPerson />
       {spraying && <LocalWaterSpray />}
     </group>
   );
@@ -450,7 +473,7 @@ function isDescendantOf(object: THREE.Object3D, ancestor: THREE.Object3D) {
 }
 
 function weaponAmmoCost(weapon: WeaponId) {
-  return weapon === "watergun" ? 2 : 1;
+  return weapon === "watergun" ? 2 : weapon === "fist" ? 0 : 1;
 }
 
 function canLocalFire(player: PlayerSnapshot | undefined, weapon: WeaponId, optimisticAmmo: Record<WeaponId, number>) {
@@ -509,6 +532,7 @@ function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?
   if (fx.explosion) {
     return <mesh position={[fx.explosion.x, fx.explosion.y, fx.explosion.z]}><sphereGeometry args={[2.6, 16, 12]} /><meshStandardMaterial color="#ff8a00" emissive="#ff3d00" emissiveIntensity={1.2} transparent opacity={0.55} /></mesh>;
   }
+  if (fx.weapon === "fist") return null;
   return (
     <group ref={group}>
       {shot.pellets.map(([start, end], i) => (

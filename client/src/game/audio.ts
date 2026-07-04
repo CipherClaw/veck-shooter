@@ -61,6 +61,12 @@ export function beep(type: "ui" | "hit" | "kill" | "reload" | "heal" | "explosio
     playTone(ac, { frequency: jitter(620, 0.03), endFrequency: jitter(360, 0.04), duration: 0.09, gain: 0.013, type: "sine", attack: 0.002 }, volume);
     return;
   }
+  if (type === "fist") {
+    playNoise(ac, { duration: 0.08, attack: 0.001, gain: 0.034, filter: "bandpass", frequency: jitter(780, 0.08), endFrequency: jitter(220, 0.08), q: 0.9 }, volume);
+    playNoise(ac, { duration: 0.045, attack: 0.002, gain: 0.018, filter: "lowpass", frequency: jitter(150, 0.06), q: 0.7, delay: 0.035 }, volume);
+    playTone(ac, { frequency: jitter(95, 0.04), endFrequency: jitter(62, 0.05), duration: 0.06, gain: 0.018, type: "sine", attack: 0.001, delay: 0.03 }, volume);
+    return;
+  }
   if (type === "heal") {
     playTone(ac, { frequency: 420, endFrequency: 620, duration: 0.1, gain: 0.052, type: "sine" }, volume);
     window.setTimeout(() => playTone(ac, { frequency: 640, endFrequency: 880, duration: 0.12, gain: 0.042, type: "sine" }, volume), 75);

@@ -400,6 +400,7 @@ function isTypingTarget(target: EventTarget | null) {
 
 function ammoText(player: { ammo: Record<WeaponId, number>; reloadingWeapon?: WeaponId; reloadingUntil?: number } | undefined, weapon: WeaponId) {
   if (!player) return "";
+  if (weapon === "fist") return "∞";
   if (player.reloadingWeapon === weapon && player.reloadingUntil && Date.now() < player.reloadingUntil) return "Reloading...";
   const current = Math.max(0, player.ammo[weapon] ?? WEAPONS[weapon].ammo);
   if (weapon === "watergun") {
