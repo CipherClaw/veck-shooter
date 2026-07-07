@@ -386,29 +386,41 @@ function FirstPersonRig({ weapon, velocity, bob, recoil, scoped, spraying, playe
     group.current.rotation.set(-0.035 - recoil.current * 0.08, 0.035, -0.015);
     if (punchArm.current) {
       const punch = THREE.MathUtils.smoothstep(recoil.current, 0, 1);
-      punchArm.current.position.set(0.14 - punch * 0.08, -0.2 + punch * 0.04, 0.04 - punch * 0.55);
-      punchArm.current.rotation.set(-0.55 - punch * 0.24, -0.18 + punch * 0.12, 0.14 - punch * 0.22);
+      const windup = Math.sin(punch * Math.PI);
+      punchArm.current.position.set(0.18 - punch * 0.18, -0.32 + punch * 0.1 - windup * 0.03, -0.2 + windup * 0.11 - punch * 0.42);
+      punchArm.current.rotation.set(-0.34 - punch * 0.18 + windup * 0.08, -0.24 + punch * 0.3, 0.12 - punch * 0.44);
     }
   });
   if (weapon === "fist") {
     return (
       <group ref={group}>
-        <mesh position={[-0.38, -0.16, 0.11]} rotation={[0.18, 0.05, -0.08]} castShadow><cylinderGeometry args={[0.11, 0.14, 0.38, 12]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
-        <mesh position={[-0.37, -0.4, 0]} rotation={[0.14, 0.04, -0.08]} castShadow><cylinderGeometry args={[0.08, 0.1, 0.22, 12]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-        <mesh position={[-0.36, -0.52, -0.05]} scale={[1.05, 0.78, 0.9]} castShadow><sphereGeometry args={[0.12, 12, 8]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-        <mesh position={[-0.43, -0.5, -0.15]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.032, 0.036, 0.1, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[-0.36, -0.52, -0.16]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.034, 0.038, 0.1, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[-0.29, -0.5, -0.15]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.032, 0.036, 0.1, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[-0.27, -0.49, -0.04]} rotation={[0.5, 0.08, -0.7]} castShadow><cylinderGeometry args={[0.032, 0.038, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <group ref={punchArm} position={[0.14, -0.2, 0.04]} rotation={[-0.55, -0.18, 0.14]}>
-          <mesh position={[0, 0.23, 0.22]} rotation={[0.02, 0, 0]} castShadow><cylinderGeometry args={[0.11, 0.15, 0.46, 12]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
-          <mesh position={[0, -0.04, 0.02]} castShadow><cylinderGeometry args={[0.085, 0.105, 0.28, 12]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-          <mesh position={[0, -0.16, -0.13]} scale={[1.18, 0.76, 0.9]} castShadow><sphereGeometry args={[0.16, 12, 8]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-          <mesh position={[-0.12, -0.12, -0.27]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.043, 0.048, 0.13, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-          <mesh position={[-0.04, -0.15, -0.3]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.045, 0.05, 0.13, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-          <mesh position={[0.04, -0.15, -0.3]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.045, 0.05, 0.13, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-          <mesh position={[0.12, -0.12, -0.27]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.043, 0.048, 0.13, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-          <mesh position={[0.18, -0.1, -0.06]} rotation={[0.45, 0.12, -0.65]} castShadow><cylinderGeometry args={[0.042, 0.052, 0.2, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <group position={[-0.36, -0.34, -0.32]} rotation={[-0.26, 0.2, -0.18]}>
+          <mesh position={[0, -0.01, 0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.07, 0.105, 0.44, 12]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
+          <mesh position={[0, -0.01, 0.08]} rotation={[Math.PI / 2, 0, 0]} castShadow><torusGeometry args={[0.095, 0.018, 6, 12]} /><meshStandardMaterial color={playerColor} roughness={0.58} /></mesh>
+          <mesh position={[0, -0.01, 0.02]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.058, 0.07, 0.13, 10]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+          <mesh position={[0, 0, -0.11]} scale={[1.18, 0.82, 0.92]} castShadow><sphereGeometry args={[0.13, 12, 8]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+          <mesh position={[-0.105, 0.035, -0.205]} scale={[1, 0.75, 0.7]} castShadow><sphereGeometry args={[0.045, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.035, 0.048, -0.225]} scale={[1, 0.75, 0.7]} castShadow><sphereGeometry args={[0.052, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.04, 0.044, -0.225]} scale={[1, 0.75, 0.7]} castShadow><sphereGeometry args={[0.05, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.11, 0.032, -0.205]} scale={[1, 0.75, 0.7]} castShadow><sphereGeometry args={[0.043, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.09, -0.055, -0.205]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.03, 0.036, 0.1, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.02, -0.065, -0.22]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.033, 0.039, 0.12, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.055, -0.06, -0.215]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.032, 0.038, 0.11, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.135, -0.02, -0.09]} rotation={[0.58, 0.06, -0.82]} castShadow><cylinderGeometry args={[0.03, 0.042, 0.16, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        </group>
+        <group ref={punchArm} position={[0.18, -0.32, -0.2]} rotation={[-0.34, -0.24, 0.12]}>
+          <mesh position={[0, -0.01, 0.35]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.075, 0.12, 0.56, 12]} /><meshStandardMaterial color={playerColor} roughness={0.62} /></mesh>
+          <mesh position={[0, -0.01, 0.1]} rotation={[Math.PI / 2, 0, 0]} castShadow><torusGeometry args={[0.11, 0.022, 6, 12]} /><meshStandardMaterial color={playerColor} roughness={0.58} /></mesh>
+          <mesh position={[0, -0.01, 0.02]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.065, 0.08, 0.15, 10]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+          <mesh position={[0, 0, -0.14]} scale={[1.22, 0.86, 0.96]} castShadow><sphereGeometry args={[0.155, 12, 8]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+          <mesh position={[-0.13, 0.045, -0.265]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.052, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.045, 0.062, -0.29]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.06, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.045, 0.058, -0.29]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.058, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.13, 0.04, -0.265]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.05, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.11, -0.06, -0.26]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.036, 0.043, 0.13, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[-0.035, -0.078, -0.285]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.04, 0.047, 0.15, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.045, -0.074, -0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.039, 0.046, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+          <mesh position={[0.16, -0.02, -0.11]} rotation={[0.58, 0.1, -0.78]} castShadow><cylinderGeometry args={[0.036, 0.052, 0.22, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
         </group>
       </group>
     );

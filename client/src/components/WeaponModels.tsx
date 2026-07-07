@@ -67,14 +67,18 @@ export function WeaponModel({ weapon, firstPerson = false }: { weapon: WeaponId;
   if (weapon === "fist") {
     return (
       <group scale={scale}>
-        <mesh position={[0, 0.21, 0.2]} rotation={[0.28, 0, 0]} castShadow><cylinderGeometry args={[0.115, 0.145, 0.42, 12]} /><meshStandardMaterial color="#2563eb" roughness={0.62} /></mesh>
-        <mesh position={[0, -0.05, 0.02]} rotation={[0.28, 0, 0]} castShadow><cylinderGeometry args={[0.095, 0.11, 0.32, 12]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-        <mesh position={[0, -0.18, -0.13]} scale={[1.2, 0.75, 0.9]} castShadow><sphereGeometry args={[0.17, 12, 8]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
-        <mesh position={[-0.13, -0.12, -0.27]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.045, 0.05, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[-0.045, -0.15, -0.3]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.047, 0.052, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[0.045, -0.15, -0.3]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.047, 0.052, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[0.13, -0.12, -0.27]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.045, 0.05, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
-        <mesh position={[0.19, -0.11, -0.08]} rotation={[0.45, 0.12, -0.65]} castShadow><cylinderGeometry args={[0.045, 0.055, 0.22, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0, 0.01, 0.34]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.08, 0.13, 0.56, 12]} /><meshStandardMaterial color="#2563eb" roughness={0.62} /></mesh>
+        <mesh position={[0, 0.01, 0.1]} rotation={[Math.PI / 2, 0, 0]} castShadow><torusGeometry args={[0.115, 0.022, 6, 12]} /><meshStandardMaterial color="#2563eb" roughness={0.58} /></mesh>
+        <mesh position={[0, 0.01, 0.02]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.065, 0.082, 0.16, 10]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+        <mesh position={[0, 0, -0.15]} scale={[1.24, 0.86, 0.98]} castShadow><sphereGeometry args={[0.16, 12, 8]} /><meshStandardMaterial color="#ffd1a3" roughness={0.72} /></mesh>
+        <mesh position={[-0.135, 0.05, -0.275]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.053, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[-0.045, 0.067, -0.302]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.061, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.045, 0.063, -0.302]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.059, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.135, 0.045, -0.275]} scale={[1, 0.75, 0.72]} castShadow><sphereGeometry args={[0.05, 10, 6]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[-0.112, -0.062, -0.268]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.036, 0.044, 0.13, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[-0.035, -0.08, -0.294]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.041, 0.048, 0.15, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.048, -0.076, -0.288]} rotation={[Math.PI / 2, 0, 0]} castShadow><cylinderGeometry args={[0.039, 0.047, 0.14, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
+        <mesh position={[0.166, -0.022, -0.112]} rotation={[0.58, 0.1, -0.78]} castShadow><cylinderGeometry args={[0.036, 0.052, 0.22, 8]} /><meshStandardMaterial color="#ffc28f" roughness={0.76} /></mesh>
       </group>
     );
   }
