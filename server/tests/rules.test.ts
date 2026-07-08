@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GameHub } from "../src/game";
 import { canDamage, gunGameWeapon, nextTeam, validateJoin, weaponDamage, winner } from "../src/rules";
 import { StatsStore } from "../src/store";
-import { BOUNCE_PAD_LAUNCH_SPEED, WEAPONS, bouncePadAt, ladderAt, resolveGrenade, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
+import { BOUNCE_PAD_LAUNCH_SPEED, GUN_GAME_KILL_TARGET, WEAPONS, bouncePadAt, ladderAt, resolveGrenade, resolvePlayerPosition, type PlayerSnapshot } from "@veck/shared";
 
 const player = (id: string, team: "red" | "green" | "none", kills = 0): PlayerSnapshot => ({
   id,
@@ -97,6 +97,42 @@ describe("game rules", () => {
     expect(attacker.kills).toBe(1);
     expect(attacker.weapon).toBe("sniper");
     expect(attacker.ammo.sniper).toBe(WEAPONS.sniper.ammo);
+  });
+
+  it("ends gun game when the first player reaches the kill target", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Shooter");
+    hub.hello("p2", "Target");
+    const gameId = hub.create("p1", "socket1", { map: "Pyramid", mode: "Gun Game", durationMinutes: 3, weapon: "watergun" });
+    hub.join("p2", "socket2", gameId, "sniper");
+    const game = (hub as any).games.get(gameId);
+    const attacker = game.players.get("p1");
+    const victim = game.players.get("p2");
+
+    for (let i = 0; i < GUN_GAME_KILL_TARGET; i += 1) {
+      victim.alive = true;
+      victim.health = 100;
+      (hub as any).damage(game, attacker, victim, 100);
+    }
+
+    hub.tick();
+
+    expect(game.status).toBe("ended");
+    expect(game.winner).toBe("Shooter");
+  });
+
+  it("does not end gun game when only the timer expires", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Shooter");
+    hub.hello("p2", "Target");
+    const gameId = hub.create("p1", "socket1", { map: "Pyramid", mode: "Gun Game", durationMinutes: 3, weapon: "watergun" });
+    hub.join("p2", "socket2", gameId, "sniper");
+    const game = (hub as any).games.get(gameId);
+
+    game.endsAt = Date.now() - 1;
+    hub.tick();
+
+    expect(game.status).toBe("active");
   });
 
   it("rejoins existing players without resetting match state", () => {

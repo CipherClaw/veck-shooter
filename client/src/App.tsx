@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, MessageSquare, Volume2, VolumeX } from "lucide-react";
-import { DURATIONS, MAPS, WEAPONS, type GameMode, type GameSnapshot, type MapName, type WeaponId } from "@veck/shared";
+import { DURATIONS, GUN_GAME_KILL_TARGET, MAPS, WEAPONS, type GameMode, type GameSnapshot, type MapName, type WeaponId } from "@veck/shared";
 import { useGame } from "./state/store";
 import { socket } from "./game/socket";
 import { beep } from "./game/audio";
@@ -60,8 +60,10 @@ function Lobby() {
             <Segmented options={MAPS} value={map} onChange={(v) => setMap(v as MapName)} />
             <label>Mode</label>
             <Segmented options={["Free Play", "Team Mode", "Gun Game"]} value={mode} onChange={(v) => setMode(v as GameMode)} />
-            <label>Duration</label>
-            <Segmented options={DURATIONS.map(String)} value={String(durationMinutes)} onChange={(v) => setDuration(Number(v))} />
+            {mode !== "Gun Game" && <>
+              <label>Duration</label>
+              <Segmented options={DURATIONS.map(String)} value={String(durationMinutes)} onChange={(v) => setDuration(Number(v))} />
+            </>}
             <button className="primary" onClick={create}>Create Game</button>
           </Panel>
           <div className="lobby-side">
@@ -72,7 +74,7 @@ function Lobby() {
                   <div className="game-row" key={game.id}>
                     <div>
                       <strong>{game.map}</strong>
-                      <span>{game.mode} · {game.durationMinutes} min · {formatTime(game.timeRemainingMs)}</span>
+                      <span>{game.mode === "Gun Game" ? `${game.mode} · First to ${GUN_GAME_KILL_TARGET}` : `${game.mode} · ${game.durationMinutes} min · ${formatTime(game.timeRemainingMs)}`}</span>
                     </div>
                     <span>{game.playerCount}/{game.maxPlayers}</span>
                     <button disabled={game.playerCount >= game.maxPlayers || game.status === "ended"} onClick={() => socket.emit("joinGame", { gameId: game.id, weapon })}>Join</button>
@@ -95,6 +97,7 @@ function Match() {
   const me = snapshot?.players.find((p) => p.id === playerId);
   const mode = snapshot?.game.mode;
   const scores = useMemo(() => snapshot?.players.slice().sort((a, b) => b.kills - a.kills) ?? [], [snapshot]);
+  const leaderKills = scores[0]?.kills ?? 0;
   const ended = snapshot?.game.status === "ended";
 
   // Tick the round timer locally so it counts down smoothly and stays correct
@@ -219,7 +222,7 @@ function Match() {
       <GameCanvas />
       <div className="hud topbar">
         <div>{snapshot.game.map}</div>
-        <strong>{formatTime(remainingMs)}</strong>
+        <strong>{mode === "Gun Game" ? `${leaderKills} / ${GUN_GAME_KILL_TARGET}` : formatTime(remainingMs)}</strong>
         <div>{snapshot.game.mode}</div>
       </div>
       {!ended && !paused && <button className="gl-btn gl-btn--ghost gl-btn--sm esc-hint" onClick={openPause}>Esc · pause / exit</button>}

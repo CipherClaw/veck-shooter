@@ -71,6 +71,7 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
 
 export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway", "Blueprint", "Bank Heist"];
 export const DURATIONS = [3, 5, 10, 15] as const;
+export const GUN_GAME_KILL_TARGET = 25;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;

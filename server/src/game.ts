@@ -4,6 +4,7 @@ import {
   HEALTH_PACK_HEAL,
   HEALTH_PACK_PICKUP_RADIUS,
   HEALTH_PACK_RESPAWN_MS,
+  GUN_GAME_KILL_TARGET,
   MAPS,
   MAX_HEALTH_PACKS,
   MAX_PLAYERS,
@@ -334,7 +335,11 @@ export class GameHub {
         this.games.delete(game.id);
         continue;
       }
-      if (game.status === "active" && now >= game.endsAt) this.endGame(game);
+      if (game.status === "active") {
+        const gunGameComplete = game.mode === "Gun Game" && [...game.players.values()].some((player) => player.kills >= GUN_GAME_KILL_TARGET);
+        const timedOut = game.mode !== "Gun Game" && now >= game.endsAt;
+        if (gunGameComplete || timedOut) this.endGame(game);
+      }
       this.updateReloads(game, now);
       if (game.status === "active") {
         this.updateGrenades(game, now);
