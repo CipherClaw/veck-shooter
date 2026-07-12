@@ -15,6 +15,8 @@ const keys = new Set<string>();
 const SPRINT_DRAIN_PER_SECOND = 0.34;
 const SPRINT_RECHARGE_PER_SECOND = 0.24;
 const SPRINT_MIN_CHARGE_TO_START = 0.18;
+const RISE_GRAVITY = 19;
+const FALL_GRAVITY = 32;
 const EXPLOSION_FX_MS = 650;
 const EXPLOSION_FX_START_SCALE = 1.2;
 const EXPLOSION_FX_PEAK_SCALE = 7.5;
@@ -305,7 +307,9 @@ function PlayerController() {
         verticalVelocity.current = bouncePad.launchVelocity;
       }
       if (!controlsBlocked() && keys.has("Space") && grounded.current) verticalVelocity.current = Math.max(verticalVelocity.current, 7.8);
-      verticalVelocity.current -= 19 * step;
+      // Keep rise gravity unchanged so jump and bounce-pad apex heights stay tuned; only the falling half is snappier.
+      const gravity = verticalVelocity.current > 0 ? RISE_GRAVITY : FALL_GRAVITY;
+      verticalVelocity.current -= gravity * step;
       pos.y = Math.max(1.2, Math.min(ceiling, pos.y + verticalVelocity.current * step));
     }
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });

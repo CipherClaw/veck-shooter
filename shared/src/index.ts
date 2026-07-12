@@ -83,6 +83,8 @@ export const HEALTH_PACK_PICKUP_RADIUS = 1.6;
 export const HEALTH_PACK_RESPAWN_MS = 18000;
 export const MAX_HEALTH_PACKS = 3;
 
+const LANDING_OVERSHOOT_EPSILON = 0.12;
+
 export type PlayerStats = {
   kills: number;
   deaths: number;
@@ -1058,7 +1060,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   const ceiling = arena.ceiling ?? 12;
   const bounds = arena.playBounds ?? arena.bounds - PLAYER_RADIUS;
   const last = previous ?? next;
-  const descending = next.y <= last.y + 0.05;
+  const descending = previous ? next.y < last.y : false;
   const resolved = {
     x: clamp(next.x, -bounds, bounds),
     y: clamp(next.y, 1.2, ceiling),
@@ -1066,14 +1068,14 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   };
   const lastGround = supportY(arena, last);
   let ground = supportY(arena, resolved, lastGround);
-  if (!descending || ground - resolved.y <= 0.8) resolved.y = Math.max(resolved.y, ground);
+  if (canSnapToSupport(descending, resolved.y, ground)) resolved.y = Math.max(resolved.y, ground);
   for (const collider of arena.colliders) {
     if (!intersectsXZ(resolved, collider)) continue;
     if (collider.ladder) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     const bottom = collider.center.y - collider.size.y / 2;
     const canStand = (collider.climbable && bottom <= lastGround + 0.95) || top - lastGround <= 0.95 || resolved.y >= top - 0.1;
-    if (canStand && resolved.y >= top - 0.65) {
+    if (canStand && resolved.y >= top - 0.65 && canSnapToSupport(descending, resolved.y, top)) {
       resolved.y = Math.max(resolved.y, top);
       ground = Math.max(ground, top);
       continue;
@@ -1096,7 +1098,9 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   resolved.x = clamp(resolved.x, -bounds, bounds);
   resolved.z = clamp(resolved.z, -bounds, bounds);
   const finalGround = supportY(arena, resolved, ground);
-  if (descending && Math.abs(resolved.y - finalGround) <= 0.8) {
+  if (descending && finalGround <= resolved.y + LANDING_OVERSHOOT_EPSILON && resolved.y - finalGround <= 0.8) {
+    resolved.y = finalGround;
+  } else if (!descending && finalGround <= resolved.y && resolved.y - finalGround <= 0.8) {
     resolved.y = finalGround;
   } else if (!descending || finalGround <= resolved.y) {
     resolved.y = Math.max(resolved.y, finalGround);
@@ -1271,6 +1275,10 @@ function clamp(value: number, min: number, max: number) {
 function collisionDirection(delta: number, previousDelta: number) {
   if (previousDelta !== 0) return previousDelta > 0 ? 1 : -1;
   return delta >= 0 ? 1 : -1;
+}
+
+function canSnapToSupport(descending: boolean, y: number, support: number) {
+  return !descending || support <= y + LANDING_OVERSHOOT_EPSILON;
 }
 
 export type ClientToServerEvents = {
