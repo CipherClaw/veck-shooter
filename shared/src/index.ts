@@ -1067,19 +1067,20 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     z: clamp(next.z, -bounds, bounds)
   };
   const lastGround = supportY(arena, last);
-  let ground = supportY(arena, resolved, lastGround);
-  if (canSnapToSupport(descending, resolved.y, ground)) resolved.y = Math.max(resolved.y, ground);
+  let ground = supportY(arena, resolved, lastGround, descending ? last.y : undefined);
+  if (canSnapToSupport(descending, last.y, ground) && (!descending || ground - resolved.y <= 0.8)) resolved.y = Math.max(resolved.y, ground);
   for (const collider of arena.colliders) {
     if (!intersectsXZ(resolved, collider)) continue;
     if (collider.ladder) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     const bottom = collider.center.y - collider.size.y / 2;
     const canStand = (collider.climbable && bottom <= lastGround + 0.95) || top - lastGround <= 0.95 || resolved.y >= top - 0.1;
-    if (canStand && resolved.y >= top - 0.65 && canSnapToSupport(descending, resolved.y, top)) {
+    if (canStand && resolved.y >= top - 0.65 && canSnapToSupport(descending, last.y, top)) {
       resolved.y = Math.max(resolved.y, top);
       ground = Math.max(ground, top);
       continue;
     }
+    if (descending && !canSnapToSupport(descending, last.y, top)) continue;
     if (resolved.y < bottom || resolved.y > top + PLAYER_HEIGHT) continue;
     const halfX = collider.size.x / 2 + PLAYER_RADIUS;
     const halfZ = collider.size.z / 2 + PLAYER_RADIUS;
@@ -1097,8 +1098,8 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   }
   resolved.x = clamp(resolved.x, -bounds, bounds);
   resolved.z = clamp(resolved.z, -bounds, bounds);
-  const finalGround = supportY(arena, resolved, ground);
-  if (descending && finalGround <= resolved.y + LANDING_OVERSHOOT_EPSILON && resolved.y - finalGround <= 0.8) {
+  const finalGround = supportY(arena, resolved, ground, descending ? last.y : undefined);
+  if (descending && finalGround >= resolved.y && finalGround <= last.y + LANDING_OVERSHOOT_EPSILON && finalGround - resolved.y <= 0.8) {
     resolved.y = finalGround;
   } else if (!descending && finalGround <= resolved.y && resolved.y - finalGround <= 0.8) {
     resolved.y = finalGround;
@@ -1183,14 +1184,19 @@ export function resolveGrenade(map: MapName, position: Vec3, velocity: Vec3): { 
   return { position: resolved, velocity: nextVelocity, collided };
 }
 
-function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2) {
+function supportY(arena: ArenaDefinition, pos: Vec3, previousGround = 1.2, lastY?: number) {
   let y = 1.2;
   for (const collider of arena.colliders) {
     if (collider.ladder) continue;
     if (!intersectsXZ(pos, collider)) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     const bottom = collider.center.y - collider.size.y / 2;
-    if ((collider.climbable && bottom <= previousGround + 0.95) || top - previousGround <= 0.95 || pos.y >= top - 0.25) y = Math.max(y, top);
+    const crossedFromAbove = lastY !== undefined && top <= lastY + LANDING_OVERSHOOT_EPSILON;
+    if (lastY !== undefined) {
+      if (crossedFromAbove && top >= pos.y) y = Math.max(y, top);
+      continue;
+    }
+    if ((collider.climbable && bottom <= previousGround + 0.95) || top - previousGround <= 0.95 || pos.y >= top - 0.25 || crossedFromAbove) y = Math.max(y, top);
   }
   return y;
 }
@@ -1277,8 +1283,8 @@ function collisionDirection(delta: number, previousDelta: number) {
   return delta >= 0 ? 1 : -1;
 }
 
-function canSnapToSupport(descending: boolean, y: number, support: number) {
-  return !descending || support <= y + LANDING_OVERSHOOT_EPSILON;
+function canSnapToSupport(descending: boolean, lastY: number, support: number) {
+  return !descending || support <= lastY + LANDING_OVERSHOOT_EPSILON;
 }
 
 export type ClientToServerEvents = {
