@@ -1058,6 +1058,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   const ceiling = arena.ceiling ?? 12;
   const bounds = arena.playBounds ?? arena.bounds - PLAYER_RADIUS;
   const last = previous ?? next;
+  const descending = next.y <= last.y + 0.05;
   const resolved = {
     x: clamp(next.x, -bounds, bounds),
     y: clamp(next.y, 1.2, ceiling),
@@ -1065,7 +1066,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   };
   const lastGround = supportY(arena, last);
   let ground = supportY(arena, resolved, lastGround);
-  resolved.y = Math.max(resolved.y, ground);
+  if (!descending || ground - resolved.y <= 0.8) resolved.y = Math.max(resolved.y, ground);
   for (const collider of arena.colliders) {
     if (!intersectsXZ(resolved, collider)) continue;
     if (collider.ladder) continue;
@@ -1095,9 +1096,9 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   resolved.x = clamp(resolved.x, -bounds, bounds);
   resolved.z = clamp(resolved.z, -bounds, bounds);
   const finalGround = supportY(arena, resolved, ground);
-  if (map === "Subway" && next.y <= last.y + 0.05 && resolved.y - finalGround <= 0.8) {
+  if (descending && Math.abs(resolved.y - finalGround) <= 0.8) {
     resolved.y = finalGround;
-  } else {
+  } else if (!descending || finalGround <= resolved.y) {
     resolved.y = Math.max(resolved.y, finalGround);
   }
   return resolved;
