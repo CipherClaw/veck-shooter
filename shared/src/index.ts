@@ -1101,8 +1101,6 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   const finalGround = supportY(arena, resolved, ground, descending ? last.y : undefined);
   if (descending && finalGround >= resolved.y && finalGround <= last.y + LANDING_OVERSHOOT_EPSILON && finalGround - resolved.y <= 0.8) {
     resolved.y = finalGround;
-  } else if (!descending && finalGround <= resolved.y && resolved.y - finalGround <= 0.8) {
-    resolved.y = finalGround;
   } else if (!descending || finalGround <= resolved.y) {
     resolved.y = Math.max(resolved.y, finalGround);
   }

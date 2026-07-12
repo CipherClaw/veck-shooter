@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { ARENAS, resolvePlayerPosition, type Vec3 } from "@veck/shared";
+import { ARENAS, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
 
 const dt = 1 / 60;
 const RISE_GRAVITY = 19;
 const FALL_GRAVITY = 32;
 
-function clientFallFrame(position: Vec3, previous: Vec3, verticalVelocity: number, horizontalVelocity: Pick<Vec3, "x" | "z">) {
-  const arena = ARENAS.Blueprint;
+function clientPhysicsFrame(
+  map: MapName,
+  position: Vec3,
+  previous: Vec3,
+  verticalVelocity: number,
+  horizontalVelocity: Pick<Vec3, "x" | "z">
+) {
+  const arena = ARENAS[map];
   const ceiling = arena.ceiling ?? 12;
   const gravity = verticalVelocity > 0 ? RISE_GRAVITY : FALL_GRAVITY;
   const nextVerticalVelocity = verticalVelocity - gravity * dt;
@@ -15,7 +21,7 @@ function clientFallFrame(position: Vec3, previous: Vec3, verticalVelocity: numbe
     y: Math.max(1.2, Math.min(ceiling, position.y + nextVerticalVelocity * dt)),
     z: position.z + horizontalVelocity.z * dt
   };
-  const resolved = resolvePlayerPosition("Blueprint", raw, previous);
+  const resolved = resolvePlayerPosition(map, raw, previous);
   const grounded = resolved.y > raw.y || resolved.y <= 1.21;
 
   return {
@@ -24,6 +30,10 @@ function clientFallFrame(position: Vec3, previous: Vec3, verticalVelocity: numbe
     grounded,
     verticalVelocity: grounded ? 0 : nextVerticalVelocity
   };
+}
+
+function clientFallFrame(position: Vec3, previous: Vec3, verticalVelocity: number, horizontalVelocity: Pick<Vec3, "x" | "z">) {
+  return clientPhysicsFrame("Blueprint", position, previous, verticalVelocity, horizontalVelocity);
 }
 
 function simulateClientFall(start: Vec3, verticalVelocity = 0) {
@@ -41,7 +51,50 @@ function simulateClientFall(start: Vec3, verticalVelocity = 0) {
   throw new Error(`fall did not settle from y=${start.y}`);
 }
 
+function simulateClientLaunch(map: MapName, start: Vec3, verticalVelocity: number) {
+  let position = { ...start };
+  let velocity = verticalVelocity;
+  let maxY = start.y;
+  let leftGround = false;
+
+  for (let frame = 0; frame < 600; frame++) {
+    const previous = { ...position };
+    const next = clientPhysicsFrame(map, position, previous, velocity, { x: 0, z: 0 });
+    position = next.resolved;
+    velocity = next.verticalVelocity;
+    maxY = Math.max(maxY, position.y);
+    if (position.y > start.y + 0.05) leftGround = true;
+    if (leftGround && next.grounded) return { ...next, frame, position, maxY };
+  }
+
+  throw new Error(`launch did not settle from y=${start.y}`);
+}
+
 describe("high platform falling", () => {
+  it("lets a normal jump leave flat Blueprint ground and return to the floor", () => {
+    const start = { x: 0, y: 1.2, z: -40 };
+    const launch = simulateClientLaunch("Blueprint", start, 7.8);
+
+    expect(launch.maxY - start.y).toBeGreaterThanOrEqual(1.4);
+    expect(launch.maxY - start.y).toBeLessThan(1.8);
+    expect(launch.position).toMatchObject(start);
+    expect(launch.grounded).toBe(true);
+  });
+
+  it("lets a real Blueprint bounce pad launch the player upward", () => {
+    const pad = ARENAS.Blueprint.bouncePads?.find((candidate) => candidate.id === "blueprint-bounce-central");
+    expect(pad).toBeDefined();
+    if (!pad) throw new Error("missing Blueprint central bounce pad");
+
+    const start = { x: pad.center.x, y: 1.2, z: pad.center.z };
+    const launch = simulateClientLaunch("Blueprint", start, pad.launchVelocity);
+    const analyticApex = (pad.launchVelocity * pad.launchVelocity) / (2 * RISE_GRAVITY);
+
+    expect(launch.maxY - start.y).toBeGreaterThanOrEqual(analyticApex / 2);
+    expect(launch.maxY).toBeGreaterThan(10);
+    expect(launch.grounded).toBe(true);
+  });
+
   it("does not re-catch a descending Blueprint player onto an overhead deck", () => {
     const previous = { x: -18, y: 28, z: -10 };
     const frame = clientFallFrame({ x: -18, y: 20, z: -10 }, previous, -0.5, { x: 0, z: 0 });

@@ -273,7 +273,7 @@ describe("game rules", () => {
     expect(frontStep.y).toBeGreaterThan(2.5);
 
     let down = { x: 16.5, y: 8.2, z: 46 };
-    for (let i = 0; i < 60; i++) down = resolvePlayerPosition("Subway", { x: down.x, y: down.y, z: down.z - 0.6 }, down);
+    for (let i = 0; i < 60; i++) down = resolvePlayerPosition("Subway", { x: down.x, y: Math.max(1.2, down.y - 0.2), z: down.z - 0.6 }, down);
     expect(down.y).toBeCloseTo(2.5);
     expect(down.z).toBeLessThan(24);
   });
