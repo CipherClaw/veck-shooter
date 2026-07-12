@@ -79,6 +79,22 @@ describe("game rules", () => {
     expect(playerState.ammo.watergun).toBe(0);
   });
 
+  it("echoes the latest processed movement input sequence in snapshots", () => {
+    const hub = new GameHub(new StatsStore(":memory:"));
+    hub.hello("p1", "Mover");
+    hub.create("p1", "socket1", { map: "Blueprint", mode: "Free Play", durationMinutes: 3, weapon: "revolver" });
+
+    hub.input("p1", {
+      position: { x: -3, y: 3.4, z: -18 },
+      velocity: { x: 0, y: 29, z: 0 },
+      seq: 42,
+      rotationY: 0,
+      weapon: "revolver"
+    });
+
+    expect(hub.tick()[0].players.find((candidate) => candidate.id === "p1")?.inputSeq).toBe(42);
+  });
+
   it("forces gun game starting weapons and advances on kill", () => {
     const hub = new GameHub(new StatsStore(":memory:"));
     hub.hello("p1", "Shooter");

@@ -98,6 +98,7 @@ export type PlayerSnapshot = {
   name: string;
   team: Team;
   position: Vec3;
+  inputSeq?: number;
   rotationY: number;
   health: number;
   alive: boolean;
@@ -168,6 +169,7 @@ export type HealthPackSnapshot = {
 export type ClientInput = {
   position: Vec3;
   velocity: Vec3;
+  seq?: number;
   rotationY: number;
   weapon: WeaponId;
 };

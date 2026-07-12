@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARENAS, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
+import { ARENAS, bouncePadAt, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
 
 const dt = 1 / 60;
 const RISE_GRAVITY = 19;
@@ -70,6 +70,72 @@ function simulateClientLaunch(map: MapName, start: Vec3, verticalVelocity: numbe
   throw new Error(`launch did not settle from y=${start.y}`);
 }
 
+function simulateBlueprintBounceWithAuthoritativeSnapshots() {
+  const map: MapName = "Blueprint";
+  const oneWayLatency = 0.15;
+  const snapshotDt = 1 / 20;
+  let nextSnapshotAt = 0;
+  let serverPosition = { x: -3, y: 1.2, z: -31 };
+  let serverInputSeq = 0;
+  let localPosition = { ...serverPosition };
+  let verticalVelocity = 0;
+  let inputSeq = 0;
+  let activeBounceSeq = 0;
+  let grounded = true;
+  let maxY = localPosition.y;
+  let bounceTriggers = 0;
+  let hardSnaps = 0;
+  const inputQueue: { at: number; seq: number; position: Vec3 }[] = [];
+  const snapshotQueue: { at: number; inputSeq: number; position: Vec3 }[] = [];
+
+  for (let frame = 0; frame < 180; frame += 1) {
+    const now = frame * dt;
+    const previous = { ...localPosition };
+    const next = { x: localPosition.x, y: localPosition.y, z: localPosition.z + 15 * dt };
+    const bouncePad = bouncePadAt(map, next);
+    if (bouncePad && previous.y <= 1.35 && next.y <= 1.35 && verticalVelocity <= 0) {
+      verticalVelocity = bouncePad.launchVelocity;
+      activeBounceSeq = inputSeq + 1;
+      bounceTriggers += 1;
+    }
+    const gravity = verticalVelocity > 0 ? RISE_GRAVITY : FALL_GRAVITY;
+    verticalVelocity -= gravity * dt;
+    next.y = Math.max(1.2, Math.min(ARENAS[map].ceiling ?? 12, next.y + verticalVelocity * dt));
+    const resolved = resolvePlayerPosition(map, next, previous);
+    grounded = resolved.y > next.y || resolved.y <= 1.21;
+    if (grounded) verticalVelocity = 0;
+    if (grounded) activeBounceSeq = 0;
+    localPosition = resolved;
+    maxY = Math.max(maxY, localPosition.y);
+
+    inputSeq += 1;
+    inputQueue.push({ at: now + oneWayLatency, seq: inputSeq, position: { ...localPosition } });
+    while (inputQueue.length > 0 && inputQueue[0].at <= now) {
+      const input = inputQueue.shift()!;
+      serverPosition = resolvePlayerPosition(map, input.position, serverPosition);
+      serverInputSeq = input.seq;
+    }
+    if (now >= nextSnapshotAt - 1e-9) {
+      snapshotQueue.push({ at: now + oneWayLatency, inputSeq: serverInputSeq, position: { ...serverPosition } });
+      nextSnapshotAt += snapshotDt;
+    }
+    while (snapshotQueue.length > 0 && snapshotQueue[0].at <= now) {
+      const snapshot = snapshotQueue.shift()!;
+      const dx = localPosition.x - snapshot.position.x;
+      const dy = localPosition.y - snapshot.position.y;
+      const dz = localPosition.z - snapshot.position.z;
+      const protectingBounceFlight = activeBounceSeq > 0 && !grounded && localPosition.y >= snapshot.position.y && snapshot.inputSeq < inputSeq;
+      if (!protectingBounceFlight && dx * dx + dy * dy + dz * dz > 49) {
+        localPosition = { ...snapshot.position };
+        verticalVelocity = 0;
+        hardSnaps += 1;
+      }
+    }
+  }
+
+  return { bounceTriggers, hardSnaps, maxY };
+}
+
 describe("high platform falling", () => {
   it("lets a normal jump leave flat Blueprint ground and return to the floor", () => {
     const start = { x: 0, y: 1.2, z: -40 };
@@ -93,6 +159,14 @@ describe("high platform falling", () => {
     expect(launch.maxY - start.y).toBeGreaterThanOrEqual(analyticApex / 2);
     expect(launch.maxY).toBeGreaterThan(10);
     expect(launch.grounded).toBe(true);
+  });
+
+  it("does not let stale server snapshots cancel a Blueprint bounce launch", () => {
+    const launch = simulateBlueprintBounceWithAuthoritativeSnapshots();
+
+    expect(launch.bounceTriggers).toBeGreaterThanOrEqual(1);
+    expect(launch.hardSnaps).toBe(0);
+    expect(launch.maxY).toBeGreaterThan(25);
   });
 
   it("does not re-catch a descending Blueprint player onto an overhead deck", () => {

@@ -174,6 +174,7 @@ export class GameHub {
       name,
       team: nextTeam([...game.players.values()], game.mode),
       position: { ...spawn },
+      inputSeq: 0,
       rotationY: 0,
       health: 100,
       alive: true,
@@ -209,6 +210,7 @@ export class GameHub {
     const { game, player } = found;
     if (game.status !== "active") return;
     player.position = resolvePlayerPosition(game.map, input.position, player.position);
+    player.inputSeq = input.seq ?? player.inputSeq;
     player.rotationY = input.rotationY;
     player.weapon = game.mode === "Gun Game" ? gunGameWeapon(player.kills) : input.weapon;
   }

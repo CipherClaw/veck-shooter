@@ -78,6 +78,8 @@ function PlayerController() {
   const localReady = useRef(false);
   const verticalVelocity = useRef(0);
   const grounded = useRef(true);
+  const inputSeq = useRef(0);
+  const activeBounceSeq = useRef(0);
   const yaw = useRef(0);
   const pitch = useRef(0);
   const shotSeq = useRef(0);
@@ -221,6 +223,7 @@ function PlayerController() {
   useEffect(() => {
     if (!me?.alive || !matchActive) {
       localReady.current = false;
+      activeBounceSeq.current = 0;
       firing.current = false;
       setSpraying(false);
       setZoom(false);
@@ -232,12 +235,14 @@ function PlayerController() {
       return;
     }
     const serverPos = new THREE.Vector3(me.position.x, me.position.y, me.position.z);
-    if (!localReady.current || localPosition.current.distanceToSquared(serverPos) > 49) {
+    const protectingBounceFlight = activeBounceSeq.current > 0 && !grounded.current && localPosition.current.y >= serverPos.y;
+    if (!localReady.current || (!protectingBounceFlight && localPosition.current.distanceToSquared(serverPos) > 49)) {
       localPosition.current.copy(serverPos);
       verticalVelocity.current = 0;
       localReady.current = true;
     }
-  }, [camera, gl.domElement, matchActive, me?.alive, me?.position.x, me?.position.y, me?.position.z]);
+    if ((me.inputSeq ?? 0) >= activeBounceSeq.current && grounded.current) activeBounceSeq.current = 0;
+  }, [camera, gl.domElement, matchActive, me?.alive, me?.inputSeq, me?.position.x, me?.position.y, me?.position.z]);
 
   useEffect(() => {
     if (weapon !== "sniper") setZoom(false);
@@ -305,6 +310,7 @@ function PlayerController() {
       const bouncePad = bouncePadAt(map, { x: pos.x, y: pos.y, z: pos.z });
       if (bouncePad && previous.y <= 1.35 && pos.y <= 1.35 && verticalVelocity.current <= 0) {
         verticalVelocity.current = bouncePad.launchVelocity;
+        activeBounceSeq.current = inputSeq.current + 1;
       }
       if (!controlsBlocked() && keys.has("Space") && grounded.current) verticalVelocity.current = Math.max(verticalVelocity.current, 7.8);
       // Keep rise gravity unchanged so jump and bounce-pad apex heights stay tuned; only the falling half is snappier.
@@ -315,6 +321,7 @@ function PlayerController() {
     const resolved = resolvePlayerPosition(map, { x: pos.x, y: pos.y, z: pos.z }, { x: previous.x, y: previous.y, z: previous.z });
     grounded.current = !climbing && (resolved.y > pos.y || resolved.y <= 1.21);
     if (climbing || grounded.current) verticalVelocity.current = 0;
+    if (grounded.current) activeBounceSeq.current = 0;
     pos.set(resolved.x, resolved.y, resolved.z);
     pos.y = Math.min(pos.y, ceiling);
     pos.x = Math.max(-arena.bounds, Math.min(arena.bounds, pos.x));
@@ -337,9 +344,11 @@ function PlayerController() {
     }
     camera.position.set(pos.x, pos.y + 0.7, pos.z);
     camera.rotation.set(pitch.current, yaw.current, 0, "YXZ");
+    const seq = ++inputSeq.current;
     socket.emit("input", {
       position: { x: pos.x, y: pos.y, z: pos.z },
       velocity: { x: velocity.current.x, y: velocity.current.y, z: velocity.current.z },
+      seq,
       rotationY: yaw.current,
       weapon
     });
