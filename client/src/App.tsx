@@ -14,7 +14,7 @@ export default function App() {
 }
 
 function Lobby() {
-  const { name, stats, games, lobbyChat, weapon, muted, setMuted, error } = useGame();
+  const { name, stats, games, lobbyChat, weapon, muted, setMuted, graphicsQuality, setGraphicsQuality, error } = useGame();
   const [map, setMap] = useState<MapName>("Pyramid");
   const [mode, setMode] = useState<GameMode>("Free Play");
   const [durationMinutes, setDuration] = useState(5);
@@ -37,6 +37,9 @@ function Lobby() {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <a className="gl-btn gl-btn--ghost gl-btn--sm" href="https://games.greglab.net" title="Back to Games Hub">← Games Hub</a>
             <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
+            <select aria-label="Graphics quality" title="Graphics quality" value={graphicsQuality} onChange={(event) => setGraphicsQuality(event.target.value as "low" | "medium" | "high")}>
+              <option value="low">Low graphics</option><option value="medium">Medium graphics</option><option value="high">High graphics</option>
+            </select>
           </div>
         </header>
         {error && <div className="error">{error}</div>}
@@ -91,7 +94,7 @@ function Lobby() {
 }
 
 function Match() {
-  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, scoped, scopeShotAt, stamina, paused, setPaused } = useGame();
+  const { snapshot, playerId, gameId, gameChat, weapon, setWeapon, muted, graphicsQuality, setGraphicsQuality, scoped, scopeShotAt, stamina, paused, setPaused } = useGame();
   const [chatOpen, setChatOpen] = useState(false);
   const [returnSeconds, setReturnSeconds] = useState(13);
   const me = snapshot?.players.find((p) => p.id === playerId);
@@ -259,7 +262,7 @@ function Match() {
         </div>
       )}
       {ended && <RoundSummary snapshot={snapshot} playerId={playerId} returnSeconds={returnSeconds} onReturn={returnToLobby} />}
-      {paused && <div className="gl-pause-overlay"><div className="gl-pause-card"><h2>Paused</h2><p className="pause-controls">WASD move · Mouse look · Click fire · R reload · Shift sprint · Space jump · Enter chat</p><div className="gl-pause-actions"><button className="gl-btn" onClick={resumePlay}>Resume</button><button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button></div></div></div>}
+      {paused && <div className="gl-pause-overlay"><div className="gl-pause-card"><h2>Paused</h2><p className="pause-controls">WASD move · Mouse look · Click fire · R reload · Shift sprint · Space jump · Enter chat</p><label>Graphics quality <select value={graphicsQuality} onChange={(event) => setGraphicsQuality(event.target.value as "low" | "medium" | "high")}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><div className="gl-pause-actions"><button className="gl-btn" onClick={resumePlay}>Resume</button><button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button></div></div></div>}
     </main>
   );
 }

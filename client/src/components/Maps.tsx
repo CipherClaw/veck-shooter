@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { ARENAS, type ArenaBouncePad, type ArenaCollider, type MapName } from "@veck/shared";
 import { useGame, type PracticeTargetFx } from "../state/store";
+import { classifySurface, floorSurface, getBoxGeometry, getSurfaceMaterial } from "../game/materials";
 
 const bankTileColor = "#d7d2c8";
 const bankSurfaceOverlap = 0.06;
@@ -15,22 +16,45 @@ function Tile({ collider, map }: { collider: ArenaCollider; map: MapName }) {
   const isBankStoneWall = isBank && (color.toLowerCase() === "#8f9699" || collider.id.includes("-lintel"));
   const isBankWoodWall = isBank && color.toLowerCase() === "#a77248";
   const displayColor = isBankStoneWall ? "#a8afb0" : isBankWoodWall ? "#9d6740" : color;
+  const renderSize = {
+    x: size.x + (isBankSurface ? bankSurfaceOverlap : 0),
+    y: size.y,
+    z: size.z + (isBankSurface ? bankSurfaceOverlap : 0)
+  };
+  const geometry = getBoxGeometry(renderSize);
+  const material = getSurfaceMaterial(classifySurface(collider, map), displayColor, isBankSurface);
   return (
     <mesh
       position={[center.x, center.y, center.z]}
-      scale={[size.x + (isBankSurface ? bankSurfaceOverlap : 0), size.y, size.z + (isBankSurface ? bankSurfaceOverlap : 0)]}
       castShadow
       receiveShadow
+      dispose={null}
     >
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial
-        color={displayColor}
-        roughness={isBankStoneWall ? 0.9 : 0.74}
-        metalness={0.02}
-        polygonOffset={isBankSurface}
-        polygonOffsetFactor={-1}
-        polygonOffsetUnits={-1}
-      />
+      <primitive object={geometry} attach="geometry" />
+      <primitive object={material} attach="material" />
+    </mesh>
+  );
+}
+
+function ArenaFloor({ map }: { map: MapName }) {
+  const arena = ARENAS[map];
+  const isBank = map === "Bank Heist";
+  const color = isBank ? bankTileColor : arena.floorColor;
+  const geometry = useMemo(() => {
+    const next = new THREE.PlaneGeometry(arena.floorSize, arena.floorSize, 1, 1);
+    const uv = next.getAttribute("uv") as THREE.BufferAttribute;
+    const repeat = arena.floorSize / 2;
+    for (let i = 0; i < uv.count; i += 1) uv.setXY(i, uv.getX(i) * repeat, uv.getY(i) * repeat);
+    uv.needsUpdate = true;
+    next.setAttribute("uv1", uv.clone());
+    return next;
+  }, [arena.floorSize]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  const material = getSurfaceMaterial(floorSurface(map), color);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, isBank ? -0.04 : 0, 0]} receiveShadow dispose={null}>
+      <primitive object={geometry} attach="geometry" />
+      <primitive object={material} attach="material" />
     </mesh>
   );
 }
@@ -53,16 +77,11 @@ function BouncePad({ pad }: { pad: ArenaBouncePad }) {
 export function ArenaMap({ map }: { map: MapName }) {
   const arena = ARENAS[map];
   const isBank = map === "Bank Heist";
-  const isForest = map === "Forest";
-  const floorY = isBank ? -0.04 : 0;
   const gridY = 0.025;
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floorY, 0]} receiveShadow>
-        <planeGeometry args={[arena.floorSize, arena.floorSize, 48, 48]} />
-        <meshStandardMaterial color={isBank ? bankTileColor : arena.floorColor} roughness={isForest ? 0.96 : 0.88} />
-      </mesh>
-      {!isBank && !isForest && <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />}
+      <ArenaFloor map={map} />
+      {!isBank && map !== "Forest" && <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />}
       {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} map={map} />)}
       {arena.bouncePads?.map((pad) => <BouncePad key={pad.id} pad={pad} />)}
       {map === "Pyramid" && <PyramidDetails />}

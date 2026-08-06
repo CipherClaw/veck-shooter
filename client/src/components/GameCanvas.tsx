@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, Line, Sky, Stars } from "@react-three/drei";
+import { Environment, Html, Line, Sky, Stars } from "@react-three/drei";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
@@ -20,30 +20,42 @@ const FALL_GRAVITY = 32;
 const EXPLOSION_FX_MS = 650;
 const EXPLOSION_FX_START_SCALE = 1.2;
 const EXPLOSION_FX_PEAK_SCALE = 7.5;
+const SUN_POSITION: [number, number, number] = [80, 34, 20];
 
 export function GameCanvas() {
   const snapshot = useGame((s) => s.snapshot);
   const playerId = useGame((s) => s.playerId);
   const fx = useGame((s) => s.fx);
   const scoped = useGame((s) => s.scoped);
+  const graphicsQuality = useGame((s) => s.graphicsQuality);
   const map = snapshot?.game.map ?? "Pyramid";
   return (
-    <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 74, position: [0, 2, 8] }}>
-      <color attach="background" args={["#8fd3ff"]} />
+    <Canvas
+      shadows
+      dpr={graphicsQuality === "low" ? 1 : [1, 1.5]}
+      gl={{ toneMapping: THREE.AgXToneMapping, toneMappingExposure: 1.05, antialias: true, powerPreference: "high-performance" }}
+      camera={{ fov: 74, position: [0, 2, 8] }}
+    >
       <fog attach="fog" args={["#b7e5ff", scoped ? 110 : 36, scoped ? 260 : 104]} />
-      <ambientLight intensity={0.55} />
-      <hemisphereLight args={["#bfe8ff", "#8f7d62", 0.45]} />
+      <hemisphereLight color="#8fb6ff" groundColor="#36302a" intensity={0.3} />
       <directionalLight
-        position={[18, 28, 14]}
-        intensity={1.75}
+        color="#ffe8c4"
+        position={SUN_POSITION}
+        intensity={3.2}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={graphicsQuality === "low" ? [1024, 1024] : [2048, 2048]}
         shadow-camera-left={-42}
         shadow-camera-right={42}
         shadow-camera-top={42}
         shadow-camera-bottom={-42}
+        shadow-normalBias={0.02}
+        shadow-bias={-0.00015}
       />
-      <Sky sunPosition={[80, 34, 20]} turbidity={4.2} rayleigh={0.65} mieCoefficient={0.004} />
+      <directionalLight color="#9ec4ff" position={[-34, 20, -28]} intensity={0.38} />
+      <directionalLight color="#ffd7a8" position={[-18, 24, -46]} intensity={0.64} />
+      <Environment frames={1} resolution={256} background>
+        <Sky sunPosition={SUN_POSITION} turbidity={4.2} rayleigh={0.65} mieCoefficient={0.004} />
+      </Environment>
       <Stars radius={120} depth={40} count={1000} factor={1.4} fade speed={0.2} />
       <Suspense fallback={null}>
         <ArenaMap map={map} />

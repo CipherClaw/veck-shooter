@@ -7,6 +7,10 @@ localStorage.setItem("veck.playerId", savedId);
 
 export type Fx = { id: number; shooterId: string; from: { x: number; y: number; z: number }; to: { x: number; y: number; z: number }; weapon: WeaponId; hit?: { x: number; y: number; z: number }; explosion?: { x: number; y: number; z: number } };
 export type PracticeTargetFx = { id: number; targetId: string; position: { x: number; y: number; z: number }; createdAt: number };
+export type GraphicsQuality = "low" | "medium" | "high";
+
+const savedGraphicsQuality = localStorage.getItem("veck.graphicsQuality");
+const initialGraphicsQuality: GraphicsQuality = savedGraphicsQuality === "low" || savedGraphicsQuality === "medium" || savedGraphicsQuality === "high" ? savedGraphicsQuality : "high";
 
 const practiceTargetTimers = new Map<string, number>();
 const practiceTargetFxTimers = new Map<number, number>();
@@ -24,6 +28,7 @@ type State = {
   gameChat: ChatMessage[];
   weapon: WeaponId;
   muted: boolean;
+  graphicsQuality: GraphicsQuality;
   scoped: boolean;
   scopeShotAt: number;
   stamina: number;
@@ -40,6 +45,7 @@ type State = {
   clearPracticeTargetFx: (id: number) => void;
   resetPracticeTargets: () => void;
   setMuted: (muted: boolean) => void;
+  setGraphicsQuality: (quality: GraphicsQuality) => void;
   setScoped: (scoped: boolean) => void;
   setScopeShotAt: (scopeShotAt: number) => void;
   setStamina: (stamina: number) => void;
@@ -56,6 +62,7 @@ export const useGame = create<State>((set) => ({
   gameChat: [],
   weapon: "revolver",
   muted: localStorage.getItem("veck.muted") === "true",
+  graphicsQuality: initialGraphicsQuality,
   scoped: false,
   scopeShotAt: 0,
   stamina: 1,
@@ -109,6 +116,10 @@ export const useGame = create<State>((set) => ({
   setMuted: (muted) => {
     localStorage.setItem("veck.muted", String(muted));
     set({ muted });
+  },
+  setGraphicsQuality: (graphicsQuality) => {
+    localStorage.setItem("veck.graphicsQuality", graphicsQuality);
+    set({ graphicsQuality });
   },
   setScoped: (scoped) => set({ scoped }),
   setScopeShotAt: (scopeShotAt) => set({ scopeShotAt }),
