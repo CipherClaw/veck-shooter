@@ -36,7 +36,7 @@ export function GameCanvas() {
     <Canvas
       shadows
       dpr={graphicsQuality === "low" ? 1 : graphicsQuality === "medium" ? [1, 1.25] : [1, 1.5]}
-      gl={{ toneMapping: THREE.NoToneMapping, antialias: true, powerPreference: "high-performance" }}
+      gl={{ toneMapping: THREE.NoToneMapping, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: Boolean(visualMap) }}
       camera={{ fov: 74, position: [0, 2, 8] }}
     >
       <fog attach="fog" args={["#b7e5ff", scoped ? 110 : 36, scoped ? 260 : 104]} />

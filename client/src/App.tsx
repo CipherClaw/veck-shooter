@@ -38,7 +38,7 @@ function Lobby() {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <a className="gl-btn gl-btn--ghost gl-btn--sm" href="https://games.greglab.net" title="Back to Games Hub">← Games Hub</a>
             <button className="icon-btn" onClick={() => setMuted(!muted)} title="Toggle sound">{muted ? <VolumeX /> : <Volume2 />}</button>
-            <select aria-label="Graphics quality" title="Graphics quality" value={graphicsQuality} onChange={(event) => setGraphicsQuality(event.target.value as "low" | "medium" | "high")}>
+            <select className="graphics-quality-select graphics-quality-select--compact" aria-label="Graphics quality" title="Graphics quality" value={graphicsQuality} onChange={(event) => setGraphicsQuality(event.target.value as "low" | "medium" | "high")}>
               <option value="low">Low graphics</option><option value="medium">Medium graphics</option><option value="high">High graphics</option>
             </select>
           </div>
@@ -263,7 +263,32 @@ function Match() {
         </div>
       )}
       {ended && <RoundSummary snapshot={snapshot} playerId={playerId} returnSeconds={returnSeconds} onReturn={returnToLobby} />}
-      {paused && <div className="gl-pause-overlay"><div className="gl-pause-card"><h2>Paused</h2><p className="pause-controls">WASD move · Mouse look · Click fire · R reload · Shift sprint · Space jump · Enter chat</p><label>Graphics quality <select value={graphicsQuality} onChange={(event) => setGraphicsQuality(event.target.value as "low" | "medium" | "high")}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><div className="gl-pause-actions"><button className="gl-btn" onClick={resumePlay}>Resume</button><button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button></div></div></div>}
+      {paused && (
+        <div className="gl-pause-overlay">
+          <div className="gl-pause-card">
+            <h2>Paused</h2>
+            <p className="pause-controls">WASD move · Mouse look · Click fire · R reload · Shift sprint · Space jump · Enter chat</p>
+            <div className="pause-setting">
+              <label htmlFor="pause-graphics-quality">Graphics quality</label>
+              <select
+                id="pause-graphics-quality"
+                className="graphics-quality-select"
+                value={graphicsQuality}
+                onChange={(event) => setGraphicsQuality(event.target.value as "low" | "medium" | "high")}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <p>Lower this to improve performance on slower machines.</p>
+            </div>
+            <div className="gl-pause-actions">
+              <button className="gl-btn" onClick={resumePlay}>Resume</button>
+              <button className="gl-btn gl-btn--ghost" onClick={returnToLobby}>Leave to Lobby</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -137,6 +137,34 @@ function simulateBlueprintBounceWithAuthoritativeSnapshots() {
 }
 
 describe("high platform falling", () => {
+  it("blocks a descending mid-jump player entering a real Bank Heist wall", () => {
+    const previous = { x: 0, y: 2.4, z: -20.8 };
+    const resolved = resolvePlayerPosition("Bank Heist", { x: 0, y: 2.1, z: -21.2 }, previous);
+
+    expect(resolved.z).toBeCloseTo(-20.9);
+  });
+
+  it("blocks a high descending player pressing into a real Bank Heist upper wall", () => {
+    const previous = { x: 20.8, y: 8, z: 0 };
+    const resolved = resolvePlayerPosition("Bank Heist", { x: 21.2, y: 7.5, z: 0 }, previous);
+
+    expect(resolved.x).toBeCloseTo(20.9);
+  });
+
+  it("still blocks a non-descending player entering a real Bank Heist wall", () => {
+    const previous = { x: 0, y: 2.1, z: -20.8 };
+    const resolved = resolvePlayerPosition("Bank Heist", { x: 0, y: 2.1, z: -21.2 }, previous);
+
+    expect(resolved.z).toBeCloseTo(-20.9);
+  });
+
+  it("lets an already embedded descending player fall through a Blueprint deck without sideways ejection", () => {
+    const previous = { x: -18, y: 20.7, z: -10 };
+    const resolved = resolvePlayerPosition("Blueprint", { x: -18, y: 20.5, z: -10 }, previous);
+
+    expect(resolved).toMatchObject({ x: -18, y: 20.5, z: -10 });
+  });
+
   it("lets a normal jump leave flat Blueprint ground and return to the floor", () => {
     const start = { x: 0, y: 1.2, z: -40 };
     const launch = simulateClientLaunch("Blueprint", start, 7.8);

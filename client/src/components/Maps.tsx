@@ -7,7 +7,6 @@ import { useGame, type PracticeTargetFx } from "../state/store";
 import { classifySurface, floorSurface, getBoxGeometry, getSurfaceMaterial } from "../game/materials";
 
 const bankTileColor = "#d7d2c8";
-const bankSurfaceOverlap = 0.06;
 
 function Tile({ collider, map, textureSize }: { collider: ArenaCollider; map: MapName; textureSize: number }) {
   const { center, size, color } = collider;
@@ -16,12 +15,7 @@ function Tile({ collider, map, textureSize }: { collider: ArenaCollider; map: Ma
   const isBankStoneWall = isBank && (color.toLowerCase() === "#8f9699" || collider.id.includes("-lintel"));
   const isBankWoodWall = isBank && color.toLowerCase() === "#a77248";
   const displayColor = isBankStoneWall ? "#a8afb0" : isBankWoodWall ? "#9d6740" : color;
-  const renderSize = {
-    x: size.x + (isBankSurface ? bankSurfaceOverlap : 0),
-    y: size.y,
-    z: size.z + (isBankSurface ? bankSurfaceOverlap : 0)
-  };
-  const geometry = getBoxGeometry(renderSize);
+  const geometry = getBoxGeometry(size);
   const material = getSurfaceMaterial(classifySurface(collider, map), displayColor, isBankSurface, textureSize);
   return (
     <mesh
@@ -381,13 +375,13 @@ function BankSurfaceGrout({ collider }: { collider: ArenaCollider }) {
     <group>
       {xLines.map((x) => (
         <mesh key={`x-${x}`} position={[x, topY, collider.center.z]} receiveShadow>
-          <boxGeometry args={[lineWidth, 0.012, collider.size.z + bankSurfaceOverlap]} />
+          <boxGeometry args={[lineWidth, 0.012, collider.size.z]} />
           <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} />
         </mesh>
       ))}
       {zLines.map((z) => (
         <mesh key={`z-${z}`} position={[collider.center.x, topY, z]} receiveShadow>
-          <boxGeometry args={[collider.size.x + bankSurfaceOverlap, 0.012, lineWidth]} />
+          <boxGeometry args={[collider.size.x, 0.012, lineWidth]} />
           <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} />
         </mesh>
       ))}
