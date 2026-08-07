@@ -20,6 +20,7 @@ input { width: 100%; border: 3px solid #101827; border-radius: 8px; padding: 11p
 label { display: block; margin: 12px 0 6px; color: #dbeafe; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
 .lobby, .match { width: 100vw; height: 100vh; position: relative; }
 .ambient-scene { position: fixed; inset: 0; filter: saturate(1.12); }
+.visual-capture { position: fixed; inset: 0; }
 .ambient-scene::after { content:""; position:absolute; inset:0; background: linear-gradient(90deg, rgba(10,18,32,.78), rgba(10,18,32,.16)); pointer-events:none; }
 .lobby-shell { position: relative; width: min(1180px, calc(100vw - 28px)); height: calc(100vh - 28px); margin: 14px auto; overflow: hidden; padding-bottom: 14px; display: flex; flex-direction: column; }
 .brand { display: flex; align-items: center; justify-content: space-between; margin: 0 0 14px; }

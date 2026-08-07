@@ -9,7 +9,7 @@ import { classifySurface, floorSurface, getBoxGeometry, getSurfaceMaterial } fro
 const bankTileColor = "#d7d2c8";
 const bankSurfaceOverlap = 0.06;
 
-function Tile({ collider, map }: { collider: ArenaCollider; map: MapName }) {
+function Tile({ collider, map, textureSize }: { collider: ArenaCollider; map: MapName; textureSize: number }) {
   const { center, size, color } = collider;
   const isBank = map === "Bank Heist";
   const isBankSurface = isBank && collider.id.includes("-surface-");
@@ -22,7 +22,7 @@ function Tile({ collider, map }: { collider: ArenaCollider; map: MapName }) {
     z: size.z + (isBankSurface ? bankSurfaceOverlap : 0)
   };
   const geometry = getBoxGeometry(renderSize);
-  const material = getSurfaceMaterial(classifySurface(collider, map), displayColor, isBankSurface);
+  const material = getSurfaceMaterial(classifySurface(collider, map), displayColor, isBankSurface, textureSize);
   return (
     <mesh
       position={[center.x, center.y, center.z]}
@@ -36,7 +36,7 @@ function Tile({ collider, map }: { collider: ArenaCollider; map: MapName }) {
   );
 }
 
-function ArenaFloor({ map }: { map: MapName }) {
+function ArenaFloor({ map, textureSize }: { map: MapName; textureSize: number }) {
   const arena = ARENAS[map];
   const isBank = map === "Bank Heist";
   const color = isBank ? bankTileColor : arena.floorColor;
@@ -50,7 +50,7 @@ function ArenaFloor({ map }: { map: MapName }) {
     return next;
   }, [arena.floorSize]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  const material = getSurfaceMaterial(floorSurface(map), color);
+  const material = getSurfaceMaterial(floorSurface(map), color, false, textureSize);
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, isBank ? -0.04 : 0, 0]} receiveShadow dispose={null}>
       <primitive object={geometry} attach="geometry" />
@@ -75,14 +75,16 @@ function BouncePad({ pad }: { pad: ArenaBouncePad }) {
 }
 
 export function ArenaMap({ map }: { map: MapName }) {
+  const graphicsQuality = useGame((state) => state.graphicsQuality);
+  const textureSize = graphicsQuality === "low" ? 128 : graphicsQuality === "medium" ? 192 : 256;
   const arena = ARENAS[map];
   const isBank = map === "Bank Heist";
   const gridY = 0.025;
   return (
-    <group>
-      <ArenaFloor map={map} />
+    <group name="arena-map">
+      <ArenaFloor map={map} textureSize={textureSize} />
       {!isBank && map !== "Forest" && <gridHelper args={[arena.floorSize, arena.floorSize / 4, "#fff7d6", arena.gridColor]} position={[0, gridY, 0]} />}
-      {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} map={map} />)}
+      {arena.colliders.filter((collider) => !hiddenCollider(collider.id)).map((collider) => <Tile key={collider.id} collider={collider} map={map} textureSize={textureSize} />)}
       {arena.bouncePads?.map((pad) => <BouncePad key={pad.id} pad={pad} />)}
       {map === "Pyramid" && <PyramidDetails />}
       {map === "Practice Range" && <PracticeDetails />}

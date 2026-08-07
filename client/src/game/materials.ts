@@ -4,7 +4,6 @@ import { fbm, ridged, worley } from "./procgen";
 
 export type SurfaceType = "concrete" | "plaster" | "metal" | "wood" | "dirt" | "sand" | "grass" | "stone" | "tile" | "glass";
 
-const TEXTURE_SIZE = 256;
 const TILE_METRES = 2;
 const textureSets = new Map<string, TextureSet>();
 const materialCache = new Map<string, THREE.MeshStandardMaterial>();
@@ -39,8 +38,8 @@ const smoothstep = (lo: number, hi: number, value: number) => {
   return t * t * (3 - 2 * t);
 };
 
-function dataTexture(data: Uint8Array, colorSpace: THREE.ColorSpace) {
-  const texture = new THREE.DataTexture(data, TEXTURE_SIZE, TEXTURE_SIZE, THREE.RGBAFormat, THREE.UnsignedByteType);
+function dataTexture(data: Uint8Array, colorSpace: THREE.ColorSpace, textureSize: number) {
+  const texture = new THREE.DataTexture(data, textureSize, textureSize, THREE.RGBAFormat, THREE.UnsignedByteType);
   texture.colorSpace = colorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   texture.generateMipmaps = true;
@@ -51,10 +50,10 @@ function dataTexture(data: Uint8Array, colorSpace: THREE.ColorSpace) {
   return texture;
 }
 
-function bakeSurface(surface: SurfaceType): TextureSet {
+function bakeSurface(surface: SurfaceType, textureSize: number): TextureSet {
   const started = performance.now();
   const recipe = RECIPES[surface];
-  const pixels = TEXTURE_SIZE * TEXTURE_SIZE;
+  const pixels = textureSize * textureSize;
   const height = new Float32Array(pixels);
   const rough = new Float32Array(pixels);
   const albedo = new Uint8Array(pixels * 4);
@@ -63,11 +62,11 @@ function bakeSurface(surface: SurfaceType): TextureSet {
   const ao = new Uint8Array(pixels * 4);
   const period = 8;
 
-  for (let y = 0; y < TEXTURE_SIZE; y += 1) {
-    for (let x = 0; x < TEXTURE_SIZE; x += 1) {
-      const i = y * TEXTURE_SIZE + x;
-      const u = x / TEXTURE_SIZE * period;
-      const v = y / TEXTURE_SIZE * period;
+  for (let y = 0; y < textureSize; y += 1) {
+    for (let x = 0; x < textureSize; x += 1) {
+      const i = y * textureSize + x;
+      const u = x / textureSize * period;
+      const v = y / textureSize * period;
       const broad = fbm(u, v, period, recipe.seed, 2);
       const fine = fbm(u * 2, v * 2, period * 2, recipe.seed + 17, 1);
       let h = 0.28 + broad * 0.46 + fine * 0.26;
@@ -105,11 +104,11 @@ function bakeSurface(surface: SurfaceType): TextureSet {
     }
   }
 
-  const texel = 1 / TEXTURE_SIZE;
+  const texel = 1 / textureSize;
   const strength = recipe.relief / TILE_METRES;
-  const sample = (x: number, y: number) => height[((y + TEXTURE_SIZE) % TEXTURE_SIZE) * TEXTURE_SIZE + ((x + TEXTURE_SIZE) % TEXTURE_SIZE)];
-  for (let y = 0; y < TEXTURE_SIZE; y += 1) {
-    for (let x = 0; x < TEXTURE_SIZE; x += 1) {
+  const sample = (x: number, y: number) => height[((y + textureSize) % textureSize) * textureSize + ((x + textureSize) % textureSize)];
+  for (let y = 0; y < textureSize; y += 1) {
+    for (let x = 0; x < textureSize; x += 1) {
       const tl = sample(x - 1, y + 1), t = sample(x, y + 1), tr = sample(x + 1, y + 1);
       const l = sample(x - 1, y), r = sample(x + 1, y);
       const bl = sample(x - 1, y - 1), b = sample(x, y - 1), br = sample(x + 1, y - 1);
@@ -118,7 +117,7 @@ function bakeSurface(surface: SurfaceType): TextureSet {
       let nx = -dx * strength, ny = -dy * strength, nz = 1;
       const invLength = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
       nx *= invLength; ny *= invLength; nz *= invLength;
-      const p = (y * TEXTURE_SIZE + x) * 4;
+      const p = (y * textureSize + x) * 4;
       normals[p] = Math.round((nx * 0.5 + 0.5) * 255);
       normals[p + 1] = Math.round((ny * 0.5 + 0.5) * 255);
       normals[p + 2] = Math.round((nz * 0.5 + 0.5) * 255);
@@ -127,28 +126,29 @@ function bakeSurface(surface: SurfaceType): TextureSet {
   }
   totalBakeMs += performance.now() - started;
   return {
-    albedo: dataTexture(albedo, THREE.SRGBColorSpace),
-    normal: dataTexture(normals, THREE.NoColorSpace),
-    roughness: dataTexture(roughness, THREE.NoColorSpace),
-    ao: dataTexture(ao, THREE.NoColorSpace)
+    albedo: dataTexture(albedo, THREE.SRGBColorSpace, textureSize),
+    normal: dataTexture(normals, THREE.NoColorSpace, textureSize),
+    roughness: dataTexture(roughness, THREE.NoColorSpace, textureSize),
+    ao: dataTexture(ao, THREE.NoColorSpace, textureSize)
   };
 }
 
-function texturesFor(surface: SurfaceType) {
+function texturesFor(surface: SurfaceType, textureSize: number) {
   const family = TEXTURE_FAMILY[surface];
-  let textures = textureSets.get(family);
+  const key = `${family}:${textureSize}`;
+  let textures = textureSets.get(key);
   if (!textures) {
-    textures = bakeSurface(family);
-    textureSets.set(family, textures);
+    textures = bakeSurface(family, textureSize);
+    textureSets.set(key, textures);
   }
   return textures;
 }
 
-export function getSurfaceMaterial(surface: SurfaceType, color: string, polygonOffset = false) {
-  const key = `${surface}:${color.toLowerCase()}:${polygonOffset}`;
+export function getSurfaceMaterial(surface: SurfaceType, color: string, polygonOffset = false, textureSize = 256) {
+  const key = `${surface}:${color.toLowerCase()}:${polygonOffset}:${textureSize}`;
   let material = materialCache.get(key);
   if (material) return material;
-  const maps = texturesFor(surface);
+  const maps = texturesFor(surface, textureSize);
   const recipe = RECIPES[surface];
   material = new THREE.MeshStandardMaterial({
     color: new THREE.Color(color), map: maps.albedo, normalMap: maps.normal,
@@ -203,4 +203,8 @@ export function floorSurface(map: MapName): SurfaceType {
   return "concrete";
 }
 
-export const materialBakeStats = () => ({ milliseconds: totalBakeMs, surfaces: textureSets.size, resolution: TEXTURE_SIZE });
+export const materialBakeStats = () => ({
+  milliseconds: totalBakeMs,
+  surfaces: textureSets.size,
+  resolutions: [...new Set([...textureSets.keys()].map((key) => Number(key.split(":")[1])))]
+});

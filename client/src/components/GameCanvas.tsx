@@ -1,12 +1,13 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Html, Line, Sky, Stars } from "@react-three/drei";
+import { Environment, Html, Line, Sky } from "@react-three/drei";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { ARENAS, LADDER_CLIMB_SPEED, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type Vec3 } from "@veck/shared";
+import { ARENAS, LADDER_CLIMB_SPEED, MAPS, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
 import { beep } from "../game/audio";
 import { ArenaMap } from "./Maps";
+import { materialBakeStats } from "../game/materials";
 import { Avatar } from "./Avatar";
 import { WeaponModel } from "./WeaponModels";
 import type { PlayerSnapshot, WeaponId } from "@veck/shared";
@@ -28,22 +29,25 @@ export function GameCanvas() {
   const fx = useGame((s) => s.fx);
   const scoped = useGame((s) => s.scoped);
   const graphicsQuality = useGame((s) => s.graphicsQuality);
-  const map = snapshot?.game.map ?? "Pyramid";
+  const requestedVisualMap = new URLSearchParams(window.location.search).get("visualMap");
+  const visualMap = MAPS.includes(requestedVisualMap as MapName) ? requestedVisualMap as MapName : undefined;
+  const map = visualMap ?? snapshot?.game.map ?? "Pyramid";
   return (
     <Canvas
       shadows
-      dpr={graphicsQuality === "low" ? 1 : [1, 1.5]}
-      gl={{ toneMapping: THREE.AgXToneMapping, toneMappingExposure: 1.05, antialias: true, powerPreference: "high-performance" }}
+      dpr={graphicsQuality === "low" ? 1 : graphicsQuality === "medium" ? [1, 1.25] : [1, 1.5]}
+      gl={{ toneMapping: THREE.NoToneMapping, antialias: true, powerPreference: "high-performance" }}
       camera={{ fov: 74, position: [0, 2, 8] }}
     >
       <fog attach="fog" args={["#b7e5ff", scoped ? 110 : 36, scoped ? 260 : 104]} />
-      <hemisphereLight color="#8fb6ff" groundColor="#36302a" intensity={0.3} />
+      <ambientLight intensity={0.5} />
+      <hemisphereLight color="#bfe8ff" groundColor="#8f7d62" intensity={0.45} />
       <directionalLight
         color="#ffe8c4"
         position={SUN_POSITION}
         intensity={3.2}
         castShadow
-        shadow-mapSize={graphicsQuality === "low" ? [1024, 1024] : [2048, 2048]}
+        shadow-mapSize={graphicsQuality === "low" ? [1024, 1024] : graphicsQuality === "medium" ? [1536, 1536] : [2048, 2048]}
         shadow-camera-left={-42}
         shadow-camera-right={42}
         shadow-camera-top={42}
@@ -56,7 +60,6 @@ export function GameCanvas() {
       <Environment frames={1} resolution={256} background>
         <Sky sunPosition={SUN_POSITION} turbidity={4.2} rayleigh={0.65} mieCoefficient={0.004} />
       </Environment>
-      <Stars radius={120} depth={40} count={1000} factor={1.4} fade speed={0.2} />
       <Suspense fallback={null}>
         <ArenaMap map={map} />
         {snapshot?.players.map((p) => <Avatar key={p.id} player={p} mine={p.id === playerId} />)}
@@ -66,10 +69,37 @@ export function GameCanvas() {
         {fx.map((f) => <ShotFx key={f.id} fx={f} />)}
         <ExplosionFxWarmup />
         <RendererEvents />
-        <PlayerController />
+        {visualMap ? <VisualProbe map={map} /> : <PlayerController />}
       </Suspense>
     </Canvas>
   );
+}
+
+function VisualProbe({ map }: { map: MapName }) {
+  const { camera, scene } = useThree();
+  useEffect(() => {
+    const positions: Partial<Record<MapName, [number, number, number]>> = {
+      Subway: [0, 13, 32],
+      "Bank Heist": [0, 18, 42]
+    };
+    camera.position.set(...(positions[map] ?? [0, 12, 32]));
+    camera.lookAt(0, map === "Subway" ? 5 : 2, 0);
+    camera.updateMatrixWorld();
+    const timer = window.setTimeout(() => {
+      const arena = scene.getObjectByName("arena-map");
+      let meshes = 0;
+      let texturedMaterials = 0;
+      arena?.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        meshes += 1;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        texturedMaterials += materials.filter((material) => material instanceof THREE.MeshStandardMaterial && material.map).length;
+      });
+      (window as typeof window & { __VECK_VISUAL__?: unknown }).__VECK_VISUAL__ = { map, meshes, texturedMaterials, bake: materialBakeStats() };
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [camera, map, scene]);
+  return null;
 }
 
 function PlayerController() {

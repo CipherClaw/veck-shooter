@@ -10,6 +10,7 @@ const weaponIds = Object.keys(WEAPONS) as WeaponId[];
 
 export default function App() {
   const gameId = useGame((s) => s.gameId);
+  if (new URLSearchParams(window.location.search).has("visualMap")) return <main className="visual-capture"><GameCanvas /></main>;
   return gameId ? <Match /> : <Lobby />;
 }
 
