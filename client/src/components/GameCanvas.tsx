@@ -52,7 +52,7 @@ export function GameCanvas() {
         shadow-camera-right={42}
         shadow-camera-top={42}
         shadow-camera-bottom={-42}
-        shadow-normalBias={0.02}
+        shadow-normalBias={0.035}
         shadow-bias={-0.00015}
       />
       <directionalLight color="#9ec4ff" position={[-34, 20, -28]} intensity={0.38} />

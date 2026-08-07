@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ARENAS, bouncePadAt, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
+import { ARENAS, MAPS, PLAYER_RADIUS, bouncePadAt, resolvePlayerPosition, type ArenaCollider, type MapName, type Vec3 } from "@veck/shared";
 
 const dt = 1 / 60;
 const RISE_GRAVITY = 19;
@@ -136,7 +136,72 @@ function simulateBlueprintBounceWithAuthoritativeSnapshots() {
   return { bounceTriggers, hardSnaps, maxY };
 }
 
+function colliderSolidAt(arena: (typeof ARENAS)[MapName], point: Vec3) {
+  return arena.colliders.find((collider) => {
+    if (collider.ladder) return false;
+    const top = collider.center.y + collider.size.y / 2 + 1.2;
+    const bottom = collider.center.y - collider.size.y / 2;
+    return Math.abs(point.x - collider.center.x) < collider.size.x / 2 + PLAYER_RADIUS
+      && Math.abs(point.z - collider.center.z) < collider.size.z / 2 + PLAYER_RADIUS
+      && point.y > bottom + 0.05 && point.y < top - 0.05;
+  });
+}
+
+function insideCollider(collider: ArenaCollider, point: Vec3) {
+  const top = collider.center.y + collider.size.y / 2 + 1.2;
+  const bottom = collider.center.y - collider.size.y / 2;
+  return Math.abs(point.x - collider.center.x) < collider.size.x / 2 + PLAYER_RADIUS - 0.05
+    && Math.abs(point.z - collider.center.z) < collider.size.z / 2 + PLAYER_RADIUS - 0.05
+    && point.y > bottom + 0.05 && point.y < top - 0.05;
+}
+
 describe("high platform falling", () => {
+  it("keeps blocking gravity-pressed movement into a Bank Heist wall end cap", () => {
+    const collider = ARENAS["Bank Heist"].colliders.find((candidate) => candidate.id === "bank-ground-ring-north-west-1");
+    expect(collider).toBeDefined();
+    if (!collider) throw new Error("missing Bank Heist north-west wall");
+
+    const paddedBoundary = collider.center.x - collider.size.x / 2 - PLAYER_RADIUS;
+    let position = { x: -38.72, y: 1.2, z: collider.center.z };
+    for (let tick = 0; tick < 30; tick += 1) {
+      position = resolvePlayerPosition("Bank Heist", { x: position.x + 0.22, y: position.y - 0.06, z: position.z }, position);
+      expect(position.x).toBeLessThanOrEqual(paddedBoundary + 1e-9);
+    }
+  });
+
+  it("blocks gravity-pressed movement into every unsteppable ground-level collider", () => {
+    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+    let checkedApproaches = 0;
+
+    for (const map of MAPS) {
+      const arena = ARENAS[map];
+      const bounds = arena.playBounds ?? arena.bounds - PLAYER_RADIUS;
+      for (const collider of arena.colliders) {
+        const top = collider.center.y + collider.size.y / 2 + 1.2;
+        const bottom = collider.center.y - collider.size.y / 2;
+        if (collider.ladder || collider.climbable || bottom > 1.2 || top <= 1.2 + 0.95) continue;
+
+        for (const [dx, dz] of directions) {
+          const faceDistance = dx === 0 ? collider.size.z / 2 + PLAYER_RADIUS : collider.size.x / 2 + PLAYER_RADIUS;
+          let position = {
+            x: collider.center.x - dx * (faceDistance + 1.6),
+            y: 1.2,
+            z: collider.center.z - dz * (faceDistance + 1.6)
+          };
+          if (Math.abs(position.x) > bounds || Math.abs(position.z) > bounds || colliderSolidAt(arena, position)) continue;
+          checkedApproaches += 1;
+
+          for (let tick = 0; tick < 25; tick += 1) {
+            position = resolvePlayerPosition(map, { x: position.x + dx * 0.22, y: position.y - 0.06, z: position.z + dz * 0.22 }, position);
+            expect(insideCollider(collider, position), `${map}/${collider.id} direction ${dx},${dz} tick ${tick}`).toBe(false);
+          }
+        }
+      }
+    }
+
+    expect(checkedApproaches).toBeGreaterThan(0);
+  });
+
   it("blocks a descending mid-jump player entering a real Bank Heist wall", () => {
     const previous = { x: 0, y: 2.4, z: -20.8 };
     const resolved = resolvePlayerPosition("Bank Heist", { x: 0, y: 2.1, z: -21.2 }, previous);

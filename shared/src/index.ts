@@ -1082,7 +1082,9 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
       ground = Math.max(ground, top);
       continue;
     }
-    const wasEmbedded = intersectsXZ(last, collider) && last.y >= bottom && last.y <= top + PLAYER_HEIGHT;
+    const wasEmbedded = Math.abs(last.x - collider.center.x) < collider.size.x / 2
+      && Math.abs(last.z - collider.center.z) < collider.size.z / 2
+      && last.y >= bottom && last.y <= top + PLAYER_HEIGHT;
     if (descending && !canSnapToSupport(descending, last.y, top) && wasEmbedded) continue;
     if (resolved.y < bottom || resolved.y > top + PLAYER_HEIGHT) continue;
     const halfX = collider.size.x / 2 + PLAYER_RADIUS;

@@ -364,7 +364,7 @@ function BankFloorGrout({ colliders }: { colliders: ArenaCollider[] }) {
 function BankSurfaceGrout({ collider }: { collider: ArenaCollider }) {
   const spacing = 2;
   const lineWidth = 0.035;
-  const topY = collider.center.y + collider.size.y / 2 + 0.018;
+  const topY = collider.center.y + collider.size.y / 2 + 0.03;
   const minX = collider.center.x - collider.size.x / 2;
   const maxX = collider.center.x + collider.size.x / 2;
   const minZ = collider.center.z - collider.size.z / 2;
@@ -376,13 +376,13 @@ function BankSurfaceGrout({ collider }: { collider: ArenaCollider }) {
       {xLines.map((x) => (
         <mesh key={`x-${x}`} position={[x, topY, collider.center.z]} receiveShadow>
           <boxGeometry args={[lineWidth, 0.012, collider.size.z]} />
-          <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} />
+          <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
         </mesh>
       ))}
       {zLines.map((z) => (
         <mesh key={`z-${z}`} position={[collider.center.x, topY, z]} receiveShadow>
           <boxGeometry args={[collider.size.x, 0.012, lineWidth]} />
-          <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} />
+          <meshStandardMaterial color="#b8b3aa" roughness={0.84} metalness={0.01} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
         </mesh>
       ))}
     </group>
