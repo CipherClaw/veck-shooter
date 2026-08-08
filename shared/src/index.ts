@@ -75,6 +75,10 @@ export const GUN_GAME_KILL_TARGET = 25;
 export const MAX_PLAYERS = 8;
 export const PLAYER_RADIUS = 0.65;
 export const PLAYER_HEIGHT = 2.2;
+export const FALL_GRAVITY = 32;
+export const MAX_CLIENT_TIMESTEP = 0.05;
+// Covers the largest one-frame gravity dip produced by the client's clamped timestep.
+export const MAX_GROUNDED_SETTLE_DIP = FALL_GRAVITY * MAX_CLIENT_TIMESTEP ** 2;
 export const GRENADE_RADIUS = 0.2;
 export const LADDER_CLIMB_SPEED = 4.2;
 export const BOUNCE_PAD_LAUNCH_SPEED = 17;
@@ -1088,7 +1092,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     z: clamp(next.z, -bounds, bounds)
   };
   const lastGround = supportY(arena, last);
-  const settlingOnSupport = descending && last.y <= lastGround + 0.05 && last.y - next.y <= 0.05;
+  const settlingOnSupport = descending && last.y <= lastGround + 0.05 && last.y - next.y <= MAX_GROUNDED_SETTLE_DIP + Number.EPSILON;
   const falling = descending && !settlingOnSupport;
   let ground = supportY(arena, resolved, lastGround, falling ? last.y : undefined);
   if (canSnapToSupport(falling, last.y, ground) && (!falling || ground - resolved.y <= 0.8)) resolved.y = Math.max(resolved.y, ground);

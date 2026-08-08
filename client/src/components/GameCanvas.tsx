@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Html, Line, Sky } from "@react-three/drei";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { ARENAS, LADDER_CLIMB_SPEED, MAPS, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
+import { ARENAS, FALL_GRAVITY, LADDER_CLIMB_SPEED, MAPS, MAX_CLIENT_TIMESTEP, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
 import { beep } from "../game/audio";
@@ -17,7 +17,6 @@ const SPRINT_DRAIN_PER_SECOND = 0.34;
 const SPRINT_RECHARGE_PER_SECOND = 0.24;
 const SPRINT_MIN_CHARGE_TO_START = 0.18;
 const RISE_GRAVITY = 19;
-const FALL_GRAVITY = 32;
 const EXPLOSION_FX_MS = 650;
 const EXPLOSION_FX_START_SCALE = 1.2;
 const EXPLOSION_FX_PEAK_SCALE = 7.5;
@@ -300,7 +299,7 @@ function PlayerController() {
       firing.current = false;
       setSpraying(false);
     }
-    const step = Math.min(dt, 0.05);
+    const step = Math.min(dt, MAX_CLIENT_TIMESTEP);
     const perspective = camera as THREE.PerspectiveCamera;
     perspective.fov = THREE.MathUtils.damp(perspective.fov, scoped ? 16 : 74, scoped ? 10 : 8, step);
     perspective.updateProjectionMatrix();

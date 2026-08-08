@@ -1,25 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { ARENAS, MAPS, PLAYER_RADIUS, bouncePadAt, resolvePlayerPosition, type ArenaCollider, type MapName, type Vec3 } from "@veck/shared";
+import { ARENAS, FALL_GRAVITY, MAPS, MAX_CLIENT_TIMESTEP, MAX_GROUNDED_SETTLE_DIP, PLAYER_RADIUS, bouncePadAt, resolvePlayerPosition, type ArenaCollider, type MapName, type Vec3 } from "@veck/shared";
 
 const dt = 1 / 60;
 const RISE_GRAVITY = 19;
-const FALL_GRAVITY = 32;
 
 function clientPhysicsFrame(
   map: MapName,
   position: Vec3,
   previous: Vec3,
   verticalVelocity: number,
-  horizontalVelocity: Pick<Vec3, "x" | "z">
+  horizontalVelocity: Pick<Vec3, "x" | "z">,
+  step = dt
 ) {
   const arena = ARENAS[map];
   const ceiling = arena.ceiling ?? 12;
   const gravity = verticalVelocity > 0 ? RISE_GRAVITY : FALL_GRAVITY;
-  const nextVerticalVelocity = verticalVelocity - gravity * dt;
+  const nextVerticalVelocity = verticalVelocity - gravity * step;
   const raw = {
-    x: position.x + horizontalVelocity.x * dt,
-    y: Math.max(1.2, Math.min(ceiling, position.y + nextVerticalVelocity * dt)),
-    z: position.z + horizontalVelocity.z * dt
+    x: position.x + horizontalVelocity.x * step,
+    y: Math.max(1.2, Math.min(ceiling, position.y + nextVerticalVelocity * step)),
+    z: position.z + horizontalVelocity.z * step
   };
   const resolved = resolvePlayerPosition(map, raw, previous);
   const grounded = resolved.y > raw.y || resolved.y <= 1.21;
@@ -70,14 +70,15 @@ function simulateClientLaunch(map: MapName, start: Vec3, verticalVelocity: numbe
   throw new Error(`launch did not settle from y=${start.y}`);
 }
 
-function simulateClientWalk(map: MapName, start: Vec3, horizontalVelocity: Pick<Vec3, "x" | "z">, frames: number) {
+function simulateClientWalk(map: MapName, start: Vec3, horizontalVelocity: Pick<Vec3, "x" | "z">, seconds: number, fps: number) {
+  const step = Math.min(1 / fps, MAX_CLIENT_TIMESTEP);
   let position = { ...start };
   let velocity = 0;
   let maxY = start.y;
 
-  for (let frame = 0; frame < frames; frame += 1) {
+  for (let frame = 0; frame < Math.ceil(seconds / step); frame += 1) {
     const previous = { ...position };
-    const next = clientPhysicsFrame(map, position, previous, velocity, horizontalVelocity);
+    const next = clientPhysicsFrame(map, position, previous, velocity, horizontalVelocity, step);
     position = next.resolved;
     velocity = next.verticalVelocity;
     maxY = Math.max(maxY, position.y);
@@ -172,21 +173,43 @@ function insideCollider(collider: ArenaCollider, point: Vec3) {
 }
 
 describe("high platform falling", () => {
-  for (const x of [-16.5, 16.5]) {
-    for (const zSign of [-1, 1]) {
-      it(`walks up the ${x < 0 ? "west" : "east"} ${zSign < 0 ? "south" : "north"} Subway stairs under gravity`, () => {
-        const walk = simulateClientWalk("Subway", { x, y: 2.5, z: zSign * 20 }, { x: 0, z: zSign * 15 }, 120);
+  for (const fps of [144, 60, 30, 24, 20]) {
+    for (const x of [-16.5, 16.5]) {
+      for (const zSign of [-1, 1]) {
+        it(`walks up the ${x < 0 ? "west" : "east"} ${zSign < 0 ? "south" : "north"} Subway stairs at ${fps} fps`, () => {
+          const walk = simulateClientWalk("Subway", { x, y: 2.5, z: zSign * 20 }, { x: 0, z: zSign * 15 }, 2, fps);
 
-        expect(walk.maxY).toBeCloseTo(8.2);
-        expect(walk.position.y).toBeCloseTo(8.2);
-      });
+          expect(walk.maxY).toBeCloseTo(8.2);
+          expect(walk.position.y).toBeCloseTo(8.2);
+        });
+      }
     }
   }
 
-  it("walks up the Pyramid tiers under gravity without jumping", () => {
-    const walk = simulateClientWalk("Pyramid", { x: 0, y: 1.2, z: 44 }, { x: 0, z: -15 }, 200);
+  for (const fps of [60, 20]) {
+    it(`walks up the Forest hill under gravity at ${fps} fps`, () => {
+      const walk = simulateClientWalk("Forest", { x: 0, y: 1.2, z: 14 }, { x: 0, z: -15 }, 3, fps);
+
+      expect(walk.maxY).toBeCloseTo(4.1);
+    });
+  }
+
+  it("walks up the Pyramid tiers under gravity without jumping at 20 fps", () => {
+    const walk = simulateClientWalk("Pyramid", { x: 0, y: 1.2, z: 44 }, { x: 0, z: -15 }, 10 / 3, 20);
 
     expect(walk.maxY).toBeGreaterThanOrEqual(10.9);
+  });
+
+  it("recognizes repeated 20 fps gravity dips as settling on flat support", () => {
+    let position = { x: 16.5, y: 2.5, z: 20 };
+    for (let frame = 0; frame < 20; frame += 1) {
+      const previous = { ...position };
+      const next = clientPhysicsFrame("Subway", position, previous, 0, { x: 0, z: 0 }, MAX_CLIENT_TIMESTEP);
+      expect(previous.y - next.raw.y).toBeCloseTo(MAX_GROUNDED_SETTLE_DIP);
+      expect(next.resolved.y).toBe(2.5);
+      expect(next.grounded).toBe(true);
+      position = next.resolved;
+    }
   });
 
   it("does not snap a player falling from above onto a Blueprint perimeter wall", () => {
@@ -195,6 +218,14 @@ describe("high platform falling", () => {
 
     expect(resolved.y).toBe(9);
     expect(resolved.y).toBeGreaterThan(8.38);
+  });
+
+  it("does not snap a player falling past a Blueprint perimeter wall at 20 fps", () => {
+    const previous = { x: 56, y: 11, z: 48 };
+    const frame = clientPhysicsFrame("Blueprint", { x: 56, y: 9, z: 48 }, previous, -40, { x: 0, z: 0 }, MAX_CLIENT_TIMESTEP);
+
+    expect(frame.resolved.y).toBe(frame.raw.y);
+    expect(frame.grounded).toBe(false);
   });
 
   it("keeps blocking gravity-pressed movement into a Bank Heist wall end cap", () => {
