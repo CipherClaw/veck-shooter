@@ -69,6 +69,25 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
   fist: { id: "fist", name: "Fist", ammo: 0, reloadMs: 0, fireMs: 380, damage: 30, range: 3, spread: 0, pellets: 1 }
 };
 
+export function weaponAmmoCost(weapon: WeaponId) {
+  return weapon === "watergun" ? 2 : weapon === "fist" ? 0 : 1;
+}
+
+export function canLocalFire(player: PlayerSnapshot | undefined, weapon: WeaponId, optimisticAmmo: Record<WeaponId, number>, now = Date.now()) {
+  if (!player?.alive) return false;
+  const reloading = player.reloadingWeapon === weapon && player.reloadingUntil && now < player.reloadingUntil;
+  if (reloading) return false;
+  return Math.min(player.ammo[weapon] ?? 0, optimisticAmmo[weapon] ?? 0) >= weaponAmmoCost(weapon);
+}
+
+export function spendLocalAmmo(ammo: Record<WeaponId, number>, weapon: WeaponId) {
+  const cost = weaponAmmoCost(weapon);
+  const before = ammo[weapon] ?? 0;
+  if (before < cost) return false;
+  ammo[weapon] = before - cost;
+  return true;
+}
+
 export const MAPS: MapName[] = ["Pyramid", "Practice Range", "Forest", "Subway", "Blueprint", "Bank Heist"];
 export const DURATIONS = [3, 5, 10, 15] as const;
 export const GUN_GAME_KILL_TARGET = 25;

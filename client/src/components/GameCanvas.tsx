@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Html, Line, Sky } from "@react-three/drei";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { ARENAS, FALL_GRAVITY, LADDER_CLIMB_SPEED, MAPS, MAX_CLIENT_TIMESTEP, WEAPONS, bouncePadAt, ladderAt, resolvePlayerPosition, type MapName, type Vec3 } from "@veck/shared";
+import { ARENAS, FALL_GRAVITY, LADDER_CLIMB_SPEED, MAPS, MAX_CLIENT_TIMESTEP, WEAPONS, bouncePadAt, canLocalFire, ladderAt, resolvePlayerPosition, spendLocalAmmo, type MapName, type Vec3 } from "@veck/shared";
 import { useGame } from "../state/store";
 import { socket } from "../game/socket";
 import { beep } from "../game/audio";
@@ -218,7 +218,8 @@ function PlayerController() {
       if (now - lastLocalFire.current[weapon] < WEAPONS[weapon].fireMs) return;
       lastLocalFire.current[weapon] = now;
       firing.current = false;
-      if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep(weapon, muted);
+      if (!spendLocalAmmo(optimisticAmmo.current, weapon)) return;
+      beep(weapon, muted);
       recoil.current = Math.min(1, recoil.current + 0.85);
       hitPracticeTargetAtCrosshair();
       shoot(camera, weapon, ++shotSeq.current);
@@ -376,7 +377,12 @@ function PlayerController() {
         setSpraying(false);
       } else if (performance.now() - lastLocalFire.current.watergun >= WEAPONS.watergun.fireMs) {
         lastLocalFire.current.watergun = performance.now();
-        if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep(weapon, muted);
+        if (!spendLocalAmmo(optimisticAmmo.current, weapon)) {
+          firing.current = false;
+          setSpraying(false);
+          return;
+        }
+        beep(weapon, muted);
         setSpraying(true);
         recoil.current = Math.min(0.65, recoil.current + 0.14);
         hitPracticeTargetAtCrosshair();
@@ -544,24 +550,6 @@ function isDescendantOf(object: THREE.Object3D, ancestor: THREE.Object3D) {
     current = current.parent;
   }
   return false;
-}
-
-function weaponAmmoCost(weapon: WeaponId) {
-  return weapon === "watergun" ? 2 : weapon === "fist" ? 0 : 1;
-}
-
-function canLocalFire(player: PlayerSnapshot | undefined, weapon: WeaponId, optimisticAmmo: Record<WeaponId, number>) {
-  if (!player?.alive) return false;
-  const reloading = player.reloadingWeapon === weapon && player.reloadingUntil && Date.now() < player.reloadingUntil;
-  if (reloading) return false;
-  return Math.min(player.ammo[weapon] ?? 0, optimisticAmmo[weapon] ?? 0) >= weaponAmmoCost(weapon);
-}
-
-function spendLocalAmmo(ammo: Record<WeaponId, number>, weapon: WeaponId) {
-  const cost = weaponAmmoCost(weapon);
-  const before = ammo[weapon] ?? 0;
-  ammo[weapon] = Math.max(0, before - cost);
-  return before >= cost && ammo[weapon] < cost;
 }
 
 function ShotFx({ fx }: { fx: { from: Vec3; to: Vec3; weapon: string; explosion?: Vec3 } }) {
