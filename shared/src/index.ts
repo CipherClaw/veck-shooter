@@ -261,7 +261,7 @@ function practiceCornerTower(sx: -1 | 1, sz: -1 | 1): ArenaCollider[] {
   const z = sz * 50;
   const roofSize = 15;
   const pillarOffset = roofSize / 2 - 1.1;
-  const pillarHeight = practiceTowerStandY - 1.2;
+  const pillarHeight = practiceTowerStandY - 1.2 - practiceDeckHeight;
   const ladderX = x - sx * (roofSize / 2 + 1.0);
   const ladderZ = z;
 
@@ -291,10 +291,10 @@ function practiceHouseColliders(): ArenaCollider[] {
     practiceBlock("practice-house-north-wall-east", 8.2, -15, 13.6, 1.6, wallHeight, practiceWallColor),
     practiceBlock("practice-house-south-wall-west", -8.2, 15, 13.6, 1.6, wallHeight, "#f1f5f9"),
     practiceBlock("practice-house-south-wall-east", 8.2, 15, 13.6, 1.6, wallHeight, "#f1f5f9"),
-    practiceBlock("practice-house-west-wall-north", -15, -8.2, 1.6, 13.6, wallHeight, "#e2e8f0"),
-    practiceBlock("practice-house-west-wall-south", -15, 8.2, 1.6, 13.6, wallHeight, "#e2e8f0"),
-    practiceBlock("practice-house-east-wall-north", 15, -8.2, 1.6, 13.6, wallHeight, "#d6dee7"),
-    practiceBlock("practice-house-east-wall-south", 15, 8.2, 1.6, 13.6, wallHeight, "#d6dee7"),
+    practiceBlock("practice-house-west-wall-north", -15, -8.2, 1.6, 13.6, wallHeight - 0.02, "#e2e8f0"),
+    practiceBlock("practice-house-west-wall-south", -15, 8.2, 1.6, 13.6, wallHeight - 0.02, "#e2e8f0"),
+    practiceBlock("practice-house-east-wall-north", 15, -8.2, 1.6, 13.6, wallHeight - 0.02, "#d6dee7"),
+    practiceBlock("practice-house-east-wall-south", 15, 8.2, 1.6, 13.6, wallHeight - 0.02, "#d6dee7"),
     practiceBlock("practice-house-core-column", 0, 0, 3.2, 3.2, roofBottom, "#cbd5df"),
     practiceBlock("practice-house-entry-left", -5.2, -18.4, 4.4, 4.6, 3.2, "#ffffff", true),
     practiceBlock("practice-house-entry-right", 5.2, -18.4, 4.4, 4.6, 3.2, "#ffffff", true)
@@ -305,8 +305,8 @@ const practiceColliders: ArenaCollider[] = [
   ...[
     [0, -62, 124, 4.2, 1.8, "practice-perimeter-north"],
     [0, 62, 124, 4.2, 1.8, "practice-perimeter-south"],
-    [-62, 0, 1.8, 4.2, 124, "practice-perimeter-west"],
-    [62, 0, 1.8, 4.2, 124, "practice-perimeter-east"]
+    [-62, 0, 1.8, 4.18, 124, "practice-perimeter-west"],
+    [62, 0, 1.8, 4.18, 124, "practice-perimeter-east"]
   ].map(([x, z, sx, sy, sz, id]) => ({
     id: id as string,
     center: { x: x as number, y: (sy as number) / 2, z: z as number },
@@ -321,10 +321,10 @@ const practiceColliders: ArenaCollider[] = [
   practiceDeck("practice-overlook-west", -31, 0, 11, 30, 8, "#ffffff"),
   practiceDeck("practice-overlook-east", 31, 0, 11, 30, 8, "#f8fafc"),
   practiceDeck("practice-right-platform", 28, -23, 18, 12, 6.55, "#f1f5f9"),
-  practiceBlock("practice-overlook-west-support-a", -31, -12, 2.4, 2.4, 6.8, "#9aa5af"),
-  practiceBlock("practice-overlook-west-support-b", -31, 12, 2.4, 2.4, 6.8, "#9aa5af"),
-  practiceBlock("practice-overlook-east-support-a", 31, -12, 2.4, 2.4, 6.8, "#8f9aa5"),
-  practiceBlock("practice-overlook-east-support-b", 31, 12, 2.4, 2.4, 6.8, "#8f9aa5"),
+  practiceBlock("practice-overlook-west-support-a", -31, -12, 2.4, 2.4, 6.8 - practiceDeckHeight, "#9aa5af"),
+  practiceBlock("practice-overlook-west-support-b", -31, 12, 2.4, 2.4, 6.8 - practiceDeckHeight, "#9aa5af"),
+  practiceBlock("practice-overlook-east-support-a", 31, -12, 2.4, 2.4, 6.8 - practiceDeckHeight, "#8f9aa5"),
+  practiceBlock("practice-overlook-east-support-b", 31, 12, 2.4, 2.4, 6.8 - practiceDeckHeight, "#8f9aa5"),
   practiceLadder("practice-ladder-legacy-southeast", 50, 42.15, 1.2, 12, { x: 0, z: -1 }),
   ...[
     [-43, -8, 5, 2.2, 12],
@@ -446,7 +446,7 @@ function subwayCornerSidewalk(sx: -1 | 1, sz: -1 | 1): ArenaCollider[] {
     surface("subway-sidewalk-mid-outside", 41.2, 56.5, 32, 36),
     surface("subway-sidewalk-outer", 24.5, 56.5, 36, 56.5),
     surface("subway-curb-x", 24.5, 25.15, 24.5, 56.5, subwayCurbTop, subwayCurbColor),
-    surface("subway-curb-z", 24.5, 56.5, 24.5, 25.15, subwayCurbTop, subwayCurbColor)
+    surface("subway-curb-z", 24.5, 56.5, 24.5, 25.15, subwayCurbTop - 0.02, subwayCurbColor)
   ];
 }
 
@@ -547,8 +547,8 @@ function subwayEntranceRailings(side: -1 | 1, zSign: -1 | 1): ArenaCollider[] {
     },
     {
       id: `subway-railing-${sideName}-${endName}-back`,
-      center: world(0, -0.8),
-      size: { x: 9.45, y: 1.2, z: 0.45 },
+      center: { ...world(0, -0.8), y: 7.59 },
+      size: { x: 9.45, y: 1.18, z: 0.45 },
       color: "#14532d"
     }
   ];
@@ -581,8 +581,8 @@ const subwayColliders: ArenaCollider[] = [
   ...subwayEntranceSidewalk(-1),
   { id: "subway-wall-west", center: { x: -57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
   { id: "subway-wall-east", center: { x: 57.5, y: 3.0, z: 0 }, size: { x: 1.8, y: 6.0, z: 116 }, color: "#5a5f63" },
-  { id: "subway-wall-north", center: { x: 0, y: 3.0, z: 57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
-  { id: "subway-wall-south", center: { x: 0, y: 3.0, z: -57.5 }, size: { x: 116, y: 6.0, z: 1.8 }, color: "#5a5f63" },
+  { id: "subway-wall-north", center: { x: 0, y: 2.99, z: 57.5 }, size: { x: 116, y: 5.98, z: 1.8 }, color: "#5a5f63" },
+  { id: "subway-wall-south", center: { x: 0, y: 2.99, z: -57.5 }, size: { x: 116, y: 5.98, z: 1.8 }, color: "#5a5f63" },
   { id: "subway-station-back-west", center: { x: -23.5, y: 2.55, z: 0 }, size: { x: 0.6, y: 2.5, z: 100 }, color: "#5a5f63" },
   { id: "subway-station-back-east", center: { x: 23.5, y: 2.55, z: 0 }, size: { x: 0.6, y: 2.5, z: 100 }, color: "#5a5f63" },
   ...subwayColumnZs.map((z) => ({ id: `subway-column-center-${z}`, center: { x: 0, y: 2.95, z }, size: { x: 1.35, y: 5.9, z: 1.35 }, color: "#14532d" })),
@@ -649,7 +649,7 @@ function blueprintLadder(
 
 function blueprintTower(id: string, x: number, z: number, width: number, depth: number, levels: number[]): ArenaCollider[] {
   const topStand = Math.max(...levels);
-  const wallHeight = topStand - 1.2;
+  const wallHeight = topStand - 1.2 - blueprintDeckHeight;
   const wallY = wallHeight / 2;
   const pillar = 1.4;
   return [
@@ -695,7 +695,7 @@ function blueprintTowerClimb(id: string, cx: number, cz: number, width: number, 
 
       out.push({
         id: `blueprint-ledge-${id}-${i}`,
-        center: { x: ex, y: bottomY - 1.2 - ledgeThick / 2, z: ez },
+        center: { x: ex, y: bottomY - 1.2 - ledgeThick / 2 - 0.02, z: ez },
         size: { x: alongX ? ledgeSpan : ledgeDepth, y: ledgeThick, z: alongX ? ledgeDepth : ledgeSpan },
         color: "#1d4ed8",
         climbable: true
@@ -712,9 +712,9 @@ const blueprintColliders: ArenaCollider[] = [
   ...blueprintTower("northwest", -40, 32, 20, 18, [7, 14, 21, 28]),
   ...blueprintTower("southeast", 42, -34, 18, 18, [7, 14]),
   ...blueprintTower("southwest", -34, -38, 24, 16, [7, 14, 21]),
-  blueprintDeck("blueprint-skybridge-west", -29.5, 11, 7, 38, 14, "#1e3a8a"),
-  blueprintDeck("blueprint-skybridge-east", 6, 3, 31.2, 11.2, 21, "#1e3a8a"),
-  blueprintDeck("blueprint-low-bridge-south", 5.5, -36, 60.2, 5, 7, "#1d4ed8"),
+  blueprintDeck("blueprint-skybridge-west", -29.5, 11, 7, 38, 13.99, "#1e3a8a"),
+  blueprintDeck("blueprint-skybridge-east", 6, 3, 31.2, 11.2, 20.99, "#1e3a8a"),
+  blueprintDeck("blueprint-low-bridge-south", 5.5, -36, 60.2, 5, 6.99, "#1d4ed8"),
   blueprintDeck("blueprint-mid-overlook", 16, -14, 18, 10, 14, "#2563eb"),
   ...blueprintTowerClimb("central", -18, -10, 22, 20, [7, 14, 21, 28]),
   ...blueprintTowerClimb("east", 28, 18, 18, 24, [7, 14, 21]),
@@ -724,8 +724,8 @@ const blueprintColliders: ArenaCollider[] = [
   ...[
     [-56, 0, 1.8, 7.2, 112, "blueprint-wall-west"],
     [56, 0, 1.8, 7.2, 112, "blueprint-wall-east"],
-    [0, -56, 112, 7.2, 1.8, "blueprint-wall-north"],
-    [0, 56, 112, 7.2, 1.8, "blueprint-wall-south"]
+    [0, -56, 112, 7.18, 1.8, "blueprint-wall-north"],
+    [0, 56, 112, 7.18, 1.8, "blueprint-wall-south"]
   ].map(([x, z, sx, sy, sz, id]) => ({
     id: id as string,
     center: { x: x as number, y: (sy as number) / 2, z: z as number },
@@ -939,7 +939,7 @@ const bankFurnitureColliders: ArenaCollider[] = [
   })
 ];
 
-const bankColliders: ArenaCollider[] = [
+const bankColliderParts: ArenaCollider[] = [
   ...bankSurfaceColliders("ground", bankGroundStandY, false),
   ...bankSurfaceColliders("upper", bankMezzanineStandY, true),
   ...bankWallColliders("ground", 0),
@@ -948,6 +948,25 @@ const bankColliders: ArenaCollider[] = [
   ...bankFurnitureColliders,
   ...bankStairColliders
 ];
+
+function lowerColliderTop(collider: ArenaCollider, amount: number): ArenaCollider {
+  return {
+    ...collider,
+    center: { ...collider.center, y: collider.center.y - amount / 2 },
+    size: { ...collider.size, y: collider.size.y - amount }
+  };
+}
+
+const bankColliders = bankColliderParts.map((collider) => {
+  if (/^bank-ground-(?:vault-wall-(?:south|west)|(?:north|south)-door-lintel)$/.test(collider.id)) {
+    return lowerColliderTop(collider, bankFloorThickness);
+  }
+  if (/^bank-(?:ground|upper)-(?:exterior-(?:west|east)|atrium-glass-(?:west|east)|(?:north|south)-door-(?:north|south)-side)$/.test(collider.id)
+    || /^bank-stair-mid-landing-[12]$/.test(collider.id)) {
+    return lowerColliderTop(collider, 0.02);
+  }
+  return collider;
+});
 
 export const ARENAS: Record<MapName, ArenaDefinition> = {
   Pyramid: {
@@ -1069,15 +1088,17 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     z: clamp(next.z, -bounds, bounds)
   };
   const lastGround = supportY(arena, last);
-  let ground = supportY(arena, resolved, lastGround, descending ? last.y : undefined);
-  if (canSnapToSupport(descending, last.y, ground) && (!descending || ground - resolved.y <= 0.8)) resolved.y = Math.max(resolved.y, ground);
+  const settlingOnSupport = descending && last.y <= lastGround + 0.05 && last.y - next.y <= 0.05;
+  const falling = descending && !settlingOnSupport;
+  let ground = supportY(arena, resolved, lastGround, falling ? last.y : undefined);
+  if (canSnapToSupport(falling, last.y, ground) && (!falling || ground - resolved.y <= 0.8)) resolved.y = Math.max(resolved.y, ground);
   for (const collider of arena.colliders) {
     if (!intersectsXZ(resolved, collider)) continue;
     if (collider.ladder) continue;
     const top = collider.center.y + collider.size.y / 2 + 1.2;
     const bottom = collider.center.y - collider.size.y / 2;
     const canStand = (collider.climbable && bottom <= lastGround + 0.95) || top - lastGround <= 0.95 || resolved.y >= top - 0.1;
-    if (canStand && resolved.y >= top - 0.65 && canSnapToSupport(descending, last.y, top)) {
+    if (canStand && resolved.y >= top - 0.65 && canSnapToSupport(falling, last.y, top)) {
       resolved.y = Math.max(resolved.y, top);
       ground = Math.max(ground, top);
       continue;
@@ -1085,7 +1106,7 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
     const wasEmbedded = Math.abs(last.x - collider.center.x) < collider.size.x / 2
       && Math.abs(last.z - collider.center.z) < collider.size.z / 2
       && last.y >= bottom && last.y <= top + PLAYER_HEIGHT;
-    if (descending && !canSnapToSupport(descending, last.y, top) && wasEmbedded) continue;
+    if (falling && !canSnapToSupport(falling, last.y, top) && wasEmbedded) continue;
     if (resolved.y < bottom || resolved.y > top + PLAYER_HEIGHT) continue;
     const halfX = collider.size.x / 2 + PLAYER_RADIUS;
     const halfZ = collider.size.z / 2 + PLAYER_RADIUS;
@@ -1103,10 +1124,10 @@ export function resolvePlayerPosition(map: MapName, next: Vec3, previous?: Vec3)
   }
   resolved.x = clamp(resolved.x, -bounds, bounds);
   resolved.z = clamp(resolved.z, -bounds, bounds);
-  const finalGround = supportY(arena, resolved, ground, descending ? last.y : undefined);
-  if (descending && finalGround >= resolved.y && finalGround <= last.y + LANDING_OVERSHOOT_EPSILON && finalGround - resolved.y <= 0.8) {
+  const finalGround = supportY(arena, resolved, ground, falling ? last.y : undefined);
+  if (falling && finalGround >= resolved.y && finalGround <= last.y + LANDING_OVERSHOOT_EPSILON && finalGround - resolved.y <= 0.8) {
     resolved.y = finalGround;
-  } else if (!descending || finalGround <= resolved.y) {
+  } else if (!falling || finalGround <= resolved.y) {
     resolved.y = Math.max(resolved.y, finalGround);
   }
   return resolved;

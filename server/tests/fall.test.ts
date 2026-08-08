@@ -70,6 +70,22 @@ function simulateClientLaunch(map: MapName, start: Vec3, verticalVelocity: numbe
   throw new Error(`launch did not settle from y=${start.y}`);
 }
 
+function simulateClientWalk(map: MapName, start: Vec3, horizontalVelocity: Pick<Vec3, "x" | "z">, frames: number) {
+  let position = { ...start };
+  let velocity = 0;
+  let maxY = start.y;
+
+  for (let frame = 0; frame < frames; frame += 1) {
+    const previous = { ...position };
+    const next = clientPhysicsFrame(map, position, previous, velocity, horizontalVelocity);
+    position = next.resolved;
+    velocity = next.verticalVelocity;
+    maxY = Math.max(maxY, position.y);
+  }
+
+  return { position, maxY };
+}
+
 function simulateBlueprintBounceWithAuthoritativeSnapshots() {
   const map: MapName = "Blueprint";
   const oneWayLatency = 0.15;
@@ -156,6 +172,31 @@ function insideCollider(collider: ArenaCollider, point: Vec3) {
 }
 
 describe("high platform falling", () => {
+  for (const x of [-16.5, 16.5]) {
+    for (const zSign of [-1, 1]) {
+      it(`walks up the ${x < 0 ? "west" : "east"} ${zSign < 0 ? "south" : "north"} Subway stairs under gravity`, () => {
+        const walk = simulateClientWalk("Subway", { x, y: 2.5, z: zSign * 20 }, { x: 0, z: zSign * 15 }, 120);
+
+        expect(walk.maxY).toBeCloseTo(8.2);
+        expect(walk.position.y).toBeCloseTo(8.2);
+      });
+    }
+  }
+
+  it("walks up the Pyramid tiers under gravity without jumping", () => {
+    const walk = simulateClientWalk("Pyramid", { x: 0, y: 1.2, z: 44 }, { x: 0, z: -15 }, 200);
+
+    expect(walk.maxY).toBeGreaterThanOrEqual(10.9);
+  });
+
+  it("does not snap a player falling from above onto a Blueprint perimeter wall", () => {
+    const previous = { x: 56, y: 11, z: 48 };
+    const resolved = resolvePlayerPosition("Blueprint", { x: 56, y: 9, z: 48 }, previous);
+
+    expect(resolved.y).toBe(9);
+    expect(resolved.y).toBeGreaterThan(8.38);
+  });
+
   it("keeps blocking gravity-pressed movement into a Bank Heist wall end cap", () => {
     const collider = ARENAS["Bank Heist"].colliders.find((candidate) => candidate.id === "bank-ground-ring-north-west-1");
     expect(collider).toBeDefined();
@@ -275,7 +316,7 @@ describe("high platform falling", () => {
     const previous = { x: -27, y: 14.35, z: 7 };
     const frame = clientFallFrame({ x: -27, y: 13.76, z: 7 }, previous, -1, { x: 0, z: 0 });
 
-    expect(frame.resolved).toMatchObject({ x: -27, y: 14, z: 7 });
+    expect(frame.resolved).toMatchObject({ x: -27, y: 13.99, z: 7 });
     expect(frame.grounded).toBe(true);
     expect(frame.verticalVelocity).toBe(0);
   });

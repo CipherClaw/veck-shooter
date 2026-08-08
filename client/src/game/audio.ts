@@ -56,9 +56,9 @@ export function beep(type: "ui" | "hit" | "kill" | "reload" | "heal" | "explosio
     return;
   }
   if (type === "watergun") {
-    playNoise(ac, { duration: 0.075, attack: 0.0015, gain: 0.024, filter: "bandpass", frequency: jitter(1650, 0.04), endFrequency: jitter(760, 0.04), q: 1.7 }, volume);
-    playNoise(ac, { duration: 0.11, attack: 0.005, gain: 0.012, filter: "lowpass", frequency: jitter(620, 0.03), q: 0.8 }, volume);
-    playTone(ac, { frequency: jitter(620, 0.03), endFrequency: jitter(360, 0.04), duration: 0.09, gain: 0.013, type: "sine", attack: 0.002 }, volume);
+    playNoise(ac, { duration: 0.07, attack: 0.0015, gain: 0.068, filter: "bandpass", frequency: jitter(1650, 0.04), endFrequency: jitter(760, 0.04), q: 1.7, saturate: 1.25, reverb: 0.06 }, volume);
+    playNoise(ac, { duration: 0.1, attack: 0.004, gain: 0.036, filter: "lowpass", frequency: jitter(620, 0.03), endFrequency: jitter(260, 0.05), q: 0.8, reverb: 0.08 }, volume);
+    playTone(ac, { frequency: jitter(620, 0.03), endFrequency: jitter(360, 0.04), duration: 0.08, gain: 0.032, type: "sine", attack: 0.002, saturate: 1.2, reverb: 0.04 }, volume);
     return;
   }
   if (type === "fist") {
@@ -131,6 +131,7 @@ function playRevolverShot(ac: AudioContext, volume: number) {
   playNoise(ac, { duration: randomRange(0.028, 0.038), attack: 0.0007, gain: jitter(0.17, 0.05), filter: "highpass", frequency: jitter(2550, 0.05), q: 0.7, delay: t, reverb: 0.13 }, volume);
   playTone(ac, { frequency: jitter(138, 0.04), endFrequency: jitter(48, 0.06), duration: randomRange(0.09, 0.12), gain: jitter(0.105, 0.05), type: "triangle", attack: 0.001, delay: t + randomRange(0, 0.002), saturate: 2.4, reverb: 0.05 }, volume);
   playNoise(ac, { duration: randomRange(0.07, 0.095), attack: 0.002, gain: jitter(0.07, 0.06), filter: "lowpass", frequency: jitter(1150, 0.05), endFrequency: jitter(260, 0.06), q: 0.65, delay: t + randomRange(0.004, 0.008), saturate: 1.7, reverb: 0.2 }, volume);
+  playNoise(ac, { duration: randomRange(0.025, 0.038), attack: 0.001, gain: jitter(0.038, 0.08), filter: "bandpass", frequency: jitter(3200, 0.08), endFrequency: jitter(1500, 0.08), q: 1.2, delay: t + randomRange(0.035, 0.052), reverb: 0.16 }, volume);
 }
 
 function playSniperShot(ac: AudioContext, volume: number) {
@@ -150,14 +151,16 @@ function playShotgunBlast(ac: AudioContext, volume: number) {
   playTone(ac, { frequency: jitter(112, 0.04), endFrequency: jitter(35, 0.07), duration: randomRange(0.28, 0.35), gain: jitter(0.18, 0.05), type: "triangle", attack: 0.0012, delay: t + randomRange(0.001, 0.003), saturate: 3.3, reverb: 0.14 }, volume);
   playNoise(ac, { duration: randomRange(0.18, 0.25), attack: 0.0025, gain: jitter(0.12, 0.06), filter: "bandpass", frequency: jitter(620, 0.07), endFrequency: jitter(230, 0.08), q: 0.72, delay: t + randomRange(0.008, 0.014), saturate: 2.2, reverb: 0.36 }, volume);
   playNoise(ac, { duration: randomRange(0.34, 0.43), attack: 0.005, gain: jitter(0.09, 0.07), filter: "lowpass", frequency: jitter(430, 0.06), endFrequency: jitter(120, 0.08), q: 0.58, delay: t + randomRange(0.025, 0.04), saturate: 1.8, reverb: 0.48 }, volume);
+  playNoise(ac, { duration: randomRange(0.035, 0.052), attack: 0.001, gain: jitter(0.044, 0.08), filter: "bandpass", frequency: jitter(2100, 0.08), endFrequency: jitter(900, 0.09), q: 1.05, delay: t + randomRange(0.075, 0.105), reverb: 0.22 }, volume);
 }
 
 function playGrenadeLaunch(ac: AudioContext, volume: number) {
   const t = randomTiming();
-  playTransient(ac, { gain: 0.07, duration: 0.005, delay: t, reverb: 0.05 }, volume);
-  playNoise(ac, { duration: randomRange(0.15, 0.22), attack: 0.003, gain: jitter(0.12, 0.06), filter: "lowpass", frequency: jitter(340, 0.06), endFrequency: jitter(105, 0.07), q: 0.65, delay: t, saturate: 2.1, reverb: 0.1 }, volume);
-  playTone(ac, { frequency: jitter(92, 0.05), endFrequency: jitter(38, 0.07), duration: randomRange(0.18, 0.23), gain: jitter(0.12, 0.05), type: "triangle", attack: 0.002, delay: t, saturate: 2.6, reverb: 0.06 }, volume);
-  playNoise(ac, { duration: randomRange(0.16, 0.22), attack: 0.006, gain: jitter(0.06, 0.08), filter: "lowpass", frequency: jitter(245, 0.07), endFrequency: jitter(88, 0.08), q: 0.62, delay: t + randomRange(0.026, 0.045), reverb: 0.12 }, volume);
+  playTransient(ac, { gain: 0.17, duration: 0.006, delay: t, reverb: 0.12 }, volume);
+  playNoise(ac, { duration: randomRange(0.025, 0.04), attack: 0.0008, gain: jitter(0.11, 0.06), filter: "highpass", frequency: jitter(1850, 0.07), q: 0.72, delay: t, reverb: 0.16 }, volume);
+  playNoise(ac, { duration: randomRange(0.15, 0.22), attack: 0.003, gain: jitter(0.15, 0.06), filter: "lowpass", frequency: jitter(420, 0.06), endFrequency: jitter(105, 0.07), q: 0.65, delay: t, saturate: 2.5, reverb: 0.18 }, volume);
+  playTone(ac, { frequency: jitter(104, 0.05), endFrequency: jitter(38, 0.07), duration: randomRange(0.2, 0.27), gain: jitter(0.145, 0.05), type: "triangle", attack: 0.002, delay: t, saturate: 2.9, reverb: 0.1 }, volume);
+  playNoise(ac, { duration: randomRange(0.2, 0.28), attack: 0.006, gain: jitter(0.075, 0.08), filter: "lowpass", frequency: jitter(310, 0.07), endFrequency: jitter(88, 0.08), q: 0.62, delay: t + randomRange(0.026, 0.045), saturate: 1.8, reverb: 0.3 }, volume);
 }
 
 function playExplosion(ac: AudioContext, volume: number) {

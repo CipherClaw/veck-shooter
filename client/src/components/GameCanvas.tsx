@@ -219,7 +219,7 @@ function PlayerController() {
       if (now - lastLocalFire.current[weapon] < WEAPONS[weapon].fireMs) return;
       lastLocalFire.current[weapon] = now;
       firing.current = false;
-      if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep("reload", muted);
+      if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep(weapon, muted);
       recoil.current = Math.min(1, recoil.current + 0.85);
       hitPracticeTargetAtCrosshair();
       shoot(camera, weapon, ++shotSeq.current);
@@ -377,7 +377,7 @@ function PlayerController() {
         setSpraying(false);
       } else if (performance.now() - lastLocalFire.current.watergun >= WEAPONS.watergun.fireMs) {
         lastLocalFire.current.watergun = performance.now();
-        if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep("reload", muted);
+        if (spendLocalAmmo(optimisticAmmo.current, weapon)) beep(weapon, muted);
         setSpraying(true);
         recoil.current = Math.min(0.65, recoil.current + 0.14);
         hitPracticeTargetAtCrosshair();

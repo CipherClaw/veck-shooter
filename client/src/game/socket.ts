@@ -48,7 +48,7 @@ socket.on("shotFx", (fx) => {
   }
   const source = fx.explosion ?? fx.from;
   const volume = fx.shooterId === state.playerId ? 1 : spatialVolume(listener, source);
-  beep(fx.explosion ? "explosion" : fx.weapon, state.muted, volume);
+  if (fx.explosion || fx.shooterId !== state.playerId) beep(fx.explosion ? "explosion" : fx.weapon, state.muted, volume);
 });
 socket.on("hit", () => beep("hit", useGame.getState().muted));
 socket.on("killed", () => beep("kill", useGame.getState().muted));

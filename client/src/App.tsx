@@ -238,8 +238,10 @@ function Match() {
       </div>
       <div className="hud killfeed">{snapshot.killFeed.map((k) => <div key={k}>{k}</div>)}</div>
       {!ended && me?.alive && <>
-        <HealthBar health={me.health} />
-        <SprintBar stamina={stamina} />
+        <div className="vitals-stack">
+          <SprintBar stamina={stamina} />
+          <HealthBar health={me.health} />
+        </div>
       </>}
       {!ended && <div className="hud weapon-hud">
         {mode === "Gun Game" ? <div className="weapon-hud-locked">Gun Game · {WEAPONS[weapon].name}</div> : <WeaponSelect weapon={weapon} setWeapon={setWeapon} compact />}
@@ -362,7 +364,7 @@ function ScopeOverlay() {
 function HealthBar({ health }: { health: number }) {
   const value = Math.max(0, Math.min(100, Math.round(health)));
   return (
-    <div className={`hud health-hud ${value <= 30 ? "low" : ""}`}>
+    <div className={`hud vitals-hud health-hud ${value <= 30 ? "low" : ""}`}>
       <span>Health</span>
       <div className="health-track"><div style={{ width: `${value}%` }} /></div>
       <strong>{value}</strong>
@@ -373,7 +375,7 @@ function HealthBar({ health }: { health: number }) {
 function SprintBar({ stamina }: { stamina: number }) {
   const value = Math.max(0, Math.min(100, Math.round(stamina * 100)));
   return (
-    <div className={`hud sprint-hud ${value <= 5 ? "empty" : ""}`}>
+    <div className={`hud vitals-hud sprint-hud ${value <= 5 ? "empty" : ""}`}>
       <span>Sprint</span>
       <div className="sprint-track"><div style={{ width: `${value}%` }} /></div>
       <strong>{value}</strong>
