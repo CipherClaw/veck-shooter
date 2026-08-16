@@ -861,7 +861,25 @@ function bankSurfaceColliders(floorName: string, standY: number, upper: boolean)
     ...(upper ? [] : [floorColor("lower-stair-opening", -39.5, -22.1, -8.3, 6.3, bankColors.tile)]),
     floorColor("north-threshold", -22.1, -21.2, -18.45, -15.05, bankColors.tile),
     floorColor("south-threshold", -22.1, -21.2, 15.05, 18.45, bankColors.tile),
-    floorColor("stair-threshold-strip", -22.1, -21.2, -8.3, 6.3, bankColors.tile)
+    floorColor("stair-threshold-strip", -22.1, -21.2, -8.3, 6.3, bankColors.tile),
+    floorColor("north-ring-west-edge-threshold", -41.3, -38, -22.45, -21.55, bankColors.tile),
+    floorColor("north-ring-west-threshold", -17.5, -12.5, -22.45, -21.55, bankColors.tile),
+    floorColor("north-ring-east-threshold", 12.5, 17.5, -22.45, -21.55, bankColors.tile),
+    floorColor("north-ring-east-edge-threshold", 38, 41.3, -22.45, -21.55, bankColors.tile),
+    floorColor("south-ring-west-edge-threshold", -41.3, -38, 21.55, 22.45, bankColors.tile),
+    floorColor("south-ring-west-threshold", -17.5, -12.5, 21.55, 22.45, bankColors.tile),
+    floorColor("south-ring-east-threshold", 12.5, 17.5, 21.55, 22.45, bankColors.tile),
+    floorColor("south-ring-east-edge-threshold", 38, 41.3, 21.55, 22.45, bankColors.tile),
+    floorColor("atrium-north-edge", -8.35, 8.35, -16.53, -16.35, bankColors.tile),
+    floorColor("atrium-north-west-corner", -8.35, -7.75, -16.35, -15.75, bankColors.tile),
+    floorColor("atrium-north-east-corner", 7.75, 8.35, -16.35, -15.75, bankColors.tile),
+    floorColor("atrium-south-edge", -8.35, 8.35, 16.35, 16.53, bankColors.tile),
+    floorColor("atrium-south-west-corner", -8.35, -7.75, 15.75, 16.35, bankColors.tile),
+    floorColor("atrium-south-east-corner", 7.75, 8.35, 15.75, 16.35, bankColors.tile),
+    floorColor("east-ring-north-seam", 21.55, 22.45, -16.53, -16.5, bankColors.tile),
+    floorColor("east-ring-south-seam", 21.55, 22.45, 16.5, 16.53, bankColors.tile),
+    floorColor("stair-north-west-corner", -41.3, -39.95, -9.2, -8.3, bankColors.tile),
+    floorColor("stair-south-west-corner", -41.3, -39.95, 6.3, 7.2, bankColors.tile)
   ];
 }
 

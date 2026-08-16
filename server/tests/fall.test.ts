@@ -75,6 +75,7 @@ function simulateClientWalk(map: MapName, start: Vec3, horizontalVelocity: Pick<
   let position = { ...start };
   let velocity = 0;
   let maxY = start.y;
+  let minY = start.y;
 
   for (let frame = 0; frame < Math.ceil(seconds / step); frame += 1) {
     const previous = { ...position };
@@ -82,9 +83,10 @@ function simulateClientWalk(map: MapName, start: Vec3, horizontalVelocity: Pick<
     position = next.resolved;
     velocity = next.verticalVelocity;
     maxY = Math.max(maxY, position.y);
+    minY = Math.min(minY, position.y);
   }
 
-  return { position, maxY };
+  return { position, maxY, minY };
 }
 
 function simulateBlueprintBounceWithAuthoritativeSnapshots() {
@@ -239,6 +241,14 @@ describe("high platform falling", () => {
       position = resolvePlayerPosition("Bank Heist", { x: position.x + 0.22, y: position.y - 0.06, z: position.z }, position);
       expect(position.x).toBeLessThanOrEqual(paddedBoundary + 1e-9);
     }
+  });
+
+  it("keeps an upper-floor player level while crossing a Bank Heist ring doorway", () => {
+    const walk = simulateClientWalk("Bank Heist", { x: -15, y: 6, z: -20 }, { x: 0, z: -4 }, 1, 60);
+
+    expect(walk.position.z).toBeLessThan(-22.45);
+    expect(walk.minY).toBeCloseTo(6);
+    expect(walk.position.y).toBeCloseTo(6);
   });
 
   it("blocks gravity-pressed movement into every unsteppable ground-level collider", () => {
