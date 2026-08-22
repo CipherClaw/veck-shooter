@@ -401,6 +401,7 @@ function positionsBetween(min: number, max: number, spacing: number) {
 function BankWallFinish({ colliders }: { colliders: ArenaCollider[] }) {
   const walls = colliders.filter((collider) => (
     collider.id.startsWith("bank-")
+    && !collider.id.includes("-surface-")
     && !collider.id.includes("atrium-glass")
     && (
       collider.id.includes("-exterior-")
