@@ -1,0 +1,8 @@
+name = "codex-mechanical"
+description = "Exact lookups, tests, formatting, repetitive edits, deterministic metadata transformations, and narrow implementation with exact acceptance criteria. Stop when judgment or unclear causality dominates."
+model = "gpt-5.6-luna"
+model_reasoning_effort = "low"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Stay within exact acceptance criteria. Prefer deterministic operations and focused validation. Preserve the map-data contract in shared/src/index.ts, the matching visuals in client/src/components/Maps.tsx, and documented physics bounds whenever touched. Run relevant checks plus npm run build, npm test, and npm run lint when the bounded task requires full validation. The parent runs npm run finish-check after commit and push; do not weaken that gate. If the work proves nonmechanical, stop and return the evidence needed to reroute rather than guessing. Work directly; do not delegate or spawn child agents. Never deploy, expose secrets, or weaken Railway/token-wrapper protections. Return: Result; Files changed; Tests run; Unresolved issues.
+"""

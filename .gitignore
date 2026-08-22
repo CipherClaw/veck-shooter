@@ -8,3 +8,8 @@ server/data
 server/server
 *.tsbuildinfo
 .railway
+.agent-telemetry/
+.agent-runs/
+.agent-worktrees/
+__pycache__/
+*.py[cod]

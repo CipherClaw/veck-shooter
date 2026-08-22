@@ -22,6 +22,18 @@ The Discord bridge is configured in `/srv/codex-work/projects/discord-codex-brid
 - After code or deploy-relevant config changes, confirm whether Railway needs an update. If the change should be live, push the GitHub commit and trigger/verify the Railway deployment as needed.
 - Do not store secrets, tokens, private keys, or passwords in this file.
 
+## Hybrid agent router
+
+- The normal Claude Code parent orchestrator is `sonnet` at `high` effort from `.claude/settings.json`; shared project settings outrank the host's user-level `fable/high` setting.
+- Claude roles: `claude-explorer`, `claude-planner`, `claude-content-editor`, and `claude-deep-reviewer`.
+- Codex roles: `codex-mechanical`, `codex-implementer`, `codex-debugger`, `codex-reviewer`, and `codex-release-reviewer`.
+- Dispatch Codex with `python3 scripts/agent_dispatch.py --role <role> --mode read-only|write --task <task> --json`.
+- Use the cheapest suitable worker; escalation requires preserved failure, ambiguity, disagreement, or correctness-risk evidence, never task size alone.
+- Meaningful work uses author/reviewer separation; high-risk gameplay, profile, security, and deployment changes require opposite-provider review.
+- Keep at most three specialists active and two write-capable workers; use isolated worktrees for concurrent writers.
+- Reviewers do not deploy, change secrets, or weaken the Railway token-wrapper and Definition-of-Done protections.
+- See `AGENT_ROUTING.md` for the matrix, escalation ladder, worktree contract, dispatcher, telemetry, and release gates.
+
 ## Definition of Done (finish every job)
 
 Every job must end with the working tree clean, all work committed and pushed to origin, and build/test/lint green. Run `npm run finish-check` before declaring a job done, and do not report a job complete while changes sit uncommitted.
