@@ -22,17 +22,25 @@ The Discord bridge is configured in `/srv/codex-work/projects/discord-codex-brid
 - After code or deploy-relevant config changes, confirm whether Railway needs an update. If the change should be live, push the GitHub commit and trigger/verify the Railway deployment as needed.
 - Do not store secrets, tokens, private keys, or passwords in this file.
 
-## Hybrid agent router
+## Hybrid agent router delta
 
-- The normal Claude Code parent orchestrator is `sonnet` at `high` effort from `.claude/settings.json`; shared project settings outrank the host's user-level `fable/high` setting.
-- Claude roles: `claude-explorer`, `claude-planner`, `claude-content-editor`, and `claude-deep-reviewer`.
-- Codex roles: `codex-mechanical`, `codex-implementer`, `codex-debugger`, `codex-reviewer`, and `codex-release-reviewer`.
-- Dispatch Codex with `python3 scripts/agent_dispatch.py --role <role> --mode read-only|write --task <task> --json`.
-- Use the cheapest suitable worker; escalation requires preserved failure, ambiguity, disagreement, or correctness-risk evidence, never task size alone.
-- Meaningful work uses author/reviewer separation; high-risk gameplay, profile, security, and deployment changes require opposite-provider review.
-- Keep at most three specialists active and two write-capable workers; use isolated worktrees for concurrent writers.
-- Reviewers do not deploy, change secrets, or weaken the Railway token-wrapper and Definition-of-Done protections.
-- See `AGENT_ROUTING.md` for the matrix, escalation ladder, worktree contract, dispatcher, telemetry, and release gates.
+Global routing, specialists, and `agent-dispatch` live at user scope (`~/.claude/CLAUDE.md`,
+`~/.codex/AGENTS.md`, `~/.config/hybrid-agent-router/ROUTING.md`); do not duplicate them here.
+This repository adds only:
+
+- **Invariants every worker preserves** (see "Notes"): map registration lives only in
+  `shared/src/index.ts` + `client/src/components/Maps.tsx`; shared protocol types in `shared/`;
+  server-authoritative gameplay (client prediction/rendering never decides outcomes);
+  player Y clamp `[1.2, 12]`, floor-only jump at `pos.y <= 1.22`; shared-profile fallback in
+  `server/src/profile.ts` when the hub is unreachable; `veck.playerId` matchmaking identity.
+- **High-risk release gate (opposite-provider review + `codex-release-reviewer`)**:
+  server-authoritative gameplay or physics validation, matchmaking, `server/src/profile.ts`
+  hub integration, security/secrets, migrations or data-loss risk, `railway.json`,
+  `Dockerfile`, Railway configuration, substantial architecture.
+- **Validation**: `npm run build`, `npm test`, `npm run lint`; the parent runs
+  `npm run finish-check` after commit and push (Definition of Done below). Workers never
+  weaken that gate, deploy, or bypass the Railway token wrapper.
+- No provider/model routing overrides; no project-local agents or Codex role overrides.
 
 ## Definition of Done (finish every job)
 
